@@ -1,10 +1,9 @@
 import 'dotenv/config';
 
-export default {
+export default ({ config }) => ({
+  ...config,
   expo: {
-    name: "unity_link_new",
-    slug: "unity_link_new",
-    version: "1.0.0",
+    ...config.expo,
     orientation: "portrait",
     icon: "./assets/images/icon.png",
     scheme: "unitylinknew",
@@ -47,7 +46,7 @@ export default {
       reactCompiler: true
     },
     extra: {
-      apiUrl: process.env.EXPO_PUBLIC_API_URL
+      apiUrl: process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000"
     }
   }
-};
+});

@@ -8,5 +8,6 @@ export type User = {
   name: string;
   email?: string;
   phone?: string;
-  role: RoleKey;
+  role: "super_admin" | "board_member" | "community_member" | "member";
+  avatar?: string;
 };

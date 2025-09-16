@@ -1,529 +1,571 @@
-import { Colors } from "@/constants/Colors";
+// app/(tabs)/announcements.tsx
+import { useRole } from "@/hooks/useRole";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import {
+  Alert,
   FlatList,
+  Keyboard,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
   useColorScheme,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type Announcement = {
   id: string;
   title: string;
+  date: string;
   content: string;
   author: string;
-  date: string;
-  category?: string;
+  priority?: "high" | "normal";
 };
 
-type UserRole = "superadmin" | "board" | "member";
+const initialAnnouncements: Announcement[] = [
+  { 
+    id: "1", 
+    title: "Pool Maintenance", 
+    date: "Sept 15, 2025", 
+    content: "The community pool will be closed for maintenance from September 18-20. We apologize for any inconvenience.",
+    author: "Management",
+    priority: "high"
+  },
+  { 
+    id: "2", 
+    title: "New Security Measures", 
+    date: "Sept 10, 2025", 
+    content: "Starting next week, we will be implementing new security measures including additional cameras at all entry points.",
+    author: "Security Team"
+  },
+  { 
+    id: "3", 
+    title: "Community Garden Update", 
+    date: "Sept 5, 2025", 
+    content: "The community garden renovation is complete! Sign up now for your plot. First come, first served.",
+    author: "Recreation Committee"
+  },
+];
 
 export default function AnnouncementsScreen() {
-  const colorScheme = useColorScheme();
-  const theme = Colors[colorScheme ?? "light"];
-
-  // ⚡ TODO: replace with context from TabsLayout
-  const [role] = useState<UserRole>("member");
-
-  // Announcements state
-  const [announcements, setAnnouncements] = useState<Announcement[]>([
-    {
-      id: "1",
-      title: "Community Cleanup Event",
-      content:
-        "Join us this Saturday at 9AM for a neighborhood cleanup! Bring gloves and trash bags.",
-      author: "Board Member John",
-      date: "2025-09-10",
-      category: "Event",
-    },
-    {
-      id: "2",
-      title: "Monthly HOA Meeting Reminder",
-      content:
-        "Next HOA meeting is scheduled for Sep 15, 2025 at 6PM in the community center.",
-      author: "Super Admin Jane",
-      date: "2025-09-08",
-      category: "Meeting",
-    },
-    {
-      id: "3",
-      title: "Pool Maintenance Notice",
-      content:
-        "The community pool will be closed for maintenance from Sep 20-22. We apologize for any inconvenience.",
-      author: "Board Member Sarah",
-      date: "2025-09-05",
-      category: "Maintenance",
-    },
-  ]);
-
-  // Modal state
+  const [announcements, setAnnouncements] = useState<Announcement[]>(initialAnnouncements);
   const [modalVisible, setModalVisible] = useState(false);
-  const [newTitle, setNewTitle] = useState("");
-  const [newContent, setNewContent] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("General");
+  const [newAnnouncement, setNewAnnouncement] = useState({ 
+    title: "", 
+    content: "", 
+    author: "",
+    priority: "normal" as "high" | "normal"
+  });
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
 
-  // Filters
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeFilter, setActiveFilter] = useState<string | null>(null);
-  const [sortNewest, setSortNewest] = useState(true);
+  const scheme = useColorScheme() || "light";
+  const isDark = scheme === "dark";
+  const insets = useSafeAreaInsets();
 
-  // Snackbar state
-  const [snackbar, setSnackbar] = useState<string | null>(null);
+  // ✅ Role checks
+  const { isSuperAdmin, isBoardMember } = useRole();
+  const canManageAnnouncements = isSuperAdmin || isBoardMember;
 
-  // Category options
-  const categories = [
-    "General",
-    "Event",
-    "Meeting",
-    "Maintenance",
-    "Social",
-    "Urgent",
-  ];
-
-  // Derived announcements (search + filter + sort)
-  const filteredAnnouncements = useMemo(() => {
-    let list = announcements;
-
-    if (searchQuery) {
-      list = list.filter(
-        (a) =>
-          a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          a.content.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+  const addAnnouncement = () => {
+    if (!newAnnouncement.title || !newAnnouncement.content || !newAnnouncement.author) {
+      Alert.alert("Missing Info", "Please fill out all required fields.");
+      return;
     }
 
-    if (activeFilter) {
-      list = list.filter((a) => a.category === activeFilter);
-    }
-
-    list = [...list].sort((a, b) =>
-      sortNewest ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date)
-    );
-
-    return list;
-  }, [announcements, searchQuery, activeFilter, sortNewest]);
-
-  // Add new announcement
-  const handleAddAnnouncement = () => {
-    if (!newTitle || !newContent) return;
-
-    const newAnnouncement: Announcement = {
-      id: Date.now().toString(),
-      title: newTitle,
-      content: newContent,
-      author: role === "superadmin" ? "Super Admin" : "Board Member",
-      date: new Date().toISOString().slice(0, 10), // YYYY-MM-DD
-      category: selectedCategory,
+    const newItem: Announcement = { 
+      id: Date.now().toString(), 
+      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      ...newAnnouncement
     };
-
-    setAnnouncements([newAnnouncement, ...announcements]);
-    setNewTitle("");
-    setNewContent("");
-    setSelectedCategory("General");
+    setAnnouncements((prev) => [newItem, ...prev]);
+    setNewAnnouncement({ title: "", content: "", author: "", priority: "normal" });
     setModalVisible(false);
-    setSnackbar("Announcement posted!");
-    setTimeout(() => setSnackbar(null), 3000);
   };
 
-  // Delete announcement
-  const handleDelete = (id: string) => {
-    setAnnouncements(announcements.filter((a) => a.id !== id));
-    setSnackbar("Announcement deleted");
-    setTimeout(() => setSnackbar(null), 3000);
+  const deleteAnnouncement = (id: string) => {
+    Alert.alert("Delete Announcement", "Are you sure you want to delete this announcement?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () => setAnnouncements((prev) => prev.filter((a) => a.id !== id)),
+      },
+    ]);
   };
 
-  // RSVP action
-  const handleRSVP = (title: string) => {
-    setSnackbar(`You RSVPed to "${title}"`);
-    setTimeout(() => setSnackbar(null), 3000);
+  const openAnnouncementDetails = (announcement: Announcement) => {
+    setSelectedAnnouncement(announcement);
+    setDetailModalVisible(true);
   };
+
+  const renderItem = ({ item }: { item: Announcement }) => (
+    <TouchableOpacity 
+      onPress={() => openAnnouncementDetails(item)}
+      activeOpacity={0.7}
+    >
+      <View style={[styles.card, { 
+        backgroundColor: isDark ? "#1e1e1e" : "#fff",
+        borderLeftWidth: 4,
+        borderLeftColor: item.priority === "high" ? "#FF3B30" : (isDark ? "#333" : "#eee")
+      }]}>
+        {/* Header row */}
+        <View style={styles.cardHeader}>
+          <Text style={[styles.announcementTitle, { color: isDark ? "#fff" : "#333" }]}>
+            {item.title}
+          </Text>
+
+          {canManageAnnouncements && (
+            <TouchableOpacity 
+              onPress={() => deleteAnnouncement(item.id)} 
+              accessibilityLabel={`Delete ${item.title}`}
+              style={styles.deleteBtn}
+            >
+              <Ionicons name="trash-outline" size={20} color="#ff3b30" />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Content preview */}
+        <Text 
+          style={[styles.announcementContent, { color: isDark ? "#bbb" : "#666" }]}
+          numberOfLines={3}
+        >
+          {item.content}
+        </Text>
+
+        {/* Details */}
+        <View style={styles.detailsContainer}>
+          <View style={styles.detailRow}>
+            <Ionicons name="person-outline" size={16} color={isDark ? "#0A84FF" : "#007AFF"} />
+            <Text style={[styles.announcementDetails, { color: isDark ? "#bbb" : "#555" }]}>{item.author}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Ionicons name="calendar-outline" size={16} color={isDark ? "#0A84FF" : "#007AFF"} />
+            <Text style={[styles.announcementDetails, { color: isDark ? "#bbb" : "#555" }]}>{item.date}</Text>
+          </View>
+          {item.priority === "high" && (
+            <View style={styles.detailRow}>
+              <Ionicons name="warning-outline" size={16} color="#FF3B30" />
+              <Text style={[styles.announcementDetails, { color: "#FF3B30" }]}>High Priority</Text>
+            </View>
+          )}
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.text }]}>Announcements</Text>
-        <TouchableOpacity
-          style={styles.sortButton}
-          onPress={() => setSortNewest(!sortNewest)}
-        >
-          <Ionicons
-            name={sortNewest ? "arrow-down-outline" : "arrow-up-outline"}
-            size={20}
-            color={theme.tint}
-          />
-        </TouchableOpacity>
-      </View>
-
-      {/* Search Bar */}
-      <TextInput
-        style={[
-          styles.searchBar,
-          {
-            backgroundColor: theme.card,
-            color: theme.text,
-            borderColor: theme.border,
-          },
-        ]}
-        placeholder="Search announcements..."
-        placeholderTextColor={theme.secondaryText}
-        value={searchQuery}
-        onChangeText={setSearchQuery}
-      />
-
-      {/* Category Filters */}
-      <View style={styles.filterRow}>
-        {categories.map((cat) => (
-          <TouchableOpacity
-            key={cat}
-            style={[
-              styles.filterPill,
-              { borderColor: theme.border },
-              activeFilter === cat && {
-                backgroundColor: theme.tint,
-                borderColor: theme.tint,
-              },
-            ]}
-            onPress={() => setActiveFilter(activeFilter === cat ? null : cat)}
-          >
-            <Text
-              style={[
-                styles.filterText,
-                { color: theme.text },
-                activeFilter === cat && { color: "#fff", fontWeight: "600" },
-              ]}
+    <View style={[styles.container, { backgroundColor: isDark ? "#121212" : "#fff" }]}>
+      {/* Header with Create Button */}
+      <View style={[styles.header, { paddingTop: insets.top + 20 }]}>
+        <View style={styles.headerRow}>
+          <View>
+            <Text style={[styles.title, { color: isDark ? "#fff" : "#2f4053" }]}>Announcements</Text>
+            {announcements.length > 0 && (
+              <Text style={[styles.subtitle, { color: isDark ? "#aaa" : "#666" }]}>
+                {announcements.length} announcement{announcements.length !== 1 ? 's' : ''}
+              </Text>
+            )}
+          </View>
+          
+          {canManageAnnouncements && announcements.length > 0 && (
+            <TouchableOpacity
+              style={[styles.createButton, { backgroundColor: isDark ? "#0A84FF" : "#007AFF" }]}
+              onPress={() => setModalVisible(true)}
+              accessibilityLabel="Add new announcement"
             >
-              {cat}
-            </Text>
-          </TouchableOpacity>
-        ))}
+              <Ionicons name="add" size={20} color="#fff" />
+              <Text style={styles.createButtonText}>Create</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
-      {/* List or Empty State */}
-      {filteredAnnouncements.length === 0 ? (
+      {announcements.length === 0 ? (
         <View style={styles.emptyState}>
-          <Ionicons
-            name="megaphone-outline"
-            size={48}
-            color={theme.secondaryText}
-          />
-          <Text
-            style={[styles.emptyStateText, { color: theme.secondaryText }]}
-          >
-            No announcements found
+          <Ionicons name="megaphone-outline" size={64} color={isDark ? "#444" : "#ccc"} />
+          <Text style={[styles.emptyTitle, { color: isDark ? "#fff" : "#333" }]}>
+            No announcements
           </Text>
+          <Text style={[styles.emptyText, { color: isDark ? "#aaa" : "#666" }]}>
+            {canManageAnnouncements 
+              ? "Get started by creating your first announcement" 
+              : "Check back later for community updates"
+            }
+          </Text>
+          {canManageAnnouncements && (
+            <TouchableOpacity
+              style={[styles.createFirstAnnouncementBtn, { backgroundColor: isDark ? "#0A84FF" : "#007AFF" }]}
+              onPress={() => setModalVisible(true)}
+            >
+              <Ionicons name="add" size={20} color="#fff" />
+              <Text style={styles.createFirstAnnouncementText}>Create Announcement</Text>
+            </TouchableOpacity>
+          )}
         </View>
       ) : (
         <FlatList
-          data={filteredAnnouncements}
+          data={announcements}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View
-              style={[
-                styles.card,
-                { backgroundColor: theme.card, borderLeftColor: theme.tint },
-              ]}
-            >
-              <Text style={[styles.cardTitle, { color: theme.text }]}>
-                {item.title}
-              </Text>
-              <Text style={[styles.content, { color: theme.text }]}>
-                {item.content}
-              </Text>
-              <Text style={[styles.meta, { color: theme.secondaryText }]}>
-                {item.author} • {item.date}
-              </Text>
-              {item.category && (
-                <Text style={[styles.category, { color: theme.tint }]}>
-                  #{item.category}
-                </Text>
-              )}
-
-              {/* ✅ Action buttons */}
-              <View style={styles.cardActions}>
-                {item.category === "Event" && (
-                  <TouchableOpacity
-                    style={[
-                      styles.actionButton,
-                      { backgroundColor: theme.tint },
-                    ]}
-                    onPress={() => handleRSVP(item.title)}
-                  >
-                    <Ionicons name="checkmark" size={16} color="#fff" />
-                    <Text style={[styles.actionText, { color: "#fff" }]}>
-                      RSVP
-                    </Text>
-                  </TouchableOpacity>
-                )}
-
-                {(role === "superadmin" || role === "board") && (
-                  <TouchableOpacity
-                    style={[
-                      styles.actionButton,
-                      { borderColor: "#e53935", borderWidth: 1 },
-                    ]}
-                    onPress={() => handleDelete(item.id)}
-                  >
-                    <Ionicons name="trash-outline" size={16} color="#e53935" />
-                    <Text style={[styles.actionText, { color: "#e53935" }]}>
-                      Delete
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-          )}
-          contentContainerStyle={{ paddingBottom: 100 }}
+          renderItem={renderItem}
+          contentContainerStyle={[styles.listContent, { paddingBottom: 20 }]}
+          ItemSeparatorComponent={() => <View style={{ height: 16 }} />}
+          showsVerticalScrollIndicator={false}
         />
       )}
 
-      {/* FAB only for admins */}
-      {(role === "superadmin" || role === "board") && (
-        <TouchableOpacity
-          style={[styles.fab, { backgroundColor: theme.tint }]}
-          activeOpacity={0.8}
-          onPress={() => setModalVisible(true)}
-        >
-          <Ionicons name="add" size={28} color="#fff" />
-        </TouchableOpacity>
-      )}
-
-      {/* Modal */}
+      {/* Create Announcement Modal */}
       <Modal transparent visible={modalVisible} animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalBox, { backgroundColor: theme.card }]}>
-            <Text style={[styles.modalTitle, { color: theme.text }]}>
-              Create New Announcement
-            </Text>
-
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  borderColor: theme.border,
-                  backgroundColor: theme.background,
-                  color: theme.text,
-                },
-              ]}
-              placeholder="Title"
-              placeholderTextColor={theme.secondaryText}
-              value={newTitle}
-              onChangeText={setNewTitle}
-            />
-
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  height: 100,
-                  borderColor: theme.border,
-                  backgroundColor: theme.background,
-                  color: theme.text,
-                },
-              ]}
-              placeholder="Content"
-              placeholderTextColor={theme.secondaryText}
-              value={newContent}
-              onChangeText={setNewContent}
-              multiline
-              textAlignVertical="top"
-            />
-
-            <Text
-              style={[
-                styles.meta,
-                { marginBottom: 8, color: theme.secondaryText },
-              ]}
-            >
-              Category:
-            </Text>
-            <View style={styles.filterRow}>
-              {categories.map((cat) => (
-                <TouchableOpacity
-                  key={cat}
-                  style={[
-                    styles.filterPill,
-                    { borderColor: theme.border },
-                    selectedCategory === cat && {
-                      backgroundColor: theme.tint,
-                      borderColor: theme.tint,
-                    },
-                  ]}
-                  onPress={() => setSelectedCategory(cat)}
-                >
-                  <Text
-                    style={[
-                      styles.filterText,
-                      { color: theme.text },
-                      selectedCategory === cat && {
-                        color: "#294594ff",
-                        fontWeight: "600",
-                      },
-                    ]}
-                  >
-                    {cat}
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <KeyboardAvoidingView 
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={styles.modalContainer}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={[styles.modalBox, { backgroundColor: isDark ? "#1e1e1e" : "#fff" }]}>
+                <View style={styles.modalHeader}>
+                  <Text style={[styles.modalTitle, { color: isDark ? "#fff" : "#333" }]}>
+                    Create New Announcement
                   </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+                  <TouchableOpacity 
+                    onPress={() => setModalVisible(false)}
+                    style={styles.closeButton}
+                  >
+                    <Ionicons name="close" size={24} color={isDark ? "#fff" : "#000"} />
+                  </TouchableOpacity>
+                </View>
 
-            {/* Buttons */}
-            <View style={styles.buttonRow}>
-              <TouchableOpacity
-                style={[
-                  styles.cancelButton,
-                  { backgroundColor: theme.card, borderColor: theme.border },
-                ]}
-                onPress={() => setModalVisible(false)}
+                <ScrollView style={styles.modalScroll}>
+                  <Text style={[styles.inputLabel, { color: isDark ? "#fff" : "#333" }]}>
+                    Title *
+                  </Text>
+                  <TextInput
+                    placeholder="Enter announcement title"
+                    placeholderTextColor="#888"
+                    style={[styles.input, { 
+                      color: isDark ? "#fff" : "#000",
+                      backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7"
+                    }]}
+                    value={newAnnouncement.title}
+                    onChangeText={(t) => setNewAnnouncement((p) => ({ ...p, title: t }))}
+                  />
+
+                  <Text style={[styles.inputLabel, { color: isDark ? "#fff" : "#333" }]}>
+                    Author *
+                  </Text>
+                  <TextInput
+                    placeholder="Enter your name or department"
+                    placeholderTextColor="#888"
+                    style={[styles.input, { 
+                      color: isDark ? "#fff" : "#000",
+                      backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7"
+                    }]}
+                    value={newAnnouncement.author}
+                    onChangeText={(t) => setNewAnnouncement((p) => ({ ...p, author: t }))}
+                  />
+
+                  <Text style={[styles.inputLabel, { color: isDark ? "#fff" : "#333" }]}>
+                    Content *
+                  </Text>
+                  <TextInput
+                    placeholder="Enter announcement content"
+                    placeholderTextColor="#888"
+                    style={[styles.input, styles.textArea, { 
+                      color: isDark ? "#fff" : "#000",
+                      backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7",
+                      height: 120,
+                      textAlignVertical: 'top'
+                    }]}
+                    multiline
+                    numberOfLines={5}
+                    value={newAnnouncement.content}
+                    onChangeText={(t) => setNewAnnouncement((p) => ({ ...p, content: t }))}
+                  />
+
+                  <Text style={[styles.inputLabel, { color: isDark ? "#fff" : "#333" }]}>
+                    Priority
+                  </Text>
+                  <View style={styles.priorityContainer}>
+                    <TouchableOpacity
+                      style={[
+                        styles.priorityButton,
+                        newAnnouncement.priority === "normal" && styles.priorityButtonSelected,
+                        { backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7" }
+                      ]}
+                      onPress={() => setNewAnnouncement((p) => ({ ...p, priority: "normal" }))}
+                    >
+                      <Text style={[
+                        styles.priorityButtonText,
+                        { color: isDark ? "#fff" : "#000" },
+                        newAnnouncement.priority === "normal" && styles.priorityButtonTextSelected
+                      ]}>
+                        Normal
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.priorityButton,
+                        newAnnouncement.priority === "high" && styles.priorityButtonSelected,
+                        newAnnouncement.priority === "high" && { backgroundColor: "#FF3B30" }
+                      ]}
+                      onPress={() => setNewAnnouncement((p) => ({ ...p, priority: "high" }))}
+                    >
+                      <Text style={[
+                        styles.priorityButtonText,
+                        newAnnouncement.priority === "high" ? { color: "#fff" } : { color: isDark ? "#fff" : "#000" }
+                      ]}>
+                        High Priority
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </ScrollView>
+
+                {/* Modal actions */}
+                <View style={styles.modalActions}>
+                  <TouchableOpacity 
+                    style={[styles.modalBtn, styles.cancelBtn, { backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7" }]} 
+                    onPress={() => setModalVisible(false)}
+                  >
+                    <Text style={[styles.modalBtnText, { color: isDark ? "#fff" : "#000" }]}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={[styles.modalBtn, styles.saveBtn, { 
+                      backgroundColor: newAnnouncement.title && newAnnouncement.content && newAnnouncement.author
+                        ? (isDark ? "#0A84FF" : "#007AFF") 
+                        : (isDark ? "#444" : "#ccc")
+                    }]} 
+                    onPress={addAnnouncement}
+                    disabled={!newAnnouncement.title || !newAnnouncement.content || !newAnnouncement.author}
+                  >
+                    <Text style={[styles.modalBtnText, { color: "#fff" }]}>Create Announcement</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </KeyboardAvoidingView>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+      {/* Announcement Detail Modal */}
+      <Modal transparent visible={detailModalVisible} animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.detailModalBox, { backgroundColor: isDark ? "#1e1e1e" : "#fff" }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.detailModalTitle, { color: isDark ? "#fff" : "#333" }]}>
+                Announcement Details
+              </Text>
+              <TouchableOpacity 
+                onPress={() => setDetailModalVisible(false)}
+                style={styles.closeButton}
               >
-                <Text style={[styles.cancelButtonText, { color: theme.text }]}>
-                  Cancel
+                <Ionicons name="close" size={24} color={isDark ? "#fff" : "#000"} />
+              </TouchableOpacity>
+            </View>
+            
+            {selectedAnnouncement && (
+              <ScrollView style={styles.detailContent}>
+                <Text style={[styles.detailTitle, { color: isDark ? "#fff" : "#333" }]}>
+                  {selectedAnnouncement.title}
                 </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.addButton, { backgroundColor: theme.tint }]}
-                onPress={handleAddAnnouncement}
-              >
-                <Text style={styles.addButtonText}>Post</Text>
-              </TouchableOpacity>
-            </View>
+                
+                <Text style={[styles.detailContentText, { color: isDark ? "#bbb" : "#666" }]}>
+                  {selectedAnnouncement.content}
+                </Text>
+                
+                <View style={styles.detailItem}>
+                  <Ionicons name="person-outline" size={20} color={isDark ? "#0A84FF" : "#007AFF"} />
+                  <Text style={[styles.detailText, { color: isDark ? "#fff" : "#333" }]}>
+                    {selectedAnnouncement.author}
+                  </Text>
+                </View>
+                
+                <View style={styles.detailItem}>
+                  <Ionicons name="calendar-outline" size={20} color={isDark ? "#0A84FF" : "#007AFF"} />
+                  <Text style={[styles.detailText, { color: isDark ? "#fff" : "#333" }]}>
+                    {selectedAnnouncement.date}
+                  </Text>
+                </View>
+                
+                {selectedAnnouncement.priority === "high" && (
+                  <View style={styles.detailItem}>
+                    <Ionicons name="warning-outline" size={20} color="#FF3B30" />
+                    <Text style={[styles.detailText, { color: "#FF3B30" }]}>
+                      High Priority
+                    </Text>
+                  </View>
+                )}
+              </ScrollView>
+            )}
           </View>
         </View>
       </Modal>
-
-      {/* ✅ Snackbar */}
-      {snackbar && (
-        <View
-          style={[
-            styles.snackbar,
-            { backgroundColor: theme.card, borderColor: theme.border },
-          ]}
-        >
-          <Text style={[styles.snackbarText, { color: theme.text }]}>
-            {snackbar}
-          </Text>
-        </View>
-      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  header: {
+  container: { flex: 1 },
+  header: { paddingHorizontal: 20, paddingBottom: 10 },
+  headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
   },
-  title: { fontSize: 24, fontWeight: "bold" },
-  sortButton: { padding: 6, borderRadius: 6 },
-  searchBar: { borderWidth: 1, borderRadius: 8, padding: 10, marginBottom: 12 },
-  filterRow: { flexDirection: "row", flexWrap: "wrap", marginBottom: 12 },
-  filterPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    marginRight: 8,
-    marginBottom: 8,
-    borderWidth: 1,
-  },
-  filterText: { fontSize: 12 },
-  card: {
-    padding: 16,
-    marginBottom: 12,
-    borderRadius: 12,
-    borderLeftWidth: 4,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  cardTitle: { fontSize: 18, fontWeight: "600", marginBottom: 6 },
-  content: { fontSize: 15, marginBottom: 8, lineHeight: 20 },
-  meta: { fontSize: 12, marginBottom: 4 },
-  category: { fontSize: 12, fontWeight: "600", marginTop: 4 },
-  cardActions: { flexDirection: "row", marginTop: 8 },
-  actionButton: {
+  title: { fontSize: 28, fontWeight: "800", marginBottom: 4 },
+  subtitle: { fontSize: 16, fontWeight: "500" },
+  createButton: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    marginRight: 8,
-  },
-  actionText: { marginLeft: 4, fontSize: 13, fontWeight: "500" },
-  fab: {
-    position: "absolute",
-    bottom: 70,
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.3,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 6,
-    elevation: 6,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalBox: { padding: 20, borderRadius: 12, width: "85%", maxHeight: "80%" },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    marginBottom: 16,
-    textAlign: "center",
-  },
-  input: { borderWidth: 1, borderRadius: 8, padding: 12, marginBottom: 12 },
-  buttonRow: { flexDirection: "row", justifyContent: "space-between" },
-  addButton: {
-    padding: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
     borderRadius: 8,
-    alignItems: "center",
-    flex: 1,
-    marginLeft: 8,
+    gap: 6,
   },
-  addButtonText: { color: "#2b6fa3ff", fontWeight: "600" },
-  cancelButton: {
-    padding: 12,
-    borderRadius: 8,
-    alignItems: "center",
-    flex: 1,
-    marginRight: 8,
-    borderWidth: 1,
+  createButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 16,
   },
-  cancelButtonText: { fontWeight: "600" },
-  emptyState: { alignItems: "center", justifyContent: "center", paddingVertical: 40 },
-  emptyStateText: { fontSize: 16, textAlign: "center", marginTop: 16 },
-  snackbar: {
-    position: "absolute",
-    bottom: 20,
-    left: 20,
-    right: 20,
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
+  listContent: { paddingHorizontal: 20, paddingVertical: 10 },
+  card: {
+    padding: 20,
+    borderRadius: 16,
     shadowColor: "#000",
     shadowOpacity: 0.1,
     shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
+    shadowRadius: 8,
     elevation: 3,
   },
-  snackbarText: { fontSize: 14, fontWeight: "500" },
+  cardHeader: { 
+    flexDirection: "row", 
+    justifyContent: "space-between", 
+    alignItems: "flex-start", 
+    marginBottom: 8 
+  },
+  announcementTitle: { fontSize: 18, fontWeight: "700", flex: 1, marginRight: 12 },
+  announcementContent: { fontSize: 14, marginBottom: 12, lineHeight: 20 },
+  detailsContainer: { marginBottom: 12 },
+  detailRow: { flexDirection: "row", alignItems: "center", marginBottom: 6 },
+  announcementDetails: { fontSize: 14, marginLeft: 8 },
+  deleteBtn: { padding: 4 },
+  emptyState: { 
+    flex: 1, 
+    alignItems: "center", 
+    justifyContent: "center",
+    paddingHorizontal: 40
+  },
+  emptyTitle: { fontSize: 20, fontWeight: "700", marginTop: 16 },
+  emptyText: { fontSize: 16, textAlign: "center", marginTop: 8, lineHeight: 24 },
+  createFirstAnnouncementBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    marginTop: 20,
+    gap: 8
+  },
+  createFirstAnnouncementText: { color: "#fff", fontWeight: "600", fontSize: 16 },
+  modalContainer: { flex: 1 },
+  modalOverlay: { 
+    flex: 1, 
+    backgroundColor: "rgba(0,0,0,0.5)", 
+    justifyContent: "center", 
+    alignItems: "center",
+    padding: 20
+  },
+  modalBox: { 
+    width: "100%", 
+    maxHeight: "80%",
+    borderRadius: 20,
+    overflow: 'hidden'
+  },
+  detailModalBox: {
+    width: "90%",
+    maxHeight: "80%",
+    borderRadius: 20,
+    overflow: 'hidden'
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(150,150,150,0.2)'
+  },
+  modalTitle: { fontSize: 20, fontWeight: "700" },
+  detailModalTitle: { fontSize: 18, fontWeight: "700" },
+  closeButton: { padding: 4 },
+  modalScroll: { maxHeight: 400, paddingHorizontal: 20 },
+  inputLabel: { fontSize: 16, fontWeight: "600", marginBottom: 8, marginTop: 16 },
+  input: {
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    fontWeight: '500'
+  },
+  textArea: {
+    height: 120,
+    textAlignVertical: 'top'
+  },
+  priorityContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16
+  },
+  priorityButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center'
+  },
+  priorityButtonSelected: {
+    backgroundColor: '#007AFF'
+  },
+  priorityButtonText: {
+    fontSize: 14,
+    fontWeight: '600'
+  },
+  priorityButtonTextSelected: {
+    color: '#fff'
+  },
+  modalActions: { 
+    flexDirection: "row", 
+    justifyContent: "flex-end", 
+    padding: 20,
+    gap: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(150,150,150,0.2)'
+  },
+  modalBtn: { 
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    minWidth: 100,
+    alignItems: 'center'
+  },
+  cancelBtn: { backgroundColor: '#f2f2f7' },
+  saveBtn: { backgroundColor: '#007AFF' },
+  modalBtnText: { fontSize: 16, fontWeight: "600" },
+  detailContent: { padding: 20 },
+  detailTitle: { fontSize: 22, fontWeight: "700", marginBottom: 12 },
+  detailContentText: { fontSize: 16, lineHeight: 24, marginBottom: 20 },
+  detailItem: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    marginBottom: 16,
+    gap: 12
+  },
+  detailText: { fontSize: 16, fontWeight: '500' },
 });

@@ -2,11 +2,11 @@
 export type Event = {
   id: string;
   title: string;
+  description: string;
   date: string;
   location: string;
-  description?: string;
-  status?: string;
-  createdBy?: string;
-  goal?: number;
-  donations?: number;
+  createdBy: string;
+  status: "upcoming" | "past" | "cancelled";
+  donations: number;
+  goal: number;
 };

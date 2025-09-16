@@ -1,8 +1,11 @@
 // types/announcement.ts
-export interface Announcement {
+export type Announcement = {
   id: string;
   title: string;
-  body: string;
-  authorRole: 'super_admin' | 'board_member' | 'community_member';
-  createdAt: string;
-}
+  content: string; // 🔄 was `body`
+  author: string; // 🔄 better than authorRole for UI
+  date: string; // 🔄 maps to createdAt
+  category?: string; // optional, for tags like "event", "general"
+  question: string;
+  answer: string;
+};

@@ -1,6 +1,6 @@
 // hooks/useThemeColor.ts
+import { useColorScheme } from './useColorScheme'; // <-- This must exactly match
 import { Colors } from '../constants/Colors';
-import { useColorScheme } from './useColorScheme'; // ✅ correct path
 
 type Theme = 'light' | 'dark';
 
@@ -11,9 +11,9 @@ type ThemeProps = {
 
 export function useThemeColor(
   props: ThemeProps,
-  colorName: keyof typeof Colors['light']
-) {
-  const theme: Theme = useColorScheme() as Theme;
+  colorName: keyof typeof Colors.light
+): string {
+  const theme: Theme = useColorScheme() ?? 'light';
   const colorFromProps = props[theme];
 
   return colorFromProps ?? Colors[theme][colorName];
