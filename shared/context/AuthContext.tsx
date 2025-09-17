@@ -4,20 +4,16 @@ import {
   loginUser,
   logoutUser,
   registerUser,
-} from "@/services";
-import { User } from "@/shared/types/user";
+} from "@/features/users/services/userService";
+import { User } from "@/types/user";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
-export type RoleKey =
-  | "super_admin"
-  | "board_member"
-  | "community_member"
-  | "member";
-export type UserRole = RoleKey;
+// Only valid roles
+export type RoleKey = "super_admin" | "board_member" | "community_member";
 
 export type AuthContextType = {
   user: User | null;
-  role: RoleKey;
+  role: RoleKey | null; // ✅ null when no role (e.g. logged out)
   loading: boolean;
   authLoading: boolean;
   error: string | null;
@@ -35,7 +31,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [authLoading, setAuthLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [role, setRoleState] = useState<RoleKey>("member");
+  const [role, setRoleState] = useState<RoleKey | null>(null);
 
   const clearError = () => setError(null);
 
@@ -46,7 +42,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const storedUser = await loadUserFromStorage();
         if (storedUser) {
           setUser(storedUser);
-          setRoleState((storedUser.role as RoleKey) || "member");
+          setRoleState(storedUser.role as RoleKey);
+        } else {
+          setRoleState(null);
         }
       } catch (err) {
         setError(
@@ -65,7 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const loggedIn = await loginUser(credential, password);
       setUser(loggedIn);
-      setRoleState((loggedIn.role as RoleKey) || "member");
+      setRoleState(loggedIn.role as RoleKey);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Login failed";
       setError(errorMessage);
@@ -81,7 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const newUser = await registerUser(credential, password);
       setUser(newUser);
-      setRoleState((newUser.role as RoleKey) || "member");
+      setRoleState(newUser.role as RoleKey);
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Registration failed";
@@ -97,7 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await logoutUser();
       setUser(null);
-      setRoleState("member");
+      setRoleState(null); // ✅ reset to null instead of "member"
       setError(null);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Logout failed";

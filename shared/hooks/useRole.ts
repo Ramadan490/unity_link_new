@@ -1,6 +1,6 @@
 // hooks/useRole.ts
 import { RoleKey, useAuth } from "@/shared/context/AuthContext";
-import { User } from "@/shared/types/user";
+import { User } from "@/types/user";
 
 export const useRole = () => {
   const { user, role, setRole } = useAuth();
@@ -20,7 +20,7 @@ export const useRole = () => {
     isSuperAdmin: role === "super_admin",
     isBoardMember: role === "board_member",
     isCommunityMember: role === "community_member",
-    isMember: role === "member",
+   
     role,
     user,
     users, // Add this

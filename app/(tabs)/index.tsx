@@ -1,10 +1,10 @@
 // app/(tabs)/home.tsx
-import ThemedText from "@/components/ui/ThemedText";
-import ThemedView from "@/components/ui/ThemedView";
-import { useRole } from "@/hooks/useRole";
+import ThemedText from "@/shared/components/ui/ThemedText";
+import ThemedView from "@/shared/components/ui/ThemedView";
+import { useRole } from "@/shared/hooks/useRole";
 import { Ionicons } from "@expo/vector-icons";
 import { Href, useRouter } from "expo-router";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -21,22 +21,43 @@ export default function HomeScreen() {
   const isDark = scheme === "dark";
   const insets = useSafeAreaInsets();
 
+  // 🔹 State for dynamic content
+  const [announcements, setAnnouncements] = useState<number>(0);
+  const [nextEvent, setNextEvent] = useState<string | null>(null);
+  const [membersCount, setMembersCount] = useState<number>(0);
+  const [pendingRequests, setPendingRequests] = useState<number>(0);
+
+  // 🔹 Simulate fetching from backend
+  useEffect(() => {
+    setTimeout(() => {
+      setAnnouncements(2);
+      setNextEvent("HOA meeting Sept 20");
+      setMembersCount(128);
+      setPendingRequests(3);
+    }, 800);
+  }, []);
+
   const goTo = (path: Href) => router.push(path);
 
   return (
     <ThemedView
       style={[
         styles.container,
-        { backgroundColor: isDark ? "#121212" : "#fff", paddingTop: insets.top + 20 },
+        {
+          backgroundColor: isDark ? "#121212" : "#fff",
+          paddingTop: insets.top + 20,
+        },
       ]}
     >
       <ScrollView contentContainerStyle={styles.scroll}>
         {/* Header */}
         <View style={styles.headerRow}>
           <View>
-            <ThemedText type="title" style={[styles.header, { color: isDark ? "#fff" : "#2f4053" }]}>
-              👋 The Sudanese American Center in Arizona
-
+            <ThemedText
+              type="title"
+              style={[styles.header, { color: isDark ? "#fff" : "#2f4053" }]}
+            >
+              👋 Sudanese American Center in Arizona
             </ThemedText>
             <ThemedText
               type="label"
@@ -49,47 +70,62 @@ export default function HomeScreen() {
 
         {/* Quick Highlights */}
         <View style={styles.row}>
+          {/* Announcements */}
           <TouchableOpacity
             style={[
               styles.card,
               { backgroundColor: isDark ? "#1e1e1e" : "#fff" },
             ]}
-            activeOpacity={0.8}
+            activeOpacity={0.85}
             onPress={() => goTo("/(tabs)/announcements" as Href)}
             accessibilityLabel="View latest announcements"
           >
-            <Ionicons name="megaphone-outline" size={28} color={isDark ? "#0A84FF" : "#007AFF"} />
+            <Ionicons
+              name="megaphone-outline"
+              size={28}
+              color={isDark ? "#0A84FF" : "#007AFF"}
+            />
             <ThemedText type="subtitle" style={styles.cardTitle}>
               Announcements
             </ThemedText>
-            <ThemedText style={[styles.cardInfo, { color: isDark ? "#bbb" : "#666" }]}>
-              2 new updates this week
+            <ThemedText
+              style={[styles.cardInfo, { color: isDark ? "#bbb" : "#666" }]}
+            >
+              {announcements} update{announcements !== 1 && "s"} this week
             </ThemedText>
+            <ThemedText style={styles.linkText}>See all →</ThemedText>
           </TouchableOpacity>
 
+          {/* Events */}
           <TouchableOpacity
             style={[
               styles.card,
               { backgroundColor: isDark ? "#1e1e1e" : "#fff" },
             ]}
-            activeOpacity={0.8}
+            activeOpacity={0.85}
             onPress={() => goTo("/(tabs)/events" as Href)}
             accessibilityLabel="View upcoming events"
           >
-            <Ionicons name="calendar-outline" size={28} color={isDark ? "#34C759" : "#34C759"} />
+            <Ionicons name="calendar-outline" size={28} color="#34C759" />
             <ThemedText type="subtitle" style={styles.cardTitle}>
               Events
             </ThemedText>
-            <ThemedText style={[styles.cardInfo, { color: isDark ? "#bbb" : "#666" }]}>
-              HOA meeting Sept 20
+            <ThemedText
+              style={[styles.cardInfo, { color: isDark ? "#bbb" : "#666" }]}
+            >
+              {nextEvent ?? "No upcoming events"}
             </ThemedText>
+            <ThemedText style={styles.linkText}>See all →</ThemedText>
           </TouchableOpacity>
         </View>
 
         {/* Community Info */}
         <TouchableOpacity
-          style={[styles.bigCard, { backgroundColor: isDark ? "#1e1e1e" : "#fff" }]}
-          activeOpacity={0.8}
+          style={[
+            styles.bigCard,
+            { backgroundColor: isDark ? "#1e1e1e" : "#fff" },
+          ]}
+          activeOpacity={0.85}
           onPress={() => goTo("/(tabs)/memorials" as Href)}
           accessibilityLabel="View memorials"
         >
@@ -98,7 +134,9 @@ export default function HomeScreen() {
             <ThemedText type="subtitle" style={styles.cardTitle}>
               Memorials
             </ThemedText>
-            <ThemedText style={[styles.cardInfo, { color: isDark ? "#bbb" : "#666" }]}>
+            <ThemedText
+              style={[styles.cardInfo, { color: isDark ? "#bbb" : "#666" }]}
+            >
               Remember and honor community members
             </ThemedText>
           </View>
@@ -106,20 +144,34 @@ export default function HomeScreen() {
 
         {/* Quick Stats */}
         <View style={styles.statsRow}>
-          <View style={[styles.statCard, { backgroundColor: isDark ? "#1e1e1e" : "#f8f9fa" }]}>
-            <Ionicons name="people-outline" size={20} color={isDark ? "#0A84FF" : "#007AFF"} />
+          <View
+            style={[
+              styles.statCard,
+              { backgroundColor: isDark ? "#1e1e1e" : "#f8f9fa" },
+            ]}
+          >
+            <Ionicons
+              name="people-outline"
+              size={20}
+              color={isDark ? "#0A84FF" : "#007AFF"}
+            />
             <ThemedText
               style={[styles.statText, { color: isDark ? "#fff" : "#333" }]}
             >
-              128 Members
+              {membersCount} Members
             </ThemedText>
           </View>
-          <View style={[styles.statCard, { backgroundColor: isDark ? "#1e1e1e" : "#f8f9fa" }]}>
-            <Ionicons name="document-text-outline" size={20} color={isDark ? "#34C759" : "#34C759"} />
+          <View
+            style={[
+              styles.statCard,
+              { backgroundColor: isDark ? "#1e1e1e" : "#f8f9fa" },
+            ]}
+          >
+            <Ionicons name="document-text-outline" size={20} color="#34C759" />
             <ThemedText
               style={[styles.statText, { color: isDark ? "#fff" : "#333" }]}
             >
-              3 Requests Pending
+              {pendingRequests} Requests Pending
             </ThemedText>
           </View>
         </View>
@@ -135,17 +187,26 @@ export default function HomeScreen() {
             </ThemedText>
 
             <TouchableOpacity
-              style={[styles.bigCard, { backgroundColor: isDark ? "#1e1e1e" : "#fff" }]}
-              activeOpacity={0.8}
+              style={[
+                styles.bigCard,
+                { backgroundColor: isDark ? "#1e1e1e" : "#fff" },
+              ]}
+              activeOpacity={0.85}
               onPress={() => goTo("/(tabs)/requests" as Href)}
               accessibilityLabel="Manage resident requests"
             >
-              <Ionicons name="document-text-outline" size={24} color="#5856D6" />
+              <Ionicons
+                name="document-text-outline"
+                size={24}
+                color="#5856D6"
+              />
               <View style={{ marginLeft: 12 }}>
                 <ThemedText type="subtitle" style={styles.cardTitle}>
                   Manage Requests
                 </ThemedText>
-                <ThemedText style={[styles.cardInfo, { color: isDark ? "#bbb" : "#666" }]}>
+                <ThemedText
+                  style={[styles.cardInfo, { color: isDark ? "#bbb" : "#666" }]}
+                >
                   Review pending resident requests
                 </ThemedText>
               </View>
@@ -153,8 +214,11 @@ export default function HomeScreen() {
 
             {isSuperAdmin && (
               <TouchableOpacity
-                style={[styles.bigCard, { backgroundColor: isDark ? "#1e1e1e" : "#fff" }]}
-                activeOpacity={0.8}
+                style={[
+                  styles.bigCard,
+                  { backgroundColor: isDark ? "#1e1e1e" : "#fff" },
+                ]}
+                activeOpacity={0.85}
                 onPress={() => goTo("/(tabs)/manageUsers" as Href)}
                 accessibilityLabel="Manage users"
               >
@@ -163,7 +227,12 @@ export default function HomeScreen() {
                   <ThemedText type="subtitle" style={styles.cardTitle}>
                     Manage Users
                   </ThemedText>
-                  <ThemedText style={[styles.cardInfo, { color: isDark ? "#bbb" : "#666" }]}>
+                  <ThemedText
+                    style={[
+                      styles.cardInfo,
+                      { color: isDark ? "#bbb" : "#666" },
+                    ]}
+                  >
                     Add, remove, or edit user roles
                   </ThemedText>
                 </View>
@@ -179,18 +248,9 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: 20, paddingBottom: 40 },
-
-  // Header
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
-  },
+  headerRow: { marginBottom: 20 },
   header: { fontSize: 26, fontWeight: "800" },
   subheader: { fontSize: 14, marginTop: 4 },
-
-  // Row of small cards
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -210,8 +270,7 @@ const styles = StyleSheet.create({
   },
   cardTitle: { marginTop: 8, fontWeight: "600" },
   cardInfo: { marginTop: 4, fontSize: 13 },
-
-  // Big card (full width)
+  linkText: { marginTop: 6, fontSize: 12, fontWeight: "500", color: "#007AFF" },
   bigCard: {
     flexDirection: "row",
     alignItems: "center",
@@ -225,8 +284,6 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 2,
   },
-
-  // Stats row
   statsRow: {
     flexDirection: "row",
     justifyContent: "space-between",

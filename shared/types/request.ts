@@ -1,5 +1,3 @@
-// /types/request.ts
-
 export type Reply = {
   id: string;
   text: string;
@@ -13,6 +11,6 @@ export type Request = {
   description: string;
   status: "open" | "in_progress" | "closed";
   createdBy: string;
-  createdAt: string; // ✅ now official field
-  replies: Reply[]; // ✅ always array
+  createdAt: string;
+  replies: Reply[];
 };

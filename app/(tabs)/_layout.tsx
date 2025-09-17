@@ -12,10 +12,12 @@ import {
   useColorScheme,
   View,
 } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
-// Import the useAuth hook
-import { RoleKey, useAuth } from "@/context/AuthContext";
+import { RoleKey, useAuth } from "@/shared/context/AuthContext";
 
 // Screens
 import AnnouncementsScreen from "./announcements";
@@ -28,20 +30,41 @@ import RequestsScreen from "./requests";
 
 const Tab = createBottomTabNavigator();
 
-// Define the tab structure for each role
-interface TabConfig {
-  name: string;
-  component: React.ComponentType<any>;
-}
+// ------------------
+// Central Tab Config
+// ------------------
+const allTabs: Record<
+  string,
+  { component: React.ComponentType<any>; icon: keyof typeof Ionicons.glyphMap }
+> = {
+  Home: { component: HomeScreen, icon: "home-outline" },
+  Events: { component: EventsScreen, icon: "calendar-outline" },
+  Announcements: { component: AnnouncementsScreen, icon: "megaphone-outline" },
+  Memorials: { component: MemorialsScreen, icon: "flower-outline" },
+  Requests: { component: RequestsScreen, icon: "document-text-outline" },
+  "Manage Users": { component: ManageUsersScreen, icon: "people-outline" },
+  Profile: { component: ProfileScreen, icon: "person-circle-outline" },
+};
 
-const roleTabs: Record<RoleKey, TabConfig[]> = {
-  super_admin: [
-    { name: "Requests", component: RequestsScreen },
-    { name: "Manage Users", component: ManageUsersScreen },
-  ],
-  board_member: [{ name: "Requests", component: RequestsScreen }],
-  community_member: [],
-  member: [],
+// Tabs allowed for each role
+const roleTabs: Record<RoleKey, string[]> = {
+  super_admin: ["Requests", "Manage Users"],
+  board_member: ["Requests"],
+  community_member: ["Requests"],
+};
+
+// Roles shown in FAB modal
+const switchableRoles: RoleKey[] = [
+  "super_admin",
+  "board_member",
+  "community_member",
+];
+
+// Human-readable labels
+const roleLabels: Record<RoleKey, string> = {
+  super_admin: "SUPER ADMIN",
+  board_member: "BOARD MEMBER",
+  community_member: "COMMUNITY MEMBER",
 };
 
 export default function TabsLayout() {
@@ -52,15 +75,9 @@ export default function TabsLayout() {
   const scheme = useColorScheme();
   const isDark = scheme === "dark";
 
-  const iconMap: Record<string, keyof typeof Ionicons.glyphMap> = {
-    Home: "home-outline",
-    Events: "calendar-outline",
-    Announcements: "megaphone-outline",
-    Memorials: "flower-outline",
-    Requests: "document-text-outline",
-    "Manage Users": "people-outline",
-    Profile: "person-circle-outline",
-  };
+  const baseTabs = ["Home", "Events", "Announcements", "Memorials", "Profile"];
+  const extraTabs = role ? roleTabs[role] ?? [] : [];
+  const activeTabs = [...baseTabs, ...extraTabs];
 
   return (
     <SafeAreaView
@@ -86,7 +103,7 @@ export default function TabsLayout() {
             >
               Select User Role
             </Text>
-            {(["super_admin", "board_member", "community_member", "member"] as RoleKey[]).map((r) => (
+            {switchableRoles.map((r) => (
               <TouchableOpacity
                 key={r}
                 style={[
@@ -97,6 +114,7 @@ export default function TabsLayout() {
                   setRole(r);
                   setModalVisible(false);
                 }}
+                accessibilityLabel={`Switch role to ${roleLabels[r]}`}
               >
                 <Text
                   style={[
@@ -104,7 +122,7 @@ export default function TabsLayout() {
                     role === r && styles.roleButtonTextActive,
                   ]}
                 >
-                  {r.replace('_', ' ').toUpperCase()}
+                  {roleLabels[r]}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -133,18 +151,18 @@ export default function TabsLayout() {
             elevation: 8,
           },
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name={iconMap[route.name]} size={size} color={color} />
+            <Ionicons
+              name={allTabs[route.name].icon}
+              size={size}
+              color={color}
+            />
           ),
         })}
       >
-        <Tab.Screen name="Home" component={HomeScreen} />
-        <Tab.Screen name="Events" component={EventsScreen} />
-        <Tab.Screen name="Announcements" component={AnnouncementsScreen} />
-        <Tab.Screen name="Memorials" component={MemorialsScreen} />
-        {roleTabs[role].map((t) => (
-          <Tab.Screen key={t.name} name={t.name} component={t.component} />
-        ))}
-        <Tab.Screen name="Profile" component={ProfileScreen} />
+        {activeTabs.map((tab) => {
+          const { component } = allTabs[tab];
+          return <Tab.Screen key={tab} name={tab} component={component} />;
+        })}
       </Tab.Navigator>
 
       {/* Floating Role Switcher */}
@@ -157,6 +175,7 @@ export default function TabsLayout() {
           },
         ]}
         onPress={() => setModalVisible(true)}
+        accessibilityLabel="Switch user role"
       >
         <Ionicons name="swap-horizontal-outline" size={26} color="#fff" />
       </TouchableOpacity>

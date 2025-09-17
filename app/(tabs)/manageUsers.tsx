@@ -1,6 +1,6 @@
 // app/(tabs)/manage-users.tsx
-import { useRole } from "@/hooks/useRole";
-import { useRoleManagement } from "@/hooks/useRoleManagement";
+import { useRole } from "@/shared/hooks/useRole";
+import { useRoleManagement } from "@/shared/hooks/useRoleManagement";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import {
@@ -15,7 +15,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function ManageUsersScreen() {
-  const { users, updateUserRole, loading, error, refetch } = useRoleManagement();
+  const { users, updateUserRole, loading, error, refetch } =
+    useRoleManagement();
   const { isSuperAdmin } = useRole();
   const scheme = useColorScheme() || "light";
   const isDark = scheme === "dark";
@@ -61,7 +62,10 @@ export default function ManageUsersScreen() {
     <ScrollView
       contentContainerStyle={[
         styles.container,
-        { paddingTop: insets.top + 20, backgroundColor: isDark ? "#121212" : "#fff" },
+        {
+          paddingTop: insets.top + 20,
+          backgroundColor: isDark ? "#121212" : "#fff",
+        },
       ]}
     >
       {/* Header */}
@@ -79,7 +83,11 @@ export default function ManageUsersScreen() {
       {/* User list */}
       {users.length === 0 ? (
         <View style={styles.centered}>
-          <Ionicons name="people-outline" size={48} color={isDark ? "#555" : "#999"} />
+          <Ionicons
+            name="people-outline"
+            size={48}
+            color={isDark ? "#555" : "#999"}
+          />
           <Text style={[styles.emptyText, { color: isDark ? "#aaa" : "#666" }]}>
             No users found.
           </Text>
@@ -100,10 +108,14 @@ export default function ManageUsersScreen() {
                 color={isDark ? "#0A84FF" : "#007AFF"}
               />
               <View style={{ marginLeft: 10 }}>
-                <Text style={[styles.userName, { color: isDark ? "#fff" : "#333" }]}>
+                <Text
+                  style={[styles.userName, { color: isDark ? "#fff" : "#333" }]}
+                >
                   {u.name}
                 </Text>
-                <Text style={[styles.userRole, { color: isDark ? "#bbb" : "#666" }]}>
+                <Text
+                  style={[styles.userRole, { color: isDark ? "#bbb" : "#666" }]}
+                >
                   {u.role}
                 </Text>
               </View>
@@ -170,7 +182,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 20,
   },
-  permissionText: { marginTop: 12, fontSize: 16, color: "#333", textAlign: "center" },
+  permissionText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: "#333",
+    textAlign: "center",
+  },
   loadingText: { marginTop: 10, fontSize: 14 },
   errorText: { marginTop: 12, fontSize: 14, textAlign: "center" },
   emptyText: { marginTop: 8, fontSize: 14 },

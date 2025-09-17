@@ -21,7 +21,8 @@ const faqs: FAQ[] = [
   {
     id: "1",
     question: "How do I update my profile?",
-    answer: "Go to the Profile tab and tap on 'Edit Profile' to update your details.",
+    answer:
+      "Go to the Profile tab and tap on 'Edit Profile' to update your details.",
   },
   {
     id: "2",
@@ -43,7 +44,7 @@ export default function HelpScreen() {
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
   const toggleExpand = (id: string) => {
-    setExpandedItems(prev => {
+    setExpandedItems((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(id)) {
         newSet.delete(id);
@@ -56,7 +57,7 @@ export default function HelpScreen() {
 
   const handleContactSupport = async () => {
     const url = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(SUPPORT_SUBJECT)}`;
-    
+
     try {
       const canOpen = await Linking.canOpenURL(url);
       if (canOpen) {
@@ -72,7 +73,7 @@ export default function HelpScreen() {
 
   const renderFAQItem = (faq: FAQ) => {
     const isExpanded = expandedItems.has(faq.id);
-    
+
     return (
       <View key={faq.id} style={styles.faqCard}>
         <TouchableOpacity
@@ -101,7 +102,7 @@ export default function HelpScreen() {
   };
 
   return (
-    <ScrollView 
+    <ScrollView
       style={styles.container}
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
@@ -114,13 +115,11 @@ export default function HelpScreen() {
       </View>
 
       {/* FAQ Section */}
-      <View style={styles.faqsContainer}>
-        {faqs.map(renderFAQItem)}
-      </View>
+      <View style={styles.faqsContainer}>{faqs.map(renderFAQItem)}</View>
 
       {/* Contact Support */}
-      <TouchableOpacity 
-        style={styles.supportButton} 
+      <TouchableOpacity
+        style={styles.supportButton}
         onPress={handleContactSupport}
         accessibilityLabel="Contact support via email"
         accessibilityRole="button"

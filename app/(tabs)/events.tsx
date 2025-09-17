@@ -1,5 +1,5 @@
 // app/(tabs)/events.tsx
-import { useRole } from "@/hooks/useRole";
+import { useRole } from "@/shared/hooks/useRole";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
@@ -30,39 +30,42 @@ type Event = {
 };
 
 const initialEvents: Event[] = [
-  { 
-    id: "1", 
-    title: "Community BBQ", 
-    date: "Sept 20, 2025", 
+  {
+    id: "1",
+    title: "Community BBQ",
+    date: "Sept 20, 2025",
     location: "Central Park",
-    description: "Join us for our annual community BBQ with food, games, and fun activities for all ages!",
-    attending: true
+    description:
+      "Join us for our annual community BBQ with food, games, and fun activities for all ages!",
+    attending: true,
   },
-  { 
-    id: "2", 
-    title: "Board Meeting", 
-    date: "Sept 25, 2025", 
+  {
+    id: "2",
+    title: "Board Meeting",
+    date: "Sept 25, 2025",
     location: "Clubhouse",
-    description: "Monthly board meeting to discuss community matters and upcoming initiatives."
+    description:
+      "Monthly board meeting to discuss community matters and upcoming initiatives.",
   },
-  { 
-    id: "3", 
-    title: "Memorial Service", 
-    date: "Oct 2, 2025", 
+  {
+    id: "3",
+    title: "Memorial Service",
+    date: "Oct 2, 2025",
     location: "Main Hall",
-    description: "A special service to honor and remember our beloved community members.",
-    attending: false
+    description:
+      "A special service to honor and remember our beloved community members.",
+    attending: false,
   },
 ];
 
 export default function EventsScreen() {
   const [events, setEvents] = useState<Event[]>(initialEvents);
   const [modalVisible, setModalVisible] = useState(false);
-  const [newEvent, setNewEvent] = useState({ 
-    title: "", 
-    date: "", 
-    location: "", 
-    description: "" 
+  const [newEvent, setNewEvent] = useState({
+    title: "",
+    date: "",
+    location: "",
+    description: "",
   });
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
@@ -81,10 +84,10 @@ export default function EventsScreen() {
       return;
     }
 
-    const newItem: Event = { 
-      id: Date.now().toString(), 
+    const newItem: Event = {
+      id: Date.now().toString(),
       ...newEvent,
-      attending: false
+      attending: false,
     };
     setEvents((prev) => [newItem, ...prev]);
     setNewEvent({ title: "", date: "", location: "", description: "" });
@@ -103,9 +106,11 @@ export default function EventsScreen() {
   };
 
   const toggleAttendance = (id: string) => {
-    setEvents(prev => prev.map(event => 
-      event.id === id ? { ...event, attending: !event.attending } : event
-    ));
+    setEvents((prev) =>
+      prev.map((event) =>
+        event.id === id ? { ...event, attending: !event.attending } : event,
+      ),
+    );
   };
 
   const openEventDetails = (event: Event) => {
@@ -114,24 +119,35 @@ export default function EventsScreen() {
   };
 
   const renderItem = ({ item }: { item: Event }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       onPress={() => openEventDetails(item)}
       activeOpacity={0.7}
     >
-      <View style={[styles.card, { 
-        backgroundColor: isDark ? "#1e1e1e" : "#fff",
-        borderLeftWidth: 4,
-        borderLeftColor: item.attending ? "#34C759" : (isDark ? "#333" : "#eee")
-      }]}>
+      <View
+        style={[
+          styles.card,
+          {
+            backgroundColor: isDark ? "#1e1e1e" : "#fff",
+            borderLeftWidth: 4,
+            borderLeftColor: item.attending
+              ? "#34C759"
+              : isDark
+                ? "#333"
+                : "#eee",
+          },
+        ]}
+      >
         {/* Header row */}
         <View style={styles.cardHeader}>
-          <Text style={[styles.eventTitle, { color: isDark ? "#fff" : "#333" }]}>
+          <Text
+            style={[styles.eventTitle, { color: isDark ? "#fff" : "#333" }]}
+          >
             {item.title}
           </Text>
 
           {canManageEvents && (
-            <TouchableOpacity 
-              onPress={() => deleteEvent(item.id)} 
+            <TouchableOpacity
+              onPress={() => deleteEvent(item.id)}
               accessibilityLabel={`Delete ${item.title}`}
               style={styles.deleteBtn}
             >
@@ -142,8 +158,11 @@ export default function EventsScreen() {
 
         {/* Description preview */}
         {item.description && (
-          <Text 
-            style={[styles.eventDescription, { color: isDark ? "#bbb" : "#666" }]}
+          <Text
+            style={[
+              styles.eventDescription,
+              { color: isDark ? "#bbb" : "#666" },
+            ]}
             numberOfLines={2}
           >
             {item.description}
@@ -153,37 +172,65 @@ export default function EventsScreen() {
         {/* Details */}
         <View style={styles.detailsContainer}>
           <View style={styles.detailRow}>
-            <Ionicons name="calendar-outline" size={16} color={isDark ? "#0A84FF" : "#007AFF"} />
-            <Text style={[styles.eventDetails, { color: isDark ? "#bbb" : "#555" }]}>{item.date}</Text>
+            <Ionicons
+              name="calendar-outline"
+              size={16}
+              color={isDark ? "#0A84FF" : "#007AFF"}
+            />
+            <Text
+              style={[styles.eventDetails, { color: isDark ? "#bbb" : "#555" }]}
+            >
+              {item.date}
+            </Text>
           </View>
           <View style={styles.detailRow}>
-            <Ionicons name="location-outline" size={16} color={isDark ? "#0A84FF" : "#007AFF"} />
-            <Text style={[styles.eventDetails, { color: isDark ? "#bbb" : "#555" }]}>{item.location}</Text>
+            <Ionicons
+              name="location-outline"
+              size={16}
+              color={isDark ? "#0A84FF" : "#007AFF"}
+            />
+            <Text
+              style={[styles.eventDetails, { color: isDark ? "#bbb" : "#555" }]}
+            >
+              {item.location}
+            </Text>
           </View>
         </View>
 
         {/* RSVP Button */}
         <TouchableOpacity
           style={[
-            styles.rsvpButton, 
-            { 
-              backgroundColor: item.attending 
-                ? (isDark ? "#2C7A4A" : "#34C759") 
-                : (isDark ? "#2C2C2E" : "#F2F2F7"),
-              borderColor: item.attending ? "transparent" : (isDark ? "#3A3A3C" : "#E5E5EA")
-            }
+            styles.rsvpButton,
+            {
+              backgroundColor: item.attending
+                ? isDark
+                  ? "#2C7A4A"
+                  : "#34C759"
+                : isDark
+                  ? "#2C2C2E"
+                  : "#F2F2F7",
+              borderColor: item.attending
+                ? "transparent"
+                : isDark
+                  ? "#3A3A3C"
+                  : "#E5E5EA",
+            },
           ]}
           onPress={() => toggleAttendance(item.id)}
         >
-          <Ionicons 
-            name={item.attending ? "checkmark-circle" : "add-circle-outline"} 
-            size={16} 
-            color={item.attending ? "#FFF" : (isDark ? "#0A84FF" : "#007AFF")} 
+          <Ionicons
+            name={item.attending ? "checkmark-circle" : "add-circle-outline"}
+            size={16}
+            color={item.attending ? "#FFF" : isDark ? "#0A84FF" : "#007AFF"}
           />
-          <Text style={[
-            styles.rsvpButtonText, 
-            { color: item.attending ? "#FFF" : (isDark ? "#0A84FF" : "#007AFF") }
-          ]}>
+          <Text
+            style={[
+              styles.rsvpButtonText,
+              {
+                color: item.attending ? "#FFF" : isDark ? "#0A84FF" : "#007AFF",
+              },
+            ]}
+          >
             {item.attending ? "Attending" : "RSVP"}
           </Text>
         </TouchableOpacity>
@@ -192,22 +239,36 @@ export default function EventsScreen() {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: isDark ? "#121212" : "#fff" }]}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: isDark ? "#121212" : "#fff" },
+      ]}
+    >
       {/* Header with Create Button */}
       <View style={[styles.header, { paddingTop: insets.top + 20 }]}>
         <View style={styles.headerRow}>
           <View>
-            <Text style={[styles.title, { color: isDark ? "#fff" : "#2f4053" }]}>Upcoming Events</Text>
+            <Text
+              style={[styles.title, { color: isDark ? "#fff" : "#2f4053" }]}
+            >
+              Upcoming Events
+            </Text>
             {events.length > 0 && (
-              <Text style={[styles.subtitle, { color: isDark ? "#aaa" : "#666" }]}>
-                {events.length} event{events.length !== 1 ? 's' : ''}
+              <Text
+                style={[styles.subtitle, { color: isDark ? "#aaa" : "#666" }]}
+              >
+                {events.length} event{events.length !== 1 ? "s" : ""}
               </Text>
             )}
           </View>
-          
+
           {canManageEvents && events.length > 0 && (
             <TouchableOpacity
-              style={[styles.createButton, { backgroundColor: isDark ? "#0A84FF" : "#007AFF" }]}
+              style={[
+                styles.createButton,
+                { backgroundColor: isDark ? "#0A84FF" : "#007AFF" },
+              ]}
               onPress={() => setModalVisible(true)}
               accessibilityLabel="Add new event"
             >
@@ -220,19 +281,27 @@ export default function EventsScreen() {
 
       {events.length === 0 ? (
         <View style={styles.emptyState}>
-          <Ionicons name="calendar-outline" size={64} color={isDark ? "#444" : "#ccc"} />
-          <Text style={[styles.emptyTitle, { color: isDark ? "#fff" : "#333" }]}>
+          <Ionicons
+            name="calendar-outline"
+            size={64}
+            color={isDark ? "#444" : "#ccc"}
+          />
+          <Text
+            style={[styles.emptyTitle, { color: isDark ? "#fff" : "#333" }]}
+          >
             No events scheduled
           </Text>
           <Text style={[styles.emptyText, { color: isDark ? "#aaa" : "#666" }]}>
-            {canManageEvents 
-              ? "Get started by creating your first event" 
-              : "Check back later for upcoming events"
-            }
+            {canManageEvents
+              ? "Get started by creating your first event"
+              : "Check back later for upcoming events"}
           </Text>
           {canManageEvents && (
             <TouchableOpacity
-              style={[styles.createFirstEventBtn, { backgroundColor: isDark ? "#0A84FF" : "#007AFF" }]}
+              style={[
+                styles.createFirstEventBtn,
+                { backgroundColor: isDark ? "#0A84FF" : "#007AFF" },
+              ]}
               onPress={() => setModalVisible(true)}
             >
               <Ionicons name="add" size={20} color="#fff" />
@@ -254,104 +323,183 @@ export default function EventsScreen() {
       {/* Create Event Modal */}
       <Modal transparent visible={modalVisible} animationType="slide">
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <KeyboardAvoidingView 
+          <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={styles.modalContainer}
           >
             <View style={styles.modalOverlay}>
-              <View style={[styles.modalBox, { backgroundColor: isDark ? "#1e1e1e" : "#fff" }]}>
+              <View
+                style={[
+                  styles.modalBox,
+                  { backgroundColor: isDark ? "#1e1e1e" : "#fff" },
+                ]}
+              >
                 <View style={styles.modalHeader}>
-                  <Text style={[styles.modalTitle, { color: isDark ? "#fff" : "#333" }]}>
+                  <Text
+                    style={[
+                      styles.modalTitle,
+                      { color: isDark ? "#fff" : "#333" },
+                    ]}
+                  >
                     Create New Event
                   </Text>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     onPress={() => setModalVisible(false)}
                     style={styles.closeButton}
                   >
-                    <Ionicons name="close" size={24} color={isDark ? "#fff" : "#000"} />
+                    <Ionicons
+                      name="close"
+                      size={24}
+                      color={isDark ? "#fff" : "#000"}
+                    />
                   </TouchableOpacity>
                 </View>
 
                 <ScrollView style={styles.modalScroll}>
-                  <Text style={[styles.inputLabel, { color: isDark ? "#fff" : "#333" }]}>
+                  <Text
+                    style={[
+                      styles.inputLabel,
+                      { color: isDark ? "#fff" : "#333" },
+                    ]}
+                  >
                     Event Title *
                   </Text>
                   <TextInput
                     placeholder="Enter event title"
                     placeholderTextColor="#888"
-                    style={[styles.input, { 
-                      color: isDark ? "#fff" : "#000",
-                      backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7"
-                    }]}
+                    style={[
+                      styles.input,
+                      {
+                        color: isDark ? "#fff" : "#000",
+                        backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7",
+                      },
+                    ]}
                     value={newEvent.title}
-                    onChangeText={(t) => setNewEvent((p) => ({ ...p, title: t }))}
+                    onChangeText={(t) =>
+                      setNewEvent((p) => ({ ...p, title: t }))
+                    }
                   />
 
-                  <Text style={[styles.inputLabel, { color: isDark ? "#fff" : "#333" }]}>
+                  <Text
+                    style={[
+                      styles.inputLabel,
+                      { color: isDark ? "#fff" : "#333" },
+                    ]}
+                  >
                     Date *
                   </Text>
                   <TextInput
                     placeholder="e.g. Sept 20, 2025"
                     placeholderTextColor="#888"
-                    style={[styles.input, { 
-                      color: isDark ? "#fff" : "#000",
-                      backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7"
-                    }]}
+                    style={[
+                      styles.input,
+                      {
+                        color: isDark ? "#fff" : "#000",
+                        backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7",
+                      },
+                    ]}
                     value={newEvent.date}
-                    onChangeText={(t) => setNewEvent((p) => ({ ...p, date: t }))}
+                    onChangeText={(t) =>
+                      setNewEvent((p) => ({ ...p, date: t }))
+                    }
                   />
 
-                  <Text style={[styles.inputLabel, { color: isDark ? "#fff" : "#333" }]}>
+                  <Text
+                    style={[
+                      styles.inputLabel,
+                      { color: isDark ? "#fff" : "#333" },
+                    ]}
+                  >
                     Location *
                   </Text>
                   <TextInput
                     placeholder="Enter location"
                     placeholderTextColor="#888"
-                    style={[styles.input, { 
-                      color: isDark ? "#fff" : "#000",
-                      backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7"
-                    }]}
+                    style={[
+                      styles.input,
+                      {
+                        color: isDark ? "#fff" : "#000",
+                        backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7",
+                      },
+                    ]}
                     value={newEvent.location}
-                    onChangeText={(t) => setNewEvent((p) => ({ ...p, location: t }))}
+                    onChangeText={(t) =>
+                      setNewEvent((p) => ({ ...p, location: t }))
+                    }
                   />
 
-                  <Text style={[styles.inputLabel, { color: isDark ? "#fff" : "#333" }]}>
+                  <Text
+                    style={[
+                      styles.inputLabel,
+                      { color: isDark ? "#fff" : "#333" },
+                    ]}
+                  >
                     Description (Optional)
                   </Text>
                   <TextInput
                     placeholder="Describe the event"
                     placeholderTextColor="#888"
-                    style={[styles.input, styles.textArea, { 
-                      color: isDark ? "#fff" : "#000",
-                      backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7",
-                      height: 100,
-                      textAlignVertical: 'top'
-                    }]}
+                    style={[
+                      styles.input,
+                      styles.textArea,
+                      {
+                        color: isDark ? "#fff" : "#000",
+                        backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7",
+                        height: 100,
+                        textAlignVertical: "top",
+                      },
+                    ]}
                     multiline
                     numberOfLines={4}
                     value={newEvent.description}
-                    onChangeText={(t) => setNewEvent((p) => ({ ...p, description: t }))}
+                    onChangeText={(t) =>
+                      setNewEvent((p) => ({ ...p, description: t }))
+                    }
                   />
                 </ScrollView>
 
                 {/* Modal actions */}
                 <View style={styles.modalActions}>
-                  <TouchableOpacity 
-                    style={[styles.modalBtn, styles.cancelBtn, { backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7" }]} 
+                  <TouchableOpacity
+                    style={[
+                      styles.modalBtn,
+                      styles.cancelBtn,
+                      { backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7" },
+                    ]}
                     onPress={() => setModalVisible(false)}
                   >
-                    <Text style={[styles.modalBtnText, { color: isDark ? "#fff" : "#000" }]}>Cancel</Text>
+                    <Text
+                      style={[
+                        styles.modalBtnText,
+                        { color: isDark ? "#fff" : "#000" },
+                      ]}
+                    >
+                      Cancel
+                    </Text>
                   </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={[styles.modalBtn, styles.saveBtn, { 
-                      backgroundColor: newEvent.title && newEvent.date && newEvent.location 
-                        ? (isDark ? "#0A84FF" : "#007AFF") 
-                        : (isDark ? "#444" : "#ccc")
-                    }]} 
+                  <TouchableOpacity
+                    style={[
+                      styles.modalBtn,
+                      styles.saveBtn,
+                      {
+                        backgroundColor:
+                          newEvent.title && newEvent.date && newEvent.location
+                            ? isDark
+                              ? "#0A84FF"
+                              : "#007AFF"
+                            : isDark
+                              ? "#444"
+                              : "#ccc",
+                      },
+                    ]}
                     onPress={addEvent}
-                    disabled={!newEvent.title || !newEvent.date || !newEvent.location}
+                    disabled={
+                      !newEvent.title || !newEvent.date || !newEvent.location
+                    }
                   >
-                    <Text style={[styles.modalBtnText, { color: "#fff" }]}>Create Event</Text>
+                    <Text style={[styles.modalBtnText, { color: "#fff" }]}>
+                      Create Event
+                    </Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -363,66 +511,118 @@ export default function EventsScreen() {
       {/* Event Detail Modal */}
       <Modal transparent visible={detailModalVisible} animationType="fade">
         <View style={styles.modalOverlay}>
-          <View style={[styles.detailModalBox, { backgroundColor: isDark ? "#1e1e1e" : "#fff" }]}>
+          <View
+            style={[
+              styles.detailModalBox,
+              { backgroundColor: isDark ? "#1e1e1e" : "#fff" },
+            ]}
+          >
             <View style={styles.modalHeader}>
-              <Text style={[styles.detailModalTitle, { color: isDark ? "#fff" : "#333" }]}>
+              <Text
+                style={[
+                  styles.detailModalTitle,
+                  { color: isDark ? "#fff" : "#333" },
+                ]}
+              >
                 Event Details
               </Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => setDetailModalVisible(false)}
                 style={styles.closeButton}
               >
-                <Ionicons name="close" size={24} color={isDark ? "#fff" : "#000"} />
+                <Ionicons
+                  name="close"
+                  size={24}
+                  color={isDark ? "#fff" : "#000"}
+                />
               </TouchableOpacity>
             </View>
-            
+
             {selectedEvent && (
               <ScrollView style={styles.detailContent}>
-                <Text style={[styles.detailTitle, { color: isDark ? "#fff" : "#333" }]}>
+                <Text
+                  style={[
+                    styles.detailTitle,
+                    { color: isDark ? "#fff" : "#333" },
+                  ]}
+                >
                   {selectedEvent.title}
                 </Text>
-                
+
                 {selectedEvent.description && (
-                  <Text style={[styles.detailDescription, { color: isDark ? "#bbb" : "#666" }]}>
+                  <Text
+                    style={[
+                      styles.detailDescription,
+                      { color: isDark ? "#bbb" : "#666" },
+                    ]}
+                  >
                     {selectedEvent.description}
                   </Text>
                 )}
-                
+
                 <View style={styles.detailItem}>
-                  <Ionicons name="calendar-outline" size={20} color={isDark ? "#0A84FF" : "#007AFF"} />
-                  <Text style={[styles.detailText, { color: isDark ? "#fff" : "#333" }]}>
+                  <Ionicons
+                    name="calendar-outline"
+                    size={20}
+                    color={isDark ? "#0A84FF" : "#007AFF"}
+                  />
+                  <Text
+                    style={[
+                      styles.detailText,
+                      { color: isDark ? "#fff" : "#333" },
+                    ]}
+                  >
                     {selectedEvent.date}
                   </Text>
                 </View>
-                
+
                 <View style={styles.detailItem}>
-                  <Ionicons name="location-outline" size={20} color={isDark ? "#0A84FF" : "#007AFF"} />
-                  <Text style={[styles.detailText, { color: isDark ? "#fff" : "#333" }]}>
+                  <Ionicons
+                    name="location-outline"
+                    size={20}
+                    color={isDark ? "#0A84FF" : "#007AFF"}
+                  />
+                  <Text
+                    style={[
+                      styles.detailText,
+                      { color: isDark ? "#fff" : "#333" },
+                    ]}
+                  >
                     {selectedEvent.location}
                   </Text>
                 </View>
-                
+
                 <TouchableOpacity
                   style={[
-                    styles.detailRsvpButton, 
-                    { 
-                      backgroundColor: selectedEvent.attending 
-                        ? (isDark ? "#2C7A4A" : "#34C759") 
-                        : (isDark ? "#0A84FF" : "#007AFF")
-                    }
+                    styles.detailRsvpButton,
+                    {
+                      backgroundColor: selectedEvent.attending
+                        ? isDark
+                          ? "#2C7A4A"
+                          : "#34C759"
+                        : isDark
+                          ? "#0A84FF"
+                          : "#007AFF",
+                    },
                   ]}
                   onPress={() => {
                     toggleAttendance(selectedEvent.id);
                     setDetailModalVisible(false);
                   }}
                 >
-                  <Ionicons 
-                    name={selectedEvent.attending ? "checkmark-circle" : "add-circle-outline"} 
-                    size={20} 
-                    color="#FFF" 
+                  <Ionicons
+                    name={
+                      selectedEvent.attending
+                        ? "checkmark-circle"
+                        : "add-circle-outline"
+                    }
+                    size={20}
+                    color="#FFF"
                   />
                   <Text style={styles.detailRsvpButtonText}>
-                    {selectedEvent.attending ? "You're Attending" : "RSVP to this Event"}
+                    {selectedEvent.attending
+                      ? "You're Attending"
+                      : "RSVP to this Event"}
                   </Text>
                 </TouchableOpacity>
               </ScrollView>
@@ -467,11 +667,11 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
-  cardHeader: { 
-    flexDirection: "row", 
-    justifyContent: "space-between", 
-    alignItems: "flex-start", 
-    marginBottom: 8 
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 8,
   },
   eventTitle: { fontSize: 18, fontWeight: "700", flex: 1, marginRight: 12 },
   eventDescription: { fontSize: 14, marginBottom: 12, lineHeight: 20 },
@@ -480,119 +680,129 @@ const styles = StyleSheet.create({
   eventDetails: { fontSize: 14, marginLeft: 8 },
   deleteBtn: { padding: 4 },
   rsvpButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 10,
     borderRadius: 12,
     borderWidth: 1,
     marginTop: 8,
-    gap: 6
+    gap: 6,
   },
   rsvpButtonText: { fontSize: 15, fontWeight: "600" },
-  emptyState: { 
-    flex: 1, 
-    alignItems: "center", 
+  emptyState: {
+    flex: 1,
+    alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 40
+    paddingHorizontal: 40,
   },
   emptyTitle: { fontSize: 20, fontWeight: "700", marginTop: 16 },
-  emptyText: { fontSize: 16, textAlign: "center", marginTop: 8, lineHeight: 24 },
+  emptyText: {
+    fontSize: 16,
+    textAlign: "center",
+    marginTop: 8,
+    lineHeight: 24,
+  },
   createFirstEventBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 12,
     marginTop: 20,
-    gap: 8
+    gap: 8,
   },
   createFirstEventText: { color: "#fff", fontWeight: "600", fontSize: 16 },
   modalContainer: { flex: 1 },
-  modalOverlay: { 
-    flex: 1, 
-    backgroundColor: "rgba(0,0,0,0.5)", 
-    justifyContent: "center", 
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
     alignItems: "center",
-    padding: 20
+    padding: 20,
   },
-  modalBox: { 
-    width: "100%", 
+  modalBox: {
+    width: "100%",
     maxHeight: "80%",
     borderRadius: 20,
-    overflow: 'hidden'
+    overflow: "hidden",
   },
   detailModalBox: {
     width: "90%",
     maxHeight: "80%",
     borderRadius: 20,
-    overflow: 'hidden'
+    overflow: "hidden",
   },
   modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(150,150,150,0.2)'
+    borderBottomColor: "rgba(150,150,150,0.2)",
   },
   modalTitle: { fontSize: 20, fontWeight: "700" },
   detailModalTitle: { fontSize: 18, fontWeight: "700" },
   closeButton: { padding: 4 },
   modalScroll: { maxHeight: 400, paddingHorizontal: 20 },
-  inputLabel: { fontSize: 16, fontWeight: "600", marginBottom: 8, marginTop: 16 },
+  inputLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 8,
+    marginTop: 16,
+  },
   input: {
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    fontWeight: '500'
+    fontWeight: "500",
   },
   textArea: {
     height: 100,
-    textAlignVertical: 'top'
+    textAlignVertical: "top",
   },
-  modalActions: { 
-    flexDirection: "row", 
-    justifyContent: "flex-end", 
+  modalActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
     padding: 20,
     gap: 12,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(150,150,150,0.2)'
+    borderTopColor: "rgba(150,150,150,0.2)",
   },
-  modalBtn: { 
+  modalBtn: {
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 12,
     minWidth: 100,
-    alignItems: 'center'
+    alignItems: "center",
   },
-  cancelBtn: { backgroundColor: '#f2f2f7' },
-  saveBtn: { backgroundColor: '#007AFF' },
+  cancelBtn: { backgroundColor: "#f2f2f7" },
+  saveBtn: { backgroundColor: "#007AFF" },
   modalBtnText: { fontSize: 16, fontWeight: "600" },
   detailContent: { padding: 20 },
   detailTitle: { fontSize: 22, fontWeight: "700", marginBottom: 12 },
   detailDescription: { fontSize: 16, lineHeight: 24, marginBottom: 20 },
-  detailItem: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
+  detailItem: {
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 16,
-    gap: 12
+    gap: 12,
   },
-  detailText: { fontSize: 16, fontWeight: '500' },
+  detailText: { fontSize: 16, fontWeight: "500" },
   detailRsvpButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 16,
     borderRadius: 12,
     marginTop: 20,
-    gap: 8
+    gap: 8,
   },
-  detailRsvpButtonText: { 
-    color: "#fff", 
-    fontWeight: "600", 
-    fontSize: 16 
+  detailRsvpButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 16,
   },
 });

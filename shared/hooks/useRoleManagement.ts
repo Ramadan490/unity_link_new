@@ -4,8 +4,8 @@ import {
   updateUserRole as serviceUpdateUserRole,
 } from "@/features/users/services/userService";
 
-import { RoleKey } from "@/shared/constants/Roles";
-import { User } from "@/shared/types/user";
+import { RoleKey } from "@/constants/Roles";
+import { User } from "@/types/user";
 import { useCallback, useEffect, useState } from "react";
 
 export function useRoleManagement() {

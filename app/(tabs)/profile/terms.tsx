@@ -23,7 +23,10 @@ export default function TermsScreen() {
         Please read these carefully before using the app.
       </Text>
 
-      <ScrollView style={styles.scroll} contentContainerStyle={{ paddingBottom: 40 }}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={{ paddingBottom: 40 }}
+      >
         <Text style={styles.sectionTitle}>1. Introduction</Text>
         <Text style={styles.paragraph}>
           By accessing or using this application, you agree to be bound by these
@@ -39,7 +42,9 @@ export default function TermsScreen() {
         >
           {accepted && <Ionicons name="checkmark" size={16} color="#fff" />}
         </TouchableOpacity>
-        <Text style={styles.checkboxLabel}>I agree to the Terms & Conditions</Text>
+        <Text style={styles.checkboxLabel}>
+          I agree to the Terms & Conditions
+        </Text>
       </View>
 
       <TouchableOpacity
@@ -55,10 +60,20 @@ export default function TermsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f9f9f9", padding: 20 },
-  header: { fontSize: 22, fontWeight: "700", marginBottom: 6, color: "#2f4053" },
+  header: {
+    fontSize: 22,
+    fontWeight: "700",
+    marginBottom: 6,
+    color: "#2f4053",
+  },
   subheader: { fontSize: 14, color: "#666", marginBottom: 20 },
   scroll: { flex: 1 },
-  sectionTitle: { fontSize: 16, fontWeight: "600", marginTop: 16, marginBottom: 6 },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginTop: 16,
+    marginBottom: 6,
+  },
   paragraph: { fontSize: 14, lineHeight: 20, color: "#444" },
   footer: { flexDirection: "row", alignItems: "center", marginTop: 12 },
   checkbox: {

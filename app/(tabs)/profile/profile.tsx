@@ -49,36 +49,89 @@ export default function ProfileScreen() {
     avatar: null,
   });
 
-  const menuItems: { icon: IoniconName; label: string; action: () => void; color?: string }[] = [
-    { icon: "lock-closed", label: "Privacy & Security", action: () => router.push("/(tabs)/profile/security" as Href) },
-    { icon: "notifications", label: "Notifications", action: () => router.push("/(tabs)/profile/notifications" as Href) },
-    { icon: "help-circle", label: "Help & Support", action: () => router.push("/(tabs)/profile/help" as Href) },
-    { icon: "document-text", label: "Terms & Conditions", action: () => router.push("/(tabs)/profile/terms" as Href) },
+  const menuItems: {
+    icon: IoniconName;
+    label: string;
+    action: () => void;
+    color?: string;
+  }[] = [
+    {
+      icon: "lock-closed",
+      label: "Privacy & Security",
+      action: () => router.push("/(tabs)/profile/security" as Href),
+    },
+    {
+      icon: "notifications",
+      label: "Notifications",
+      action: () => router.push("/(tabs)/profile/notifications" as Href),
+    },
+    {
+      icon: "help-circle",
+      label: "Help & Support",
+      action: () => router.push("/(tabs)/profile/help" as Href),
+    },
+    {
+      icon: "document-text",
+      label: "Terms & Conditions",
+      action: () => router.push("/(tabs)/profile/terms" as Href),
+    },
     {
       icon: "globe",
-      label: i18n.language === "en" ? t("switchToArabic") || "Switch to Arabic" : t("switchToEnglish") || "Switch to English",
+      label:
+        i18n.language === "en"
+          ? t("switchToArabic") || "Switch to Arabic"
+          : t("switchToEnglish") || "Switch to English",
       action: () => i18n.changeLanguage(i18n.language === "en" ? "ar" : "en"),
     },
-    { icon: "log-out", label: "Log Out", action: () => console.log("Logout"), color: "#ff3b30" },
+    {
+      icon: "log-out",
+      label: "Log Out",
+      action: () => console.log("Logout"),
+      color: "#ff3b30",
+    },
   ];
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["top", "left", "right"]}>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      edges={["top", "left", "right"]}
+    >
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 40 }}
+      >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>{t("profile")}</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>
+            {t("profile")}
+          </Text>
         </View>
 
         {/* Profile Card */}
-        <View style={[styles.profileCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <TouchableOpacity style={styles.avatarContainer} onPress={() => console.log("Change Avatar")}>
+        <View
+          style={[
+            styles.profileCard,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
+          <TouchableOpacity
+            style={styles.avatarContainer}
+            onPress={() => console.log("Change Avatar")}
+          >
             {user.avatar ? (
               <Image source={{ uri: user.avatar }} style={styles.avatar} />
             ) : (
-              <View style={[styles.avatarPlaceholder, { backgroundColor: colors.tint }]}>
+              <View
+                style={[
+                  styles.avatarPlaceholder,
+                  { backgroundColor: colors.tint },
+                ]}
+              >
                 <Text style={[styles.avatarText, { color: colors.background }]}>
-                  {user.name.split(" ").map((n) => n[0]).join("")}
+                  {user.name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")}
                 </Text>
               </View>
             )}
@@ -87,49 +140,98 @@ export default function ProfileScreen() {
             </View>
           </TouchableOpacity>
 
-          <Text style={[styles.userName, { color: colors.text }]}>{user.name}</Text>
-          <Text style={[styles.userEmail, { color: colors.secondaryText }]}>{user.email}</Text>
+          <Text style={[styles.userName, { color: colors.text }]}>
+            {user.name}
+          </Text>
+          <Text style={[styles.userEmail, { color: colors.secondaryText }]}>
+            {user.email}
+          </Text>
 
           {/* Role Chip */}
-          <View style={[styles.roleChip, { backgroundColor: colors.tint + "20" }]}>
+          <View
+            style={[styles.roleChip, { backgroundColor: colors.tint + "20" }]}
+          >
             <Ionicons name="star" size={14} color={colors.tint} />
-            <Text style={[styles.roleText, { color: colors.tint }]}>{user.role}</Text>
+            <Text style={[styles.roleText, { color: colors.tint }]}>
+              {user.role}
+            </Text>
           </View>
 
           {/* User Details */}
           <View style={styles.userDetails}>
             <View style={styles.detailItem}>
-              <Ionicons name="business" size={16} color={colors.secondaryText} />
-              <Text style={[styles.detailText, { color: colors.secondaryText }]}>{user.unit}</Text>
+              <Ionicons
+                name="business"
+                size={16}
+                color={colors.secondaryText}
+              />
+              <Text
+                style={[styles.detailText, { color: colors.secondaryText }]}
+              >
+                {user.unit}
+              </Text>
             </View>
             <View style={styles.detailItem}>
-              <Ionicons name="calendar" size={16} color={colors.secondaryText} />
-              <Text style={[styles.detailText, { color: colors.secondaryText }]}>{t("memberSince")} {user.joinDate}</Text>
+              <Ionicons
+                name="calendar"
+                size={16}
+                color={colors.secondaryText}
+              />
+              <Text
+                style={[styles.detailText, { color: colors.secondaryText }]}
+              >
+                {t("memberSince")} {user.joinDate}
+              </Text>
             </View>
           </View>
         </View>
 
         {/* Menu Section */}
-        <Text style={[styles.sectionHeader, { color: colors.secondaryText }]}>Account Settings</Text>
+        <Text style={[styles.sectionHeader, { color: colors.secondaryText }]}>
+          Account Settings
+        </Text>
         <View style={styles.menuSection}>
           {menuItems.map((item, index) => (
             <TouchableOpacity
               key={index}
-              style={[styles.menuItem, { backgroundColor: colors.card, borderColor: colors.border }]}
+              style={[
+                styles.menuItem,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
               onPress={item.action}
               accessibilityLabel={`Go to ${item.label}`}
               activeOpacity={0.7}
             >
-              <Ionicons name={item.icon} size={22} color={item.color || colors.tint} />
-              <Text style={[styles.menuLabel, { color: item.color || colors.text }]}>{item.label}</Text>
-              <Ionicons name="chevron-forward" size={18} color={colors.secondaryText} style={styles.menuArrow} />
+              <Ionicons
+                name={item.icon}
+                size={22}
+                color={item.color || colors.tint}
+              />
+              <Text
+                style={[styles.menuLabel, { color: item.color || colors.text }]}
+              >
+                {item.label}
+              </Text>
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color={colors.secondaryText}
+                style={styles.menuArrow}
+              />
             </TouchableOpacity>
           ))}
         </View>
 
         {/* Footer */}
-        <View style={[styles.footer, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.versionText, { color: colors.secondaryText }]}>Community App v1.0.0 (Build 101)</Text>
+        <View
+          style={[
+            styles.footer,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
+          <Text style={[styles.versionText, { color: colors.secondaryText }]}>
+            Community App v1.0.0 (Build 101)
+          </Text>
           <Text style={[styles.copyrightText, { color: colors.secondaryText }]}>
             © {new Date().getFullYear()} Community Management • Made with ❤️
           </Text>
@@ -190,7 +292,13 @@ const styles = StyleSheet.create({
   detailItem: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
   detailText: { marginLeft: 8, fontSize: 14 },
 
-  sectionHeader: { fontSize: 14, fontWeight: "600", marginLeft: 20, marginBottom: 8, textTransform: "uppercase" },
+  sectionHeader: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginLeft: 20,
+    marginBottom: 8,
+    textTransform: "uppercase",
+  },
   menuSection: { marginHorizontal: 20, marginBottom: 20 },
   menuItem: {
     flexDirection: "row",

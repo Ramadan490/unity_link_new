@@ -1,8 +1,8 @@
 // app/_layout.tsx
-import { ErrorBoundary } from "@/components/ErrorBoundary";
-import Loading from "@/components/ui/Loading";
-import { AuthProvider } from "@/context/AuthContext";
-import { ThemeProvider, useTheme } from "@/context/ThemeContext";
+import { ErrorBoundary } from "@/shared/components/ErrorBoundary";
+import Loading from "@/shared/components/ui/Loading";
+import { AuthProvider } from "@/shared/context/AuthContext";
+import { ThemeProvider, useTheme } from "@/shared/context/ThemeContext";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
@@ -26,15 +26,14 @@ function ThemedLayout() {
   useEffect(() => {
     async function prepare() {
       try {
-        // Pre-load other resources if needed (API calls, async storage, etc.)
-        await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate loading
+        // Pre-load resources if needed
+        await new Promise((resolve) => setTimeout(resolve, 500));
       } catch (e) {
         console.warn(e);
       } finally {
         setAppIsReady(true);
       }
     }
-
     prepare();
   }, []);
 
@@ -44,7 +43,6 @@ function ThemedLayout() {
     }
   }, [appIsReady]);
 
-  // ✅ Show loading until app is ready
   if (!appIsReady) {
     return <Loading message="Preparing app..." />;
   }
@@ -65,9 +63,7 @@ function ThemedLayout() {
           <Stack
             screenOptions={{
               headerShown: false,
-              contentStyle: {
-                backgroundColor: theme.colors.background,
-              },
+              contentStyle: { backgroundColor: theme.colors.background },
             }}
           >
             {/* Main Tabs Navigation */}
@@ -79,7 +75,7 @@ function ThemedLayout() {
               }}
             />
 
-            {/* Auth Flow - Now handled by its own layout */}
+            {/* Auth Flow */}
             <Stack.Screen
               name="auth"
               options={{
@@ -99,14 +95,7 @@ function ThemedLayout() {
               }}
             />
 
-            {/* Add other screens that might be causing the warning */}
-            <Stack.Screen
-              name="settings"
-              options={{
-                animation: "slide_from_right",
-              }}
-            />
-
+            {/* Debug Screens */}
             <Stack.Screen
               name="debug/env-check"
               options={{

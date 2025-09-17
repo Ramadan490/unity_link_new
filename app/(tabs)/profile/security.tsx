@@ -39,19 +39,35 @@ export default function SecurityScreen() {
             <Switch
               value={biometric}
               onValueChange={setBiometric}
-              thumbColor={Platform.OS === "android" ? (biometric ? "#007AFF" : "#ccc") : undefined}
+              thumbColor={
+                Platform.OS === "android"
+                  ? biometric
+                    ? "#007AFF"
+                    : "#ccc"
+                  : undefined
+              }
               trackColor={{ false: "#ddd", true: "#81b0ff" }}
               accessibilityLabel="Toggle biometric login"
             />
           </View>
 
           <View style={styles.row}>
-            <Ionicons name="shield-checkmark-outline" size={22} color="#007AFF" />
+            <Ionicons
+              name="shield-checkmark-outline"
+              size={22}
+              color="#007AFF"
+            />
             <Text style={styles.label}>Two-Factor Authentication</Text>
             <Switch
               value={twoFA}
               onValueChange={setTwoFA}
-              thumbColor={Platform.OS === "android" ? (twoFA ? "#007AFF" : "#ccc") : undefined}
+              thumbColor={
+                Platform.OS === "android"
+                  ? twoFA
+                    ? "#007AFF"
+                    : "#ccc"
+                  : undefined
+              }
               trackColor={{ false: "#ddd", true: "#81b0ff" }}
               accessibilityLabel="Toggle two-factor authentication"
             />
@@ -67,7 +83,13 @@ export default function SecurityScreen() {
             <Switch
               value={dataSharing}
               onValueChange={setDataSharing}
-              thumbColor={Platform.OS === "android" ? (dataSharing ? "#007AFF" : "#ccc") : undefined}
+              thumbColor={
+                Platform.OS === "android"
+                  ? dataSharing
+                    ? "#007AFF"
+                    : "#ccc"
+                  : undefined
+              }
               trackColor={{ false: "#ddd", true: "#81b0ff" }}
               accessibilityLabel="Toggle data sharing"
             />
@@ -80,7 +102,12 @@ export default function SecurityScreen() {
           onPress={handleChangePassword}
           accessibilityLabel="Change your password"
         >
-          <Ionicons name="key-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
+          <Ionicons
+            name="key-outline"
+            size={20}
+            color="#fff"
+            style={{ marginRight: 8 }}
+          />
           <Text style={styles.buttonText}>Change Password</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -91,9 +118,19 @@ export default function SecurityScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f9f9f9" },
   scroll: { padding: 20, paddingBottom: 40 },
-  header: { fontSize: 22, fontWeight: "700", marginBottom: 6, color: "#2f4053" },
+  header: {
+    fontSize: 22,
+    fontWeight: "700",
+    marginBottom: 6,
+    color: "#2f4053",
+  },
   subheader: { fontSize: 14, color: "#666", marginBottom: 20 },
-  sectionTitle: { fontSize: 14, fontWeight: "600", marginBottom: 8, color: "#444" },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 8,
+    color: "#444",
+  },
   card: {
     backgroundColor: "#fff",
     borderRadius: 12,

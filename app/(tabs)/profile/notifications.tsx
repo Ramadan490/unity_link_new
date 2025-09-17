@@ -51,7 +51,7 @@ export default function NotificationsScreen() {
 
   const markAsRead = (id: string) => {
     setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
     );
   };
 
@@ -93,7 +93,7 @@ export default function NotificationsScreen() {
       {notifications.length === 0 ? (
         <View style={styles.emptyState}>
           <Ionicons name="checkmark-circle-outline" size={48} color="#999" />
-          <Text style={styles.emptyText}>You're all caught up!</Text>
+          <Text style={styles.emptyText}>You&apos;re all caught up!</Text>
         </View>
       ) : (
         <FlatList
