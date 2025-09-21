@@ -1,29 +1,28 @@
-import { Link } from "expo-router";
-import { StyleSheet } from "react-native";
+import React from "react";
+import { StyleSheet, Text, TextProps } from "react-native";
 
-import { ThemedText } from "@/shared/components/themed-text";
-import { ThemedView } from "@/shared/components/themed-view";
+type ThemedTextType = "body" | "label" | "title" | "subtitle" | "link"; // ✅ add link
 
-export default function ModalScreen() {
+interface Props extends TextProps {
+  type?: ThemedTextType;
+}
+
+export default function ThemedText({ style, type = "body", ...props }: Props) {
   return (
-    <ThemedView style={styles.container}>
-      <ThemedText type="title">This is a modal</ThemedText>
-      <Link href="/" dismissTo style={styles.link}>
-        <ThemedText type="link">Go to home screen</ThemedText>
-      </Link>
-    </ThemedView>
+    <Text
+      {...props}
+      style={[
+        styles[type],
+        style,
+      ]}
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 20,
-  },
-  link: {
-    marginTop: 15,
-    paddingVertical: 15,
-  },
+  body: { fontSize: 16, color: "#333" },
+  label: { fontSize: 14, fontWeight: "500", color: "#666" },
+  title: { fontSize: 20, fontWeight: "700", color: "#000" },
+  subtitle: { fontSize: 18, fontWeight: "600", color: "#444" },
+  link: { fontSize: 16, color: "#007AFF", textDecorationLine: "underline" }, // ✅ NEW
 });

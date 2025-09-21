@@ -13,7 +13,7 @@ export type RoleKey = "super_admin" | "board_member" | "community_member";
 
 export type AuthContextType = {
   user: User | null;
-  role: RoleKey | null; // ✅ null when no role (e.g. logged out)
+  role: RoleKey | null;
   loading: boolean;
   authLoading: boolean;
   error: string | null;
@@ -22,6 +22,7 @@ export type AuthContextType = {
   logout: () => Promise<void>;
   setRole: (role: RoleKey) => void;
   clearError: () => void;
+  updateUser: (updates: Partial<User>) => void; // ✅ NEW
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -95,7 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await logoutUser();
       setUser(null);
-      setRoleState(null); // ✅ reset to null instead of "member"
+      setRoleState(null);
       setError(null);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Logout failed";
@@ -113,6 +114,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // ✅ NEW: update profile fields locally
+  const updateUser = (updates: Partial<User>) => {
+    if (!user) return;
+    setUser({ ...user, ...updates });
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -126,6 +133,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         logout,
         setRole,
         clearError,
+        updateUser, // ✅ exposed
       }}
     >
       {children}

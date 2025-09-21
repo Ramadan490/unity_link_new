@@ -1,69 +1,36 @@
-/**
- * Global design tokens for colors and fonts.
- * - Colors are split into light & dark modes.
- * - Fonts adapt by platform (iOS, Android, Web).
- *
- * Extend this as your app grows:
- *   - semantic colors: success, warning, error
- *   - brand colors or gradients
- *   - typography scale
- */
+// constants/Colors.ts
+import { DarkTheme, LightTheme } from '@/shared/context/ThemeContext';
 
-import { Platform } from "react-native";
-
-const tintColorLight = "#0a7ea4";
-const tintColorDark = "#ffffff";
-
+// Map your old color names to the new theme system
 export const Colors = {
-  light: {
-    text: "#11181C", // Primary text
-    secondaryText: "#687076", // Muted text
-    background: "#FFFFFF",
-    card: "#F2F2F7", // Card background
-    border: "#E5E5EA", // Divider / section border
-    tint: tintColorLight, // Accent / brand
-    icon: "#687076",
-    tabIconDefault: "#687076",
-    tabIconSelected: tintColorLight,
-    danger: "#FF3B30", // Errors / destructive
-  },
-  dark: {
-    text: "#ECEDEE",
-    secondaryText: "#9BA1A6",
-    background: "#151718",
-    card: "#1C1C1E",
-    border: "#3A3A3C",
-    tint: tintColorDark,
-    icon: "#9BA1A6",
-    tabIconDefault: "#9BA1A6",
-    tabIconSelected: tintColorDark,
-    danger: "#FF453A",
-  },
+  light: LightTheme.colors,
+  dark: DarkTheme.colors,
 };
 
-export const Fonts = Platform.select({
-  ios: {
-    sans: "system-ui", // Default system font
-    serif: "ui-serif",
-    rounded: "ui-rounded",
-    mono: "ui-monospace",
+// Or if you want to keep the old structure for compatibility:
+export const LegacyColors = {
+  light: {
+    text: LightTheme.colors.text,
+    secondaryText: LightTheme.colors.textSecondary,
+    background: LightTheme.colors.background,
+    card: LightTheme.colors.card,
+    border: LightTheme.colors.border,
+    tint: LightTheme.colors.primary,
+    icon: LightTheme.colors.textSecondary,
+    tabIconDefault: LightTheme.colors.textSecondary,
+    tabIconSelected: LightTheme.colors.primary,
+    danger: LightTheme.colors.error,
   },
-  android: {
-    sans: "sans-serif",
-    serif: "serif",
-    rounded: "sans-serif", // fallback
-    mono: "monospace",
+  dark: {
+    text: DarkTheme.colors.text,
+    secondaryText: DarkTheme.colors.textSecondary,
+    background: DarkTheme.colors.background,
+    card: DarkTheme.colors.card,
+    border: DarkTheme.colors.border,
+    tint: DarkTheme.colors.primary,
+    icon: DarkTheme.colors.textSecondary,
+    tabIconDefault: DarkTheme.colors.textSecondary,
+    tabIconSelected: DarkTheme.colors.primary,
+    danger: DarkTheme.colors.error,
   },
-  web: {
-    sans: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-    serif: "Georgia, 'Times New Roman', serif",
-    rounded: "'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif",
-    mono: "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
-  },
-  default: {
-    sans: "normal",
-    serif: "serif",
-    rounded: "normal",
-    mono: "monospace",
-  },
-});
+};

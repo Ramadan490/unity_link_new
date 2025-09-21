@@ -1,54 +1,26 @@
-import { Memorial } from "@/types/memorial";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import React, { useState } from "react";
-import { Button, StyleSheet, TextInput, View } from "react-native";
+import { Button, Platform, View } from "react-native";
 
-type Props = {
-  onSubmit: (memorial: Memorial) => void;
-};
-
-export default function MemorialForm({ onSubmit }: Props) {
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-
-  const handleSubmit = () => {
-    const newMemorial: Memorial = {
-      id: String(Date.now()),
-      name,
-      description, // ✅ use description instead of message
-      createdAt: new Date().toISOString(),
-      createdBy: "currentUser",
-    };
-    onSubmit(newMemorial);
-    setName("");
-    setDescription("");
-  };
+export default function TestDatePicker() {
+  const [date, setDate] = useState(new Date());
+  const [show, setShow] = useState(false);
 
   return (
-    <View style={styles.container}>
-      <TextInput
-        style={styles.input}
-        placeholder="Name"
-        value={name}
-        onChangeText={setName}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Description"
-        value={description}
-        onChangeText={setDescription}
-      />
-      <Button title="Add Memorial" onPress={handleSubmit} />
+    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      <Button title="Pick a date" onPress={() => setShow(true)} />
+      {show && (
+        <DateTimePicker
+          value={date}
+          mode="date"
+          display={Platform.OS === "ios" ? "inline" : "default"}
+          minimumDate={new Date(2025, 0, 1)}
+          onChange={(event, selectedDate) => {
+            setShow(false);
+            if (selectedDate) setDate(selectedDate);
+          }}
+        />
+      )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { marginBottom: 20 },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 10,
-  },
-});

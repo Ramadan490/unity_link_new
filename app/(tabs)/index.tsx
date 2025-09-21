@@ -1,303 +1,403 @@
-// app/(tabs)/home.tsx
-import ThemedText from "@/shared/components/ui/ThemedText";
-import ThemedView from "@/shared/components/ui/ThemedView";
-import { useRole } from "@/shared/hooks/useRole";
+// app/(tabs)/index.tsx
+import { ThemeToggle } from "@/shared/components/ThemeToggle";
+import { useTheme } from "@/shared/context/ThemeContext";
 import { Ionicons } from "@expo/vector-icons";
-import { Href, useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { useRouter } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
 import {
+  Animated,
+  Dimensions,
+  ImageBackground,
+  Platform,
+  RefreshControl,
   ScrollView,
   StyleSheet,
+  Text,
   TouchableOpacity,
   View,
-  useColorScheme,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+const { width } = Dimensions.get("window");
+const CARD_WIDTH = (width - 48) / 2;
+
+// Sudan images
+const images = [
+  require("../../assets/images/sudan/sudan2.jpg"),
+  require("../../assets/images/sudan/sudan3.jpg"),
+  require("../../assets/images/sudan/sudan4.jpg"),
+  require("../../assets/images/sudan/sudan6.jpg"),
+  require("../../assets/images/sudan/sudan7.jpg"),
+  require("../../assets/images/sudan/sudan8.jpg"),
+];
+
+// ✅ Define allowed routes
+type TabRoutes =
+  | "/announcements"
+  | "/events"
+  | "/memorials"
+  | "/profile"
+  | "/requests"
+  | "/manageUsers";
+type ExtraRoutes = "/community";
+type AllowedRoutes = TabRoutes | ExtraRoutes;
+
+// ✅ Quick link type
+type QuickLink = {
+  title: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  route: AllowedRoutes;
+  color: string;
+  description: string;
+  isTab: boolean;
+};
+
+// ✅ Centralized quick links
+const quickLinks: QuickLink[] = [
+  {
+    title: "Announcements",
+    icon: "megaphone",
+    route: "/announcements",
+    color: "#D21034",
+    description: "Latest community news",
+    isTab: true,
+  },
+  {
+    title: "Events",
+    icon: "calendar",
+    route: "/events",
+    color: "#007A36",
+    description: "Upcoming activities",
+    isTab: true,
+  },
+  {
+    title: "Memorials",
+    icon: "flower",
+    route: "/memorials",
+    color: "#FFD700",
+    description: "Honoring our history",
+    isTab: true,
+  },
+  {
+    title: "Profile",
+    icon: "person-circle",
+    route: "/profile",
+    color: "#6A0DAD",
+    description: "Manage your info",
+    isTab: true,
+  },
+  {
+    title: "Community",
+    icon: "people",
+    route: "/community",
+    color: "#0A84FF",
+    description: "Connect with others",
+    isTab: false,
+  },
+  {
+    title: "Requests",
+    icon: "document-text",
+    route: "/requests",
+    color: "#FF9500",
+    description: "Submit or view requests",
+    isTab: true,
+  },
+  {
+    title: "Manage Users",
+    icon: "people",
+    route: "/manageUsers",
+    color: "#FF3B30",
+    description: "User management tools",
+    isTab: true,
+  },
+];
+
+// Gradient overlay for hero section
+const GradientOverlay = ({ colors, style, children }: any) => {
+  return (
+    <View style={[style, { backgroundColor: "transparent", overflow: "hidden" }]}>
+      <View
+        style={[StyleSheet.absoluteFill, { backgroundColor: colors[0], opacity: 0.4 }]}
+      />
+      <View
+        style={[
+          StyleSheet.absoluteFill,
+          { backgroundColor: colors[1], opacity: 0.2, top: "30%", height: "40%" },
+        ]}
+      />
+      <View
+        style={[
+          StyleSheet.absoluteFill,
+          { backgroundColor: colors[2], opacity: 0.3, top: "60%", height: "40%" },
+        ]}
+      />
+      {children}
+    </View>
+  );
+};
+
 export default function HomeScreen() {
-  const { isSuperAdmin, isBoardMember } = useRole();
-  const router = useRouter();
-  const scheme = useColorScheme() || "light";
-  const isDark = scheme === "dark";
   const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const [index, setIndex] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const fadeAnim = useState(new Animated.Value(0))[0];
+  const { theme, isDark } = useTheme();
 
-  // 🔹 State for dynamic content
-  const [announcements, setAnnouncements] = useState<number>(0);
-  const [nextEvent, setNextEvent] = useState<string | null>(null);
-  const [membersCount, setMembersCount] = useState<number>(0);
-  const [pendingRequests, setPendingRequests] = useState<number>(0);
-
-  // 🔹 Simulate fetching from backend
+  // Smooth fade animation for hero image
   useEffect(() => {
-    setTimeout(() => {
-      setAnnouncements(2);
-      setNextEvent("HOA meeting Sept 20");
-      setMembersCount(128);
-      setPendingRequests(3);
-    }, 800);
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 800,
+      useNativeDriver: true,
+    }).start();
+  }, [index]);
+
+  // Rotate hero image every 5s
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fadeAnim.setValue(0);
+      setIndex((prev) => (prev + 1) % images.length);
+    }, 5000);
+    return () => clearInterval(interval);
   }, []);
 
-  const goTo = (path: Href) => router.push(path);
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 1500);
+  }, []);
 
   return (
-    <ThemedView
-      style={[
+    <ScrollView
+      contentContainerStyle={[
         styles.container,
-        {
-          backgroundColor: isDark ? "#121212" : "#fff",
-          paddingTop: insets.top + 20,
-        },
+        { backgroundColor: theme.colors.background, paddingTop: insets.top + 10 },
       ]}
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor={isDark ? "#aaa" : "#666"}
+        />
+      }
     >
-      <ScrollView contentContainerStyle={styles.scroll}>
-        {/* Header */}
-        <View style={styles.headerRow}>
-          <View>
-            <ThemedText
-              type="title"
-              style={[styles.header, { color: isDark ? "#fff" : "#2f4053" }]}
-            >
-              👋 Sudanese American Center in Arizona
-            </ThemedText>
-            <ThemedText
-              type="label"
-              style={[styles.subheader, { color: isDark ? "#aaa" : "#666" }]}
-            >
-              Here’s what’s happening in your community
-            </ThemedText>
-          </View>
-        </View>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={[styles.logo, { color: theme.colors.text }]}>
+          The Sudanese American Center
+        </Text>
+        <ThemeToggle />
+      </View>
 
-        {/* Quick Highlights */}
-        <View style={styles.row}>
-          {/* Announcements */}
-          <TouchableOpacity
-            style={[
-              styles.card,
-              { backgroundColor: isDark ? "#1e1e1e" : "#fff" },
-            ]}
-            activeOpacity={0.85}
-            onPress={() => goTo("/(tabs)/announcements" as Href)}
-            accessibilityLabel="View latest announcements"
-          >
-            <Ionicons
-              name="megaphone-outline"
-              size={28}
-              color={isDark ? "#0A84FF" : "#007AFF"}
-            />
-            <ThemedText type="subtitle" style={styles.cardTitle}>
-              Announcements
-            </ThemedText>
-            <ThemedText
-              style={[styles.cardInfo, { color: isDark ? "#bbb" : "#666" }]}
-            >
-              {announcements} update{announcements !== 1 && "s"} this week
-            </ThemedText>
-            <ThemedText style={styles.linkText}>See all →</ThemedText>
-          </TouchableOpacity>
-
-          {/* Events */}
-          <TouchableOpacity
-            style={[
-              styles.card,
-              { backgroundColor: isDark ? "#1e1e1e" : "#fff" },
-            ]}
-            activeOpacity={0.85}
-            onPress={() => goTo("/(tabs)/events" as Href)}
-            accessibilityLabel="View upcoming events"
-          >
-            <Ionicons name="calendar-outline" size={28} color="#34C759" />
-            <ThemedText type="subtitle" style={styles.cardTitle}>
-              Events
-            </ThemedText>
-            <ThemedText
-              style={[styles.cardInfo, { color: isDark ? "#bbb" : "#666" }]}
-            >
-              {nextEvent ?? "No upcoming events"}
-            </ThemedText>
-            <ThemedText style={styles.linkText}>See all →</ThemedText>
-          </TouchableOpacity>
-        </View>
-
-        {/* Community Info */}
-        <TouchableOpacity
-          style={[
-            styles.bigCard,
-            { backgroundColor: isDark ? "#1e1e1e" : "#fff" },
-          ]}
-          activeOpacity={0.85}
-          onPress={() => goTo("/(tabs)/memorials" as Href)}
-          accessibilityLabel="View memorials"
+      {/* Hero Section */}
+      <Animated.View style={{ opacity: fadeAnim }}>
+        <ImageBackground
+          source={images[index]}
+          style={styles.hero}
+          imageStyle={{ borderRadius: 20 }}
         >
-          <Ionicons name="flower-outline" size={28} color="#FF9500" />
-          <View style={{ marginLeft: 12 }}>
-            <ThemedText type="subtitle" style={styles.cardTitle}>
-              Memorials
-            </ThemedText>
-            <ThemedText
-              style={[styles.cardInfo, { color: isDark ? "#bbb" : "#666" }]}
-            >
-              Remember and honor community members
-            </ThemedText>
-          </View>
-        </TouchableOpacity>
+          <GradientOverlay colors={["#000", "#333", "#000"]} style={styles.gradient}>
+            <Text style={styles.heroTitle}>Discover Sudan</Text>
+            <Text style={styles.heroSubtitle}>
+              Rich Cultural Heritage & Historic Landmarks
+            </Text>
+          </GradientOverlay>
+        </ImageBackground>
+      </Animated.View>
 
-        {/* Quick Stats */}
-        <View style={styles.statsRow}>
-          <View
-            style={[
-              styles.statCard,
-              { backgroundColor: isDark ? "#1e1e1e" : "#f8f9fa" },
-            ]}
-          >
-            <Ionicons
-              name="people-outline"
-              size={20}
-              color={isDark ? "#0A84FF" : "#007AFF"}
-            />
-            <ThemedText
-              style={[styles.statText, { color: isDark ? "#fff" : "#333" }]}
-            >
-              {membersCount} Members
-            </ThemedText>
-          </View>
-          <View
-            style={[
-              styles.statCard,
-              { backgroundColor: isDark ? "#1e1e1e" : "#f8f9fa" },
-            ]}
-          >
-            <Ionicons name="document-text-outline" size={20} color="#34C759" />
-            <ThemedText
-              style={[styles.statText, { color: isDark ? "#fff" : "#333" }]}
-            >
-              {pendingRequests} Requests Pending
-            </ThemedText>
-          </View>
+      {/* Welcome Section */}
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+          Welcome to Our Community
+        </Text>
+        <Text style={[styles.sectionText, { color: theme.colors.textSecondary }]}>
+          SAC in Arizona is a cultural, social, and charitable organization for the
+          pride of the Sudanese Americans, promoting and celebrating the Sudanese
+          heritage and cultural identity. We are proud to be one of the first such
+          organizations in Arizona.
+        </Text>
+      </View>
+
+      {/* Quick Access Grid */}
+      <View style={styles.grid}>
+        {quickLinks.map((link) => (
+          <Card
+            key={link.title}
+            title={link.title}
+            icon={link.icon}
+            color={link.color}
+            description={link.description}
+            onPress={() =>
+              link.isTab
+                ? router.replace(link.route as TabRoutes) // ✅ tab route
+                : router.push(link.route as ExtraRoutes) // ✅ non-tab route
+            }
+          />
+        ))}
+      </View>
+
+      {/* Featured Section */}
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+          Featured Content
+        </Text>
+        <View style={[styles.featuredCard, { backgroundColor: theme.colors.card }]}>
+          <Ionicons name="star" size={20} color="#FFD700" />
+          <Text style={[styles.featuredText, { color: theme.colors.text }]}>
+            Cultural Festival this weekend - Don't miss out!
+          </Text>
+          <TouchableOpacity>
+            <Text style={styles.featuredLink}>Learn more</Text>
+          </TouchableOpacity>
         </View>
-
-        {/* Role-Specific Actions */}
-        {(isSuperAdmin || isBoardMember) && (
-          <View style={{ marginTop: 28 }}>
-            <ThemedText
-              type="subtitle"
-              style={[{ marginBottom: 12, color: isDark ? "#fff" : "#2f4053" }]}
-            >
-              Board Tools
-            </ThemedText>
-
-            <TouchableOpacity
-              style={[
-                styles.bigCard,
-                { backgroundColor: isDark ? "#1e1e1e" : "#fff" },
-              ]}
-              activeOpacity={0.85}
-              onPress={() => goTo("/(tabs)/requests" as Href)}
-              accessibilityLabel="Manage resident requests"
-            >
-              <Ionicons
-                name="document-text-outline"
-                size={24}
-                color="#5856D6"
-              />
-              <View style={{ marginLeft: 12 }}>
-                <ThemedText type="subtitle" style={styles.cardTitle}>
-                  Manage Requests
-                </ThemedText>
-                <ThemedText
-                  style={[styles.cardInfo, { color: isDark ? "#bbb" : "#666" }]}
-                >
-                  Review pending resident requests
-                </ThemedText>
-              </View>
-            </TouchableOpacity>
-
-            {isSuperAdmin && (
-              <TouchableOpacity
-                style={[
-                  styles.bigCard,
-                  { backgroundColor: isDark ? "#1e1e1e" : "#fff" },
-                ]}
-                activeOpacity={0.85}
-                onPress={() => goTo("/(tabs)/manageUsers" as Href)}
-                accessibilityLabel="Manage users"
-              >
-                <Ionicons name="people-outline" size={24} color="#FF2D55" />
-                <View style={{ marginLeft: 12 }}>
-                  <ThemedText type="subtitle" style={styles.cardTitle}>
-                    Manage Users
-                  </ThemedText>
-                  <ThemedText
-                    style={[
-                      styles.cardInfo,
-                      { color: isDark ? "#bbb" : "#666" },
-                    ]}
-                  >
-                    Add, remove, or edit user roles
-                  </ThemedText>
-                </View>
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
-      </ScrollView>
-    </ThemedView>
+      </View>
+    </ScrollView>
   );
 }
 
+// 🔹 Card Component
+function Card({
+  title,
+  icon,
+  color,
+  description,
+  onPress,
+}: {
+  title: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  color: string;
+  description: string;
+  onPress: () => void;
+}) {
+  const { theme, isDark } = useTheme();
+  return (
+    <TouchableOpacity
+      style={[
+        styles.card,
+        { backgroundColor: theme.colors.card, borderLeftColor: color },
+      ]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <View
+        style={[
+          styles.iconContainer,
+          { backgroundColor: isDark ? color + "40" : color + "20" },
+        ]}
+      >
+        <Ionicons name={icon} size={24} color={color} />
+      </View>
+      <Text style={[styles.cardTitle, { color: theme.colors.text }]}>{title}</Text>
+      {description && (
+        <Text style={[styles.cardDescription, { color: theme.colors.textSecondary }]}>
+          {description}
+        </Text>
+      )}
+    </TouchableOpacity>
+  );
+}
+
+// Styles
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scroll: { paddingHorizontal: 20, paddingBottom: 40 },
-  headerRow: { marginBottom: 20 },
-  header: { fontSize: 26, fontWeight: "800" },
-  subheader: { fontSize: 14, marginTop: 4 },
-  row: {
+  container: { paddingHorizontal: 16, paddingBottom: 40 },
+  header: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 20,
-    gap: 12,
+  },
+  logo: { fontSize: 24, fontWeight: "800" },
+  hero: {
+    width: width - 32,
+    height: 240,
+    borderRadius: 20,
+    overflow: "hidden",
+    justifyContent: "flex-end",
+    marginBottom: 24,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+      },
+      android: { elevation: 6 },
+    }),
+  },
+  gradient: { flex: 1, justifyContent: "flex-end", padding: 20 },
+  heroTitle: {
+    color: "#fff",
+    fontSize: 28,
+    fontWeight: "800",
+    textShadowColor: "rgba(0,0,0,0.7)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+  },
+  heroSubtitle: {
+    color: "#eee",
+    fontSize: 16,
+    marginTop: 6,
+    fontWeight: "500",
+    textShadowColor: "rgba(0,0,0,0.7)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  section: { marginBottom: 24 },
+  sectionTitle: { fontSize: 22, fontWeight: "700", marginBottom: 12 },
+  sectionText: { fontSize: 15, lineHeight: 22 },
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    gap: 16,
+    marginBottom: 16,
   },
   card: {
-    flex: 1,
-    paddingVertical: 18,
-    paddingHorizontal: 16,
+    width: CARD_WIDTH,
+    borderRadius: 16,
+    padding: 16,
+    borderLeftWidth: 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: { elevation: 3 },
+    }),
+  },
+  iconContainer: {
+    width: 48,
+    height: 48,
     borderRadius: 12,
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  cardTitle: { marginTop: 8, fontWeight: "600" },
-  cardInfo: { marginTop: 4, fontSize: 13 },
-  linkText: { marginTop: 6, fontSize: 12, fontWeight: "500", color: "#007AFF" },
-  bigCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 18,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    marginBottom: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  statsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginVertical: 24,
-    gap: 12,
-  },
-  statCard: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 14,
-    paddingHorizontal: 12,
-    borderRadius: 10,
     justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 12,
   },
-  statText: { marginLeft: 8, fontSize: 13, fontWeight: "500" },
+  cardTitle: { fontSize: 16, fontWeight: "700", marginBottom: 4 },
+  cardDescription: { fontSize: 13, marginTop: 4 },
+  featuredCard: {
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
+      },
+      android: { elevation: 2 },
+    }),
+  },
+  featuredText: { flex: 1, marginLeft: 12, fontSize: 14 },
+  featuredLink: {
+    color: "#D21034",
+    fontWeight: "600",
+    fontSize: 14,
+    marginLeft: 8,
+  },
 });

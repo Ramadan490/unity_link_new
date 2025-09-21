@@ -1,16 +1,17 @@
 {
-  "extends": "expo/tsconfig.base",
+  "extends": "expo/tsconfig.base.json",
   "compilerOptions": {
     "strict": true,
     "baseUrl": ".",
     "paths": {
       "@/config/*": ["shared/config/*"],
-"@/services/*": ["features/users/services/*"],      "@/utils/*": ["shared/utils/*"],
+      "@/services/*": ["features/users/services/*"],
+      "@/utils/*": ["shared/utils/*"],
       "@/components/*": ["shared/components/*"],
       "@/context/*": ["shared/context/*"],
       "@/hooks/*": ["shared/hooks/*"],
       "@/types/*": ["shared/types/*"],
-      "@/constants/*": ["shared/constants/*"],   // ✅ added this
+      "@/constants/*": ["shared/constants/*"],
       "@/*": ["*"]
     }
   },

@@ -5,4 +5,6 @@ export type Memorial = {
   image?: string;       // ✅ profile picture or tribute image
   createdAt: string;    // ✅ so formatDate works
   createdBy: string;
+  date?: string;   
+  time?: string; 
 };

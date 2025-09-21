@@ -10,5 +10,221 @@
   "notifications": "Notifications",
   "helpSupport": "Help & Support",
   "termsConditions": "Terms & Conditions",
-  "logout": "Log Out"
+  "logout": "Log Out",
+  "login": "Login", 
+   "appearance": "Appearance",         
+  "areYouSure": "Are you sure you want to logout?",
+
+
+  "tabs": {
+    "home": "Home",
+    "events": "Events",
+    "announcements": "Announcements",
+    "memorials": "Memorials",
+    "requests": "Requests",
+    "manageUsers": "Manage Users",
+    "profile": "Profile"
+  },
+
+  "roles": {
+    "switchRole": "Switch Role",
+    "superAdmin": "Super Admin",
+    "boardMember": "Board Member",
+    "communityMember": "Community Member",
+    "superAdminDesc": "Full system access and user management",
+    "boardMemberDesc": "Community management and moderation",
+    "communityMemberDesc": "Basic community access and features",
+    "currentUser": "Current user"
+  },
+
+  "buttons": {
+    "close": "Close"
+  },
+
+  "requests": {
+    "title": "Requests",
+    "searchPlaceholder": "Search requests...",
+    "create": "Create Request",
+    "createNew": "Create New Request",
+    "noRequests": "No requests found",
+    "noMatching": "No matching requests",
+    "beFirst": "Be the first to create a request.",
+    "loading": "Loading requests...",
+    "errors": {
+      "missingInfo": "Missing Info",
+      "fillFields": "Please fill out all required fields.",
+      "titleTooLong": "Title Too Long",
+      "titleLimit": "Title must be less than 100 characters.",
+      "descTooLong": "Description Too Long",
+      "descLimit": "Description must be less than 1000 characters.",
+      "replyTooLong": "Reply Too Long",
+      "replyLimit": "Reply must be less than 500 characters.",
+      "limitReached": "Limit Reached",
+      "tenReplies": "This request already has 10 replies.",
+      "failedLoad": "Failed to load requests",
+      "failedDelete": "Unable to delete request."
+    },
+    "status": {
+      "open": "Open",
+      "inProgress": "In Progress",
+      "closed": "Closed",
+      "all": "All"
+    },
+    "form": {
+      "title": "Title *",
+      "titlePlaceholder": "Enter request title",
+      "description": "Description *",
+      "descriptionPlaceholder": "Describe your request in detail"
+    },
+    "buttons": {
+      "cancel": "Cancel",
+      "create": "Create Request",
+      "save": "Save",
+      "tryAgain": "Try Again",
+      "clearFilters": "Clear Filters",
+      "send": "Send"
+    },
+    "meta": {
+      "postedBy": "Posted by {{user}} • {{date}}"
+    },
+    "replies": {
+      "title": "Replies ({{count}})",
+      "write": "Write a reply..."
+    }
+  },
+
+  "announcements": {
+    "title": "Announcements",
+    "count": "{{count}} announcement",
+    "count_plural": "{{count}} announcements",
+    "create": "Create",
+    "createNew": "Create New Announcement",
+    "createFirst": "Create Announcement",
+    "noAnnouncements": "No announcements",
+    "emptyManage": "Get started by creating your first announcement",
+    "emptyView": "Check back later for community updates",
+    "deleteConfirm": "Delete Announcement",
+    "deleteConfirmMsg": "Are you sure you want to delete this announcement?",
+    "normal": "Normal",
+    "high": "High Priority",
+    "details": "Announcement Details",
+    "form": {
+      "title": "Title *",
+      "titlePlaceholder": "Enter announcement title",
+      "author": "Author *",
+      "authorPlaceholder": "Enter your name or department",
+      "content": "Content *",
+      "contentPlaceholder": "Enter announcement content",
+      "priority": "Priority"
+    },
+    "buttons": {
+      "cancel": "Cancel",
+      "save": "Save",
+      "create": "Create Announcement"
+    }
+  },
+
+  "events": {
+    "title": "Upcoming Events",
+    "count": "{{count}} event",
+    "count_plural": "{{count}} events",
+    "create": "Create",
+    "createNew": "Create New Event",
+    "createFirst": "Create Event",
+    "noEvents": "No events scheduled",
+    "emptyManage": "Get started by creating your first event",
+    "emptyView": "Check back later for upcoming events",
+    "deleteConfirm": "Delete Event",
+    "deleteConfirmMsg": "Are you sure you want to delete this event?",
+    "details": "Event Details",
+    "rsvp": "RSVP",
+    "attending": "Attending",
+    "attendingDetail": "You're Attending",
+    "rsvpDetail": "RSVP to this Event",
+    "form": {
+      "title": "Event Title *",
+      "titlePlaceholder": "Enter event title",
+      "date": "Date *",
+      "datePlaceholder": "e.g. Sept 20, 2025",
+      "location": "Location *",
+      "locationPlaceholder": "Enter location",
+      "description": "Description (Optional)",
+      "descriptionPlaceholder": "Describe the event"
+    },
+    "buttons": {
+      "cancel": "Cancel",
+      "save": "Save",
+      "create": "Create Event"
+    }
+  },
+
+  "home": {
+    "welcome": "Here's what's happening in your community",
+    "announcements": "Announcements",
+    "events": "Events",
+    "memorials": "Memorials",
+    "stats": {
+      "overview": "Community Overview",
+      "members": "Members",
+      "pendingRequests": "Pending Requests"
+    },
+    "boardTools": "Board Tools",
+    "manageRequests": "Manage Requests",
+    "manageUsers": "Manage Users",
+    "seeAll": "See all"
+  },
+
+  "manageUsers": {
+    "title": "Manage Users",
+    "subtitle": "Promote or demote members of your community",
+    "searchPlaceholder": "Search users...",
+    "loading": "Loading users...",
+    "error": "Failed to load users",
+    "retry": "Retry",
+    "empty": "No users found",
+    "emptySearch": "No users match your search",
+    "permissionDenied": "🚫 You do not have permission to view this page.",
+    "confirmRoleChange": "Confirm Role Change",
+    "confirmRoleChangeMsg": "Are you sure you want to change {{name}}'s role to {{role}}?",
+    "roles": {
+      "superAdmin": "Super Admin",
+      "boardMember": "Board Member",
+      "communityMember": "Community Member"
+    },
+    "buttons": {
+      "makeBoard": "Make Board",
+      "makeMember": "Make Member"
+    }
+  },
+
+  "memorials": {
+    "title": "In Memoriam",
+    "count": "{{count}} memorial",
+    "count_plural": "{{count}} memorials",
+    "create": "Create",
+    "createNew": "Create Memorial",
+    "createFirst": "Create Memorial",
+    "noMemorials": "No memorials yet",
+    "emptyManage": "Honor community members by creating a memorial",
+    "emptyView": "Remembering those who have contributed to our community",
+    "deleteConfirm": "Delete Memorial",
+    "deleteConfirmMsg": "Are you sure you want to delete this memorial?",
+    "details": "Memorial Details",
+    "form": {
+      "name": "Name *",
+      "namePlaceholder": "Enter full name",
+      "dates": "Dates *",
+      "datesPlaceholder": "e.g. 1950 - 2023",
+      "description": "Description *",
+      "descriptionPlaceholder": "Share their story and contributions",
+      "image": "Image URL (Optional)",
+      "imagePlaceholder": "Paste image URL"
+    },
+    "buttons": {
+      "cancel": "Cancel",
+      "save": "Save",
+      "create": "Create Memorial"
+    },
+    "tribute": "Leave a Tribute"
+  }
 }

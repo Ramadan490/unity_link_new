@@ -5,37 +5,42 @@ export default ({ config }) => ({
   expo: {
     ...config.expo,
     orientation: "portrait",
-    icon: "./assets/images/icon.png",
+    icon: "./assets/logos/icon.png", // ✅ moved to logos
     scheme: "unitylinknew",
     userInterfaceStyle: "automatic",
-    newArchEnabled: true,
     ios: {
       supportsTablet: true,
     },
     android: {
       adaptiveIcon: {
+        foregroundImage: "./assets/icons/android-icon-foreground.png", // ✅ moved to icons
+        backgroundImage: "./assets/icons/android-icon-background.png",
+        monochromeImage: "./assets/icons/android-icon-monochrome.png",
         backgroundColor: "#E6F4FE",
-        foregroundImage: "./assets/images/android-icon-foreground.png",
-        backgroundImage: "./assets/images/android-icon-background.png",
-        monochromeImage: "./assets/images/android-icon-monochrome.png",
       },
       edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false,
     },
     web: {
       output: "static",
-      favicon: "./assets/images/favicon.png",
+      favicon: "./assets/icons/favicon.png", // ✅ moved to icons
+    },
+    locales: {
+      en: "./assets/locales/en.json", // ✅ stays
+      ar: "./assets/locales/ar.json",
     },
     plugins: [
       "expo-router",
+      "expo-localization",
       [
         "expo-splash-screen",
         {
-          image: "./assets/images/splash-icon.png",
+          image: "./assets/splash/splash-icon.png", // ✅ moved to splash
           imageWidth: 200,
           resizeMode: "contain",
           backgroundColor: "#ffffff",
           dark: {
+            image: "./assets/splash/splash-icon.png", // 👈 optional: add splash-icon-dark.png
             backgroundColor: "#000000",
           },
         },
