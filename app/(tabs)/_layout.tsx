@@ -1,5 +1,6 @@
-import { RoleKey, useAuth } from "@/shared/context/AuthContext";
+import { useAuth } from "@/shared/context/AuthContext";
 import { useTheme } from "@/shared/context/ThemeContext";
+import { RoleKey } from "@/shared/types/user";
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
@@ -97,7 +98,7 @@ export default function TabLayout() {
 
   // ✅ only these are tabs
   const baseTabs = ["index", "announcements", "events", "memorials", "profile"];
-  const extraTabs = role ? roleTabs[role] ?? [] : [];
+  const extraTabs = role ? (roleTabs[role] ?? []) : [];
   const activeTabs = [...baseTabs, ...extraTabs];
 
   return (
@@ -106,6 +107,7 @@ export default function TabLayout() {
       <Tabs
         screenOptions={({ route }) => ({
           headerShown: false,
+          tabBarShowLabel: false,
           tabBarActiveTintColor: theme.colors.primary,
           tabBarInactiveTintColor: theme.colors.textSecondary,
           tabBarStyle: {
@@ -124,10 +126,7 @@ export default function TabLayout() {
           <Tabs.Screen
             key={tab}
             name={tab}
-            options={{
-              // 👇 Translated title
-              title: t(`tabs.${tab === "index" ? "home" : tab}`),
-            }}
+            options={{}}
           />
         ))}
       </Tabs>
@@ -157,7 +156,10 @@ export default function TabLayout() {
       {/* Role Selector Modal */}
       <Modal transparent visible={modalVisible} animationType="fade">
         <Pressable
-          style={[styles.modalOverlay, { backgroundColor: theme.colors.overlay }]}
+          style={[
+            styles.modalOverlay,
+            { backgroundColor: theme.colors.overlay },
+          ]}
           onPress={() => setModalVisible(false)}
         >
           <Animated.View
@@ -173,7 +175,9 @@ export default function TabLayout() {
             <Text style={[styles.modalTitle, { color: theme.colors.text }]}>
               {t("roles.switchRole")}
             </Text>
-            <Text style={{ color: theme.colors.textSecondary, marginBottom: 16 }}>
+            <Text
+              style={{ color: theme.colors.textSecondary, marginBottom: 16 }}
+            >
               {t("roles.currentUser")}: {user?.name || "Guest"}
             </Text>
 
@@ -185,7 +189,10 @@ export default function TabLayout() {
                   {
                     borderLeftColor: roleColors[r as RoleKey],
                     borderLeftWidth: 4,
-                    backgroundColor: role === r ? `${roleColors[r as RoleKey]}25` : "transparent",
+                    backgroundColor:
+                      role === r
+                        ? `${roleColors[r as RoleKey]}25`
+                        : "transparent",
                   },
                 ]}
                 onPress={() => {
@@ -196,7 +203,12 @@ export default function TabLayout() {
                 <Text style={[styles.roleName, { color: theme.colors.text }]}>
                   {t(`roles.${r}`)}
                 </Text>
-                <Text style={[styles.roleDescription, { color: theme.colors.textSecondary }]}>
+                <Text
+                  style={[
+                    styles.roleDescription,
+                    { color: theme.colors.textSecondary },
+                  ]}
+                >
                   {t(`roles.${r}Desc`)}
                 </Text>
               </TouchableOpacity>
@@ -204,9 +216,14 @@ export default function TabLayout() {
 
             <TouchableOpacity
               onPress={() => setModalVisible(false)}
-              style={[styles.closeButton, { backgroundColor: theme.colors.surface2 }]}
+              style={[
+                styles.closeButton,
+                { backgroundColor: theme.colors.surface2 },
+              ]}
             >
-              <Text style={{ color: theme.colors.text }}>{t("buttons.close")}</Text>
+              <Text style={{ color: theme.colors.text }}>
+                {t("buttons.close")}
+              </Text>
             </TouchableOpacity>
           </Animated.View>
         </Pressable>

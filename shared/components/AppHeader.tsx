@@ -1,18 +1,18 @@
 // shared/components/AppHeader.tsx
-import { useTheme } from '@/shared/context/ThemeContext';
-import React from 'react';
-import { StyleSheet, View } from 'react-native';
-import { ThemeToggle } from './ThemeToggle';
-import { ThemedText } from './ui/ThemedText';
+import { ThemedText } from "@/shared/components/ui";
+import { useTheme } from "@/shared/context/ThemeContext";
+import React from "react";
+import { StyleSheet, View } from "react-native";
+import { ThemeToggle } from "./ThemeToggle";
 
 interface AppHeaderProps {
   title: string;
   showThemeToggle?: boolean;
 }
 
-export const AppHeader: React.FC<AppHeaderProps> = ({ 
-  title, 
-  showThemeToggle = true 
+export const AppHeader: React.FC<AppHeaderProps> = ({
+  title,
+  showThemeToggle = true,
 }) => {
   const { theme } = useTheme();
 
@@ -28,14 +28,14 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
 const styles = StyleSheet.create({
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     padding: 16,
     borderBottomWidth: 1,
   },
   title: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
 });

@@ -11,10 +11,9 @@
   "helpSupport": "Help & Support",
   "termsConditions": "Terms & Conditions",
   "logout": "Log Out",
-  "login": "Login", 
-   "appearance": "Appearance",         
+  "login": "Login",
+  "appearance": "Appearance",
   "areYouSure": "Are you sure you want to logout?",
-
 
   "tabs": {
     "home": "Home",
@@ -119,42 +118,28 @@
     },
     "buttons": {
       "cancel": "Cancel",
+      "close": "Close",
+      "delete": "Delete",
       "save": "Save",
       "create": "Create Announcement"
     }
   },
 
   "events": {
-    "title": "Upcoming Events",
-    "count": "{{count}} event",
-    "count_plural": "{{count}} events",
-    "create": "Create",
-    "createNew": "Create New Event",
-    "createFirst": "Create Event",
-    "noEvents": "No events scheduled",
-    "emptyManage": "Get started by creating your first event",
-    "emptyView": "Check back later for upcoming events",
-    "deleteConfirm": "Delete Event",
-    "deleteConfirmMsg": "Are you sure you want to delete this event?",
-    "details": "Event Details",
-    "rsvp": "RSVP",
-    "attending": "Attending",
-    "attendingDetail": "You're Attending",
-    "rsvpDetail": "RSVP to this Event",
-    "form": {
-      "title": "Event Title *",
-      "titlePlaceholder": "Enter event title",
-      "date": "Date *",
-      "datePlaceholder": "e.g. Sept 20, 2025",
-      "location": "Location *",
-      "locationPlaceholder": "Enter location",
-      "description": "Description (Optional)",
-      "descriptionPlaceholder": "Describe the event"
-    },
+  "cancelAttendance": "Cancel Attendance",
+  "cancelAttendanceMsg": "Are you sure you want to cancel your attendance?",
+  "confirmAttendance": "Confirm Attendance",
+  "confirmAttendanceMsg": "Are you sure you want to RSVP to this event?",
+  "errors": {
+    "missingInfo": "Missing Info",
+    "fillFields": "Please fill out all required fields."
+  },
     "buttons": {
-      "cancel": "Cancel",
-      "save": "Save",
-      "create": "Create Event"
+  "close": "Close",
+  "delete": "Delete",
+  "create": "Create",
+  "no": "No",
+  "yes": "Yes"
     }
   },
 

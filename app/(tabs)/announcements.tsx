@@ -1,9 +1,9 @@
 // app/(tabs)/announcements.tsx
-import { ThemedText } from "@/shared/components/ui/ThemedText";
-import { ThemedView } from "@/shared/components/ui/ThemedView";
+import { ThemedText, ThemedView } from "@/shared/components/ui";
 import { useTheme } from "@/shared/context/ThemeContext";
 import { useRole } from "@/shared/hooks/useRole";
 import { Ionicons } from "@expo/vector-icons";
+import { t } from "i18next";
 import React, { useState } from "react";
 import {
   Alert,
@@ -35,8 +35,7 @@ const initialAnnouncements: Announcement[] = [
     id: "1",
     title: "Pool Maintenance",
     date: "Sept 15, 2025",
-    content:
-      "The community pool will be closed for maintenance from September 18-20. We apologize for any inconvenience.",
+    content: "The community pool will be closed for maintenance from September 18-20. We apologize for any inconvenience.",
     author: "Management",
     priority: "high",
   },
@@ -44,16 +43,14 @@ const initialAnnouncements: Announcement[] = [
     id: "2",
     title: "New Security Measures",
     date: "Sept 10, 2025",
-    content:
-      "Starting next week, we will be implementing new security measures including additional cameras at all entry points.",
+    content: "Starting next week, we will be implementing new security measures including additional cameras at all entry points.",
     author: "Security Team",
   },
   {
     id: "3",
     title: "Community Garden Update",
     date: "Sept 5, 2025",
-    content:
-      "The community garden renovation is complete! Sign up now for your plot. First come, first served.",
+    content: "The community garden renovation is complete! Sign up now for your plot. First come, first served.",
     author: "Recreation Committee",
   },
 ];
@@ -70,16 +67,18 @@ export default function AnnouncementsScreen() {
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
 
-  const { theme, isDark } = useTheme();
+  const { theme } = useTheme();
   const insets = useSafeAreaInsets();
 
-  // ✅ Role checks
   const { isSuperAdmin, isBoardMember } = useRole();
   const canManageAnnouncements = isSuperAdmin || isBoardMember;
 
   const addAnnouncement = () => {
     if (!newAnnouncement.title || !newAnnouncement.content || !newAnnouncement.author) {
-      Alert.alert("Missing Info", "Please fill out all required fields.");
+      Alert.alert(
+        t("announcements.errors.missingInfo"),
+        t("announcements.errors.fillFields")
+      );
       return;
     }
 
@@ -104,12 +103,12 @@ export default function AnnouncementsScreen() {
 
   const deleteAnnouncement = (id: string) => {
     Alert.alert(
-      "Delete Announcement",
-      "Are you sure you want to delete this announcement?",
+      t("announcements.deleteConfirm"),
+      t("announcements.deleteConfirmMsg"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("cancel"), style: "cancel" },
         {
-          text: "Delete",
+          text: t("buttons.delete"),
           style: "destructive",
           onPress: () => setAnnouncements((prev) => prev.filter((a) => a.id !== id)),
         },
@@ -155,20 +154,32 @@ export default function AnnouncementsScreen() {
         </View>
 
         {/* Content preview */}
-        <ThemedText type="default" style={styles.announcementContent} numberOfLines={3}>
+        <ThemedText
+          type="default"
+          style={styles.announcementContent}
+          numberOfLines={3}
+        >
           {item.content}
         </ThemedText>
 
         {/* Details */}
         <View style={styles.detailsContainer}>
           <View style={styles.detailRow}>
-            <Ionicons name="person-outline" size={16} color={theme.colors.primary} />
+            <Ionicons
+              name="person-outline"
+              size={16}
+              color={theme.colors.primary}
+            />
             <ThemedText type="default" style={styles.announcementDetails}>
               {item.author}
             </ThemedText>
           </View>
           <View style={styles.detailRow}>
-            <Ionicons name="calendar-outline" size={16} color={theme.colors.primary} />
+            <Ionicons
+              name="calendar-outline"
+              size={16}
+              color={theme.colors.primary}
+            />
             <ThemedText type="default" style={styles.announcementDetails}>
               {item.date}
             </ThemedText>
@@ -176,8 +187,11 @@ export default function AnnouncementsScreen() {
           {item.priority === "high" && (
             <View style={styles.detailRow}>
               <Ionicons name="warning-outline" size={16} color="#FF3B30" />
-              <ThemedText type="default" style={[styles.announcementDetails, { color: "#FF3B30" }]}>
-                High Priority
+              <ThemedText
+                type="default"
+                style={[styles.announcementDetails, { color: "#FF3B30" }]}
+              >
+                {t("announcements.high")}
               </ThemedText>
             </View>
           )}
@@ -186,6 +200,9 @@ export default function AnnouncementsScreen() {
     </TouchableOpacity>
   );
 
+  const announcementCount = announcements.length;
+  const announcementText = t("announcements.count", { count: announcementCount });
+
   return (
     <ThemedView style={styles.container}>
       {/* Header with Create Button */}
@@ -193,24 +210,28 @@ export default function AnnouncementsScreen() {
         <View style={styles.headerRow}>
           <View>
             <ThemedText type="title" style={styles.title}>
-              Announcements
+              {t("announcements.title")}
             </ThemedText>
             {announcements.length > 0 && (
               <ThemedText type="default" style={styles.subtitle}>
-                {announcements.length} announcement
-                {announcements.length !== 1 ? "s" : ""}
+                {announcementText}
               </ThemedText>
             )}
           </View>
 
           {canManageAnnouncements && announcements.length > 0 && (
             <TouchableOpacity
-              style={[styles.createButton, { backgroundColor: theme.colors.primary }]}
+              style={[
+                styles.createButton,
+                { backgroundColor: theme.colors.primary },
+              ]}
               onPress={() => setModalVisible(true)}
-              accessibilityLabel="Add new announcement"
+              accessibilityLabel={t("announcements.create")}
             >
               <Ionicons name="add" size={20} color="#fff" />
-              <ThemedText style={styles.createButtonText}>Create</ThemedText>
+              <ThemedText style={styles.createButtonText}>
+                {t("announcements.create")}
+              </ThemedText>
             </TouchableOpacity>
           )}
         </View>
@@ -224,21 +245,24 @@ export default function AnnouncementsScreen() {
             color={theme.colors.textSecondary}
           />
           <ThemedText type="title" style={styles.emptyTitle}>
-            No announcements
+            {t("announcements.noAnnouncements")}
           </ThemedText>
           <ThemedText type="default" style={styles.emptyText}>
             {canManageAnnouncements
-              ? "Get started by creating your first announcement"
-              : "Check back later for community updates"}
+              ? t("announcements.emptyManage")
+              : t("announcements.emptyView")}
           </ThemedText>
           {canManageAnnouncements && (
             <TouchableOpacity
-              style={[styles.createFirstAnnouncementBtn, { backgroundColor: theme.colors.primary }]}
+              style={[
+                styles.createFirstAnnouncementBtn,
+                { backgroundColor: theme.colors.primary },
+              ]}
               onPress={() => setModalVisible(true)}
             >
               <Ionicons name="add" size={20} color="#fff" />
               <ThemedText style={styles.createFirstAnnouncementText}>
-                Create Announcement
+                {t("announcements.createFirst")}
               </ThemedText>
             </TouchableOpacity>
           )}
@@ -263,26 +287,33 @@ export default function AnnouncementsScreen() {
           >
             <View style={styles.modalOverlay}>
               <View
-                style={[styles.modalBox, { backgroundColor: theme.colors.card }]}
+                style={[
+                  styles.modalBox,
+                  { backgroundColor: theme.colors.card },
+                ]}
               >
                 <View style={styles.modalHeader}>
                   <ThemedText type="title" style={styles.modalTitle}>
-                    Create New Announcement
+                    {t("announcements.createNew")}
                   </ThemedText>
                   <TouchableOpacity
                     onPress={() => setModalVisible(false)}
                     style={styles.closeButton}
                   >
-                    <Ionicons name="close" size={24} color={theme.colors.text} />
+                    <Ionicons
+                      name="close"
+                      size={24}
+                      color={theme.colors.text}
+                    />
                   </TouchableOpacity>
                 </View>
 
                 <ScrollView style={styles.modalScroll}>
                   <ThemedText type="defaultSemiBold" style={styles.inputLabel}>
-                    Title *
+                    {t("announcements.form.title")}
                   </ThemedText>
                   <TextInput
-                    placeholder="Enter announcement title"
+                    placeholder={t("announcements.form.titlePlaceholder")}
                     placeholderTextColor={theme.colors.textSecondary}
                     style={[
                       styles.input,
@@ -292,14 +323,16 @@ export default function AnnouncementsScreen() {
                       },
                     ]}
                     value={newAnnouncement.title}
-                    onChangeText={(t) => setNewAnnouncement((p) => ({ ...p, title: t }))}
+                    onChangeText={(t) =>
+                      setNewAnnouncement((p) => ({ ...p, title: t }))
+                    }
                   />
 
                   <ThemedText type="defaultSemiBold" style={styles.inputLabel}>
-                    Author *
+                    {t("announcements.form.author")}
                   </ThemedText>
                   <TextInput
-                    placeholder="Enter your name or department"
+                    placeholder={t("announcements.form.authorPlaceholder")}
                     placeholderTextColor={theme.colors.textSecondary}
                     style={[
                       styles.input,
@@ -309,14 +342,16 @@ export default function AnnouncementsScreen() {
                       },
                     ]}
                     value={newAnnouncement.author}
-                    onChangeText={(t) => setNewAnnouncement((p) => ({ ...p, author: t }))}
+                    onChangeText={(t) =>
+                      setNewAnnouncement((p) => ({ ...p, author: t }))
+                    }
                   />
 
                   <ThemedText type="defaultSemiBold" style={styles.inputLabel}>
-                    Content *
+                    {t("announcements.form.content")}
                   </ThemedText>
                   <TextInput
-                    placeholder="Enter announcement content"
+                    placeholder={t("announcements.form.contentPlaceholder")}
                     placeholderTextColor={theme.colors.textSecondary}
                     style={[
                       styles.input,
@@ -331,47 +366,63 @@ export default function AnnouncementsScreen() {
                     multiline
                     numberOfLines={5}
                     value={newAnnouncement.content}
-                    onChangeText={(t) => setNewAnnouncement((p) => ({ ...p, content: t }))}
+                    onChangeText={(t) =>
+                      setNewAnnouncement((p) => ({ ...p, content: t }))
+                    }
                   />
 
                   <ThemedText type="defaultSemiBold" style={styles.inputLabel}>
-                    Priority
+                    {t("announcements.form.priority")}
                   </ThemedText>
                   <View style={styles.priorityContainer}>
                     <TouchableOpacity
                       style={[
                         styles.priorityButton,
-                        newAnnouncement.priority === "normal" && styles.priorityButtonSelected,
+                        newAnnouncement.priority === "normal" &&
+                          styles.priorityButtonSelected,
                         { backgroundColor: theme.colors.surface },
                       ]}
-                      onPress={() => setNewAnnouncement((p) => ({ ...p, priority: "normal" }))}
-                    >
-                      <ThemedText 
-                        type="default" 
-                        style={[
-                          styles.priorityButtonText,
-                          newAnnouncement.priority === "normal" && styles.priorityButtonTextSelected,
-                        ]}
-                      >
-                        Normal
-                      </ThemedText>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[
-                        styles.priorityButton,
-                        newAnnouncement.priority === "high" && styles.priorityButtonSelected,
-                        newAnnouncement.priority === "high" && { backgroundColor: "#FF3B30" },
-                      ]}
-                      onPress={() => setNewAnnouncement((p) => ({ ...p, priority: "high" }))}
+                      onPress={() =>
+                        setNewAnnouncement((p) => ({
+                          ...p,
+                          priority: "normal",
+                        }))
+                      }
                     >
                       <ThemedText
                         type="default"
                         style={[
                           styles.priorityButtonText,
-                          newAnnouncement.priority === "high" ? { color: "#fff" } : { color: theme.colors.text },
+                          newAnnouncement.priority === "normal" &&
+                            styles.priorityButtonTextSelected,
                         ]}
                       >
-                        High Priority
+                        {t("announcements.normal")}
+                      </ThemedText>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.priorityButton,
+                        newAnnouncement.priority === "high" &&
+                          styles.priorityButtonSelected,
+                        newAnnouncement.priority === "high" && {
+                          backgroundColor: "#FF3B30",
+                        },
+                      ]}
+                      onPress={() =>
+                        setNewAnnouncement((p) => ({ ...p, priority: "high" }))
+                      }
+                    >
+                      <ThemedText
+                        type="default"
+                        style={[
+                          styles.priorityButtonText,
+                          newAnnouncement.priority === "high"
+                            ? { color: "#fff" }
+                            : { color: theme.colors.text },
+                        ]}
+                      >
+                        {t("announcements.high")}
                       </ThemedText>
                     </TouchableOpacity>
                   </View>
@@ -380,11 +431,15 @@ export default function AnnouncementsScreen() {
                 {/* Modal actions */}
                 <View style={styles.modalActions}>
                   <TouchableOpacity
-                    style={[styles.modalBtn, styles.cancelBtn, { backgroundColor: theme.colors.surface }]}
+                    style={[
+                      styles.modalBtn,
+                      styles.cancelBtn,
+                      { backgroundColor: theme.colors.surface },
+                    ]}
                     onPress={() => setModalVisible(false)}
                   >
                     <ThemedText type="default" style={styles.modalBtnText}>
-                      Cancel
+                      {t("cancel")}
                     </ThemedText>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -392,16 +447,26 @@ export default function AnnouncementsScreen() {
                       styles.modalBtn,
                       styles.saveBtn,
                       {
-                        backgroundColor: newAnnouncement.title && newAnnouncement.content && newAnnouncement.author
-                          ? theme.colors.primary
-                          : theme.colors.textSecondary,
+                        backgroundColor:
+                          newAnnouncement.title &&
+                          newAnnouncement.content &&
+                          newAnnouncement.author
+                            ? theme.colors.primary
+                            : theme.colors.textSecondary,
                       },
                     ]}
                     onPress={addAnnouncement}
-                    disabled={!newAnnouncement.title || !newAnnouncement.content || !newAnnouncement.author}
+                    disabled={
+                      !newAnnouncement.title ||
+                      !newAnnouncement.content ||
+                      !newAnnouncement.author
+                    }
                   >
-                    <ThemedText type="default" style={[styles.modalBtnText, { color: "#fff" }]}>
-                      Create Announcement
+                    <ThemedText
+                      type="default"
+                      style={[styles.modalBtnText, { color: "#fff" }]}
+                    >
+                      {t("announcements.buttons.create")}
                     </ThemedText>
                   </TouchableOpacity>
                 </View>
@@ -415,11 +480,14 @@ export default function AnnouncementsScreen() {
       <Modal transparent visible={detailModalVisible} animationType="fade">
         <View style={styles.modalOverlay}>
           <View
-            style={[styles.detailModalBox, { backgroundColor: theme.colors.card }]}
+            style={[
+              styles.detailModalBox,
+              { backgroundColor: theme.colors.card },
+            ]}
           >
             <View style={styles.modalHeader}>
               <ThemedText type="title" style={styles.detailModalTitle}>
-                Announcement Details
+                {t("announcements.details")}
               </ThemedText>
               <TouchableOpacity
                 onPress={() => setDetailModalVisible(false)}
@@ -440,14 +508,22 @@ export default function AnnouncementsScreen() {
                 </ThemedText>
 
                 <View style={styles.detailItem}>
-                  <Ionicons name="person-outline" size={20} color={theme.colors.primary} />
+                  <Ionicons
+                    name="person-outline"
+                    size={20}
+                    color={theme.colors.primary}
+                  />
                   <ThemedText type="default" style={styles.detailText}>
                     {selectedAnnouncement.author}
                   </ThemedText>
                 </View>
 
                 <View style={styles.detailItem}>
-                  <Ionicons name="calendar-outline" size={20} color={theme.colors.primary} />
+                  <Ionicons
+                    name="calendar-outline"
+                    size={20}
+                    color={theme.colors.primary}
+                  />
                   <ThemedText type="default" style={styles.detailText}>
                     {selectedAnnouncement.date}
                   </ThemedText>
@@ -455,9 +531,16 @@ export default function AnnouncementsScreen() {
 
                 {selectedAnnouncement.priority === "high" && (
                   <View style={styles.detailItem}>
-                    <Ionicons name="warning-outline" size={20} color="#FF3B30" />
-                    <ThemedText type="default" style={[styles.detailText, { color: "#FF3B30" }]}>
-                      High Priority
+                    <Ionicons
+                      name="warning-outline"
+                      size={20}
+                      color="#FF3B30"
+                    />
+                    <ThemedText
+                      type="default"
+                      style={[styles.detailText, { color: "#FF3B30" }]}
+                    >
+                      {t("announcements.high")}
                     </ThemedText>
                   </View>
                 )}

@@ -19,36 +19,15 @@ export default function ProfileLayout() {
       }}
     >
       {/* 👇 default profile tab screen */}
-      <Stack.Screen
-        name="index"
-        options={{ headerShown: false }}
-      />
+      <Stack.Screen name="index" options={{ headerShown: false }} />
 
       {/* 👇 sub-pages with headers + back button */}
-      <Stack.Screen
-        name="appearance"
-        options={{ title: "Appearance" }}
-      />
-      <Stack.Screen
-        name="notifications"
-        options={{ title: "Notifications" }}
-      />
-      <Stack.Screen
-        name="security"
-        options={{ title: "Privacy & Security" }}
-      />
-      <Stack.Screen
-        name="help"
-        options={{ title: "Help & Support" }}
-      />
-      <Stack.Screen
-        name="terms"
-        options={{ title: "Terms & Conditions" }}
-      />
-      <Stack.Screen
-        name="edit"
-        options={{ title: "Edit Profile" }}
-      />
+      <Stack.Screen name="appearance" options={{ title: "Appearance" }} />
+      <Stack.Screen name="notifications" options={{ title: "Notifications" }} />
+      <Stack.Screen name="security" options={{ title: "Privacy & Security" }} />
+      <Stack.Screen name="help" options={{ title: "Help & Support" }} />
+      <Stack.Screen name="terms" options={{ title: "Terms & Conditions" }} />
+      <Stack.Screen name="edit" options={{ title: "Edit Profile" }} />
     </Stack>
   );
 }

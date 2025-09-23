@@ -1,4 +1,3 @@
-
 {
   "profile": "الملف الشخصي",
   "memberSince": "عضو منذ",
@@ -12,8 +11,8 @@
   "helpSupport": "المساعدة والدعم",
   "termsConditions": "الشروط والأحكام",
   "logout": "تسجيل الخروج",
-  "login": "تسجيل الدخول", 
-  "appearance": "المظهر",      
+  "login": "تسجيل الدخول",
+  "appearance": "المظهر",
   "areYouSure": "هل أنت متأكد أنك تريد تسجيل الخروج؟",
 
   "tabs": {
@@ -38,7 +37,9 @@
   },
 
   "buttons": {
-    "close": "إغلاق"
+    "close": "إغلاق",
+    "delete": "حذف",
+    "create": "إنشاء"
   },
 
   "announcements": {
@@ -51,11 +52,15 @@
     "noAnnouncements": "لا توجد إعلانات",
     "emptyManage": "ابدأ بإنشاء أول إعلان لك",
     "emptyView": "تحقق مرة أخرى لاحقًا للحصول على تحديثات المجتمع",
+    "deleteTitle": "حذف الإعلان",
     "deleteConfirm": "حذف الإعلان",
     "deleteConfirmMsg": "هل أنت متأكد أنك تريد حذف هذا الإعلان؟",
+    "missingInfo": "معلومات ناقصة",
+    "fillFields": "يرجى ملء جميع الحقول المطلوبة.",
     "normal": "عادي",
     "high": "أولوية قصوى",
     "details": "تفاصيل الإعلان",
+    "createTitle": "إنشاء إعلان جديد",
     "form": {
       "title": "العنوان *",
       "titlePlaceholder": "أدخل عنوان الإعلان",
@@ -72,37 +77,21 @@
     }
   },
 
-  "events": {
-    "title": "الفعاليات القادمة",
-    "count": "{{count}} فعالية",
-    "count_plural": "{{count}} فعاليات",
-    "create": "إنشاء",
-    "createNew": "إنشاء فعالية جديدة",
-    "createFirst": "إنشاء فعالية",
-    "noEvents": "لا توجد فعاليات مجدولة",
-    "emptyManage": "ابدأ بإنشاء أول فعالية لك",
-    "emptyView": "تحقق لاحقًا من الفعاليات القادمة",
-    "deleteConfirm": "حذف الفعالية",
-    "deleteConfirmMsg": "هل أنت متأكد أنك تريد حذف هذه الفعالية؟",
-    "details": "تفاصيل الفعالية",
-    "rsvp": "تأكيد الحضور",
-    "attending": "سيتم الحضور",
-    "attendingDetail": "أنت ستشارك",
-    "rsvpDetail": "قم بتأكيد حضورك لهذه الفعالية",
-    "form": {
-      "title": "عنوان الفعالية *",
-      "titlePlaceholder": "أدخل عنوان الفعالية",
-      "date": "التاريخ *",
-      "datePlaceholder": "مثال: 20 سبتمبر 2025",
-      "location": "المكان *",
-      "locationPlaceholder": "أدخل المكان",
-      "description": "الوصف (اختياري)",
-      "descriptionPlaceholder": "صف الفعالية"
-    },
-    "buttons": {
-      "cancel": "إلغاء",
-      "save": "حفظ",
-      "create": "إنشاء فعالية"
+ "events": {
+  "cancelAttendance": "إلغاء الحضور",
+  "cancelAttendanceMsg": "هل أنت متأكد أنك تريد إلغاء حضورك؟",
+  "confirmAttendance": "تأكيد الحضور",
+  "confirmAttendanceMsg": "هل أنت متأكد أنك تريد تأكيد حضورك لهذه الفعالية؟",
+  "errors": {
+    "missingInfo": "معلومات ناقصة",
+    "fillFields": "يرجى ملء جميع الحقول المطلوبة."
+  },
+   "buttons": {
+  "close": "إغلاق",
+  "delete": "حذف",
+  "create": "إنشاء",
+  "no": "لا",
+  "yes": "نعم"
     }
   },
 

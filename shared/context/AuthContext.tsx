@@ -1,6 +1,7 @@
 // context/AuthContext.tsx
 import {
   loadUserFromStorage,
+  saveUserToStorage, // ✅ added
   loginUser,
   logoutUser,
   registerUser,
@@ -22,7 +23,7 @@ export type AuthContextType = {
   logout: () => Promise<void>;
   setRole: (role: RoleKey) => void;
   clearError: () => void;
-  updateUser: (updates: Partial<User>) => void; // ✅ NEW
+  updateUser: (updates: Partial<User>) => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -65,6 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const loggedIn = await loginUser(credential, password);
       setUser(loggedIn);
       setRoleState(loggedIn.role as RoleKey);
+      await saveUserToStorage(loggedIn); // ✅ persist
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Login failed";
       setError(errorMessage);
@@ -81,6 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const newUser = await registerUser(credential, password);
       setUser(newUser);
       setRoleState(newUser.role as RoleKey);
+      await saveUserToStorage(newUser); // ✅ persist
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Registration failed";
@@ -98,6 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       setRoleState(null);
       setError(null);
+      await saveUserToStorage(null); // ✅ clear storage
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Logout failed";
       setError(errorMessage);
@@ -110,14 +114,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const setRole = (newRole: RoleKey) => {
     setRoleState(newRole);
     if (user) {
-      setUser({ ...user, role: newRole });
+      const updated = { ...user, role: newRole };
+      setUser(updated);
+      saveUserToStorage(updated); // ✅ persist
     }
   };
 
-  // ✅ NEW: update profile fields locally
   const updateUser = (updates: Partial<User>) => {
     if (!user) return;
-    setUser({ ...user, ...updates });
+    const updated = { ...user, ...updates };
+    setUser(updated);
+    saveUserToStorage(updated); // ✅ persist
   };
 
   return (
@@ -133,7 +140,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         logout,
         setRole,
         clearError,
-        updateUser, // ✅ exposed
+        updateUser,
       }}
     >
       {children}

@@ -7,18 +7,25 @@ type ButtonProps = {
   variant?: "primary" | "secondary" | "danger";
 };
 
-export default function Button({ label, onPress, variant = "primary" }: ButtonProps) {
+export default function Button({
+  label,
+  onPress,
+  variant = "primary",
+}: ButtonProps) {
   const background =
     variant === "primary"
       ? "#2b6fa3"
       : variant === "danger"
-      ? "#e53935"
-      : "#e0e0e0";
+        ? "#e53935"
+        : "#e0e0e0";
 
   const textColor = variant === "secondary" ? "#000" : "#fff";
 
   return (
-    <TouchableOpacity style={[styles.button, { backgroundColor: background }]} onPress={onPress}>
+    <TouchableOpacity
+      style={[styles.button, { backgroundColor: background }]}
+      onPress={onPress}
+    >
       <Text style={[styles.text, { color: textColor }]}>{label}</Text>
     </TouchableOpacity>
   );

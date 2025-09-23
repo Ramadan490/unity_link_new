@@ -38,14 +38,18 @@ const themes = {
     border: "transparent",
     primary: "#007AFF",
     secondary: "#6c757d",
-  }
+  },
 };
 
 // ---- Storage Key ----
 const STORAGE_KEY = "appearanceSettings";
 
 // ---- Font Size Options ----
-const fontSizeOptions: { label: string; value: "small" | "medium" | "large" | "xlarge"; size: number }[] = [
+const fontSizeOptions: {
+  label: string;
+  value: "small" | "medium" | "large" | "xlarge";
+  size: number;
+}[] = [
   { label: "Small", value: "small", size: 14 },
   { label: "Medium", value: "medium", size: 16 },
   { label: "Large", value: "large", size: 18 },
@@ -53,7 +57,11 @@ const fontSizeOptions: { label: string; value: "small" | "medium" | "large" | "x
 ];
 
 // ---- Theme Options ----
-const themeOptions: { label: string; value: "light" | "dark" | "system"; icon: keyof typeof Ionicons.glyphMap }[] = [
+const themeOptions: {
+  label: string;
+  value: "light" | "dark" | "system";
+  icon: keyof typeof Ionicons.glyphMap;
+}[] = [
   { label: "Light", value: "light", icon: "sunny-outline" },
   { label: "Dark", value: "dark", icon: "moon-outline" },
   { label: "System", value: "system", icon: "phone-portrait-outline" },
@@ -61,8 +69,12 @@ const themeOptions: { label: string; value: "light" | "dark" | "system"; icon: k
 
 export default function AppearanceScreen() {
   const systemColorScheme = useColorScheme();
-  const [themeMode, setThemeMode] = useState<"light" | "dark" | "system">("system");
-  const [fontSize, setFontSize] = useState<"small" | "medium" | "large" | "xlarge">("medium");
+  const [themeMode, setThemeMode] = useState<"light" | "dark" | "system">(
+    "system",
+  );
+  const [fontSize, setFontSize] = useState<
+    "small" | "medium" | "large" | "xlarge"
+  >("medium");
   const [reduceMotion, setReduceMotion] = useState(false);
   const [boldText, setBoldText] = useState(false);
   const [highContrast, setHighContrast] = useState(false);
@@ -103,7 +115,13 @@ export default function AppearanceScreen() {
       try {
         await AsyncStorage.setItem(
           STORAGE_KEY,
-          JSON.stringify({ themeMode, fontSize, reduceMotion, boldText, highContrast })
+          JSON.stringify({
+            themeMode,
+            fontSize,
+            reduceMotion,
+            boldText,
+            highContrast,
+          }),
         );
       } catch (error) {
         console.error("Failed to save appearance settings:", error);
@@ -141,7 +159,11 @@ export default function AppearanceScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.headerContainer}>
-          <Ionicons name="color-palette-outline" size={32} color={currentTheme.primary} />
+          <Ionicons
+            name="color-palette-outline"
+            size={32}
+            color={currentTheme.primary}
+          />
           <Text style={[styles.header, { color: currentTheme.text }]}>
             Appearance Settings
           </Text>
@@ -161,30 +183,44 @@ export default function AppearanceScreen() {
                 key={option.value}
                 style={[
                   styles.themeOption,
-                  { 
-                    backgroundColor: themeMode === option.value ? currentTheme.primary : currentTheme.card,
+                  {
+                    backgroundColor:
+                      themeMode === option.value
+                        ? currentTheme.primary
+                        : currentTheme.card,
                     borderColor: currentTheme.border,
                   },
                 ]}
                 onPress={() => setThemeMode(option.value)}
               >
-                <Ionicons 
-                  name={option.icon} 
-                  size={24} 
-                  color={themeMode === option.value ? "#FFFFFF" : currentTheme.primary} 
+                <Ionicons
+                  name={option.icon}
+                  size={24}
+                  color={
+                    themeMode === option.value
+                      ? "#FFFFFF"
+                      : currentTheme.primary
+                  }
                 />
-                <Text style={[
-                  styles.themeOptionText,
-                  { color: themeMode === option.value ? "#FFFFFF" : currentTheme.text }
-                ]}>
+                <Text
+                  style={[
+                    styles.themeOptionText,
+                    {
+                      color:
+                        themeMode === option.value
+                          ? "#FFFFFF"
+                          : currentTheme.text,
+                    },
+                  ]}
+                >
                   {option.label}
                 </Text>
                 {themeMode === option.value && (
-                  <Ionicons 
-                    name="checkmark-circle" 
-                    size={20} 
-                    color="#FFFFFF" 
-                    style={styles.selectedIcon} 
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={20}
+                    color="#FFFFFF"
+                    style={styles.selectedIcon}
                   />
                 )}
               </TouchableOpacity>
@@ -203,9 +239,15 @@ export default function AppearanceScreen() {
                 key={option.value}
                 style={[
                   styles.fontSizeOption,
-                  { 
-                    borderColor: fontSize === option.value ? currentTheme.primary : currentTheme.border,
-                    backgroundColor: fontSize === option.value ? currentTheme.primary : currentTheme.card,
+                  {
+                    borderColor:
+                      fontSize === option.value
+                        ? currentTheme.primary
+                        : currentTheme.border,
+                    backgroundColor:
+                      fontSize === option.value
+                        ? currentTheme.primary
+                        : currentTheme.card,
                   },
                 ]}
                 onPress={() => setFontSize(option.value)}
@@ -213,18 +255,28 @@ export default function AppearanceScreen() {
                 <Text
                   style={[
                     styles.optionText,
-                    { 
-                      color: fontSize === option.value ? "#FFFFFF" : currentTheme.text,
+                    {
+                      color:
+                        fontSize === option.value
+                          ? "#FFFFFF"
+                          : currentTheme.text,
                       fontSize: option.size,
                     },
                   ]}
                 >
                   Aa
                 </Text>
-                <Text style={[
-                  styles.optionLabel,
-                  { color: fontSize === option.value ? "#FFFFFF" : currentTheme.text }
-                ]}>
+                <Text
+                  style={[
+                    styles.optionLabel,
+                    {
+                      color:
+                        fontSize === option.value
+                          ? "#FFFFFF"
+                          : currentTheme.text,
+                    },
+                  ]}
+                >
                   {option.label}
                 </Text>
               </TouchableOpacity>
@@ -237,20 +289,34 @@ export default function AppearanceScreen() {
           <Text style={[styles.sectionTitle, { color: currentTheme.text }]}>
             Accessibility
           </Text>
-          
+
           <View
             style={[
               styles.settingRow,
-              { backgroundColor: currentTheme.card, borderColor: currentTheme.border },
+              {
+                backgroundColor: currentTheme.card,
+                borderColor: currentTheme.border,
+              },
             ]}
           >
             <View style={styles.settingInfo}>
-              <Ionicons name="move-outline" size={22} color={currentTheme.primary} />
+              <Ionicons
+                name="move-outline"
+                size={22}
+                color={currentTheme.primary}
+              />
               <View style={styles.settingTextContainer}>
-                <Text style={[styles.settingText, { color: currentTheme.text }]}>
+                <Text
+                  style={[styles.settingText, { color: currentTheme.text }]}
+                >
                   Reduce Motion
                 </Text>
-                <Text style={[styles.settingDescription, { color: currentTheme.secondary }]}>
+                <Text
+                  style={[
+                    styles.settingDescription,
+                    { color: currentTheme.secondary },
+                  ]}
+                >
                   Limit animations and transitions
                 </Text>
               </View>
@@ -258,7 +324,10 @@ export default function AppearanceScreen() {
             <Switch
               value={reduceMotion}
               onValueChange={setReduceMotion}
-              trackColor={{ false: currentTheme.border, true: currentTheme.primary + "80" }}
+              trackColor={{
+                false: currentTheme.border,
+                true: currentTheme.primary + "80",
+              }}
               thumbColor={reduceMotion ? currentTheme.primary : "#f4f3f4"}
             />
           </View>
@@ -266,16 +335,30 @@ export default function AppearanceScreen() {
           <View
             style={[
               styles.settingRow,
-              { backgroundColor: currentTheme.card, borderColor: currentTheme.border },
+              {
+                backgroundColor: currentTheme.card,
+                borderColor: currentTheme.border,
+              },
             ]}
           >
             <View style={styles.settingInfo}>
-              <Ionicons name="text-outline" size={22} color={currentTheme.primary} />
+              <Ionicons
+                name="text-outline"
+                size={22}
+                color={currentTheme.primary}
+              />
               <View style={styles.settingTextContainer}>
-                <Text style={[styles.settingText, { color: currentTheme.text }]}>
+                <Text
+                  style={[styles.settingText, { color: currentTheme.text }]}
+                >
                   Bold Text
                 </Text>
-                <Text style={[styles.settingDescription, { color: currentTheme.secondary }]}>
+                <Text
+                  style={[
+                    styles.settingDescription,
+                    { color: currentTheme.secondary },
+                  ]}
+                >
                   Use heavier font weights
                 </Text>
               </View>
@@ -283,7 +366,10 @@ export default function AppearanceScreen() {
             <Switch
               value={boldText}
               onValueChange={setBoldText}
-              trackColor={{ false: currentTheme.border, true: currentTheme.primary + "80" }}
+              trackColor={{
+                false: currentTheme.border,
+                true: currentTheme.primary + "80",
+              }}
               thumbColor={boldText ? currentTheme.primary : "#f4f3f4"}
             />
           </View>
@@ -291,16 +377,30 @@ export default function AppearanceScreen() {
           <View
             style={[
               styles.settingRow,
-              { backgroundColor: currentTheme.card, borderColor: currentTheme.border },
+              {
+                backgroundColor: currentTheme.card,
+                borderColor: currentTheme.border,
+              },
             ]}
           >
             <View style={styles.settingInfo}>
-              <Ionicons name="contrast-outline" size={22} color={currentTheme.primary} />
+              <Ionicons
+                name="contrast-outline"
+                size={22}
+                color={currentTheme.primary}
+              />
               <View style={styles.settingTextContainer}>
-                <Text style={[styles.settingText, { color: currentTheme.text }]}>
+                <Text
+                  style={[styles.settingText, { color: currentTheme.text }]}
+                >
                   High Contrast
                 </Text>
-                <Text style={[styles.settingDescription, { color: currentTheme.secondary }]}>
+                <Text
+                  style={[
+                    styles.settingDescription,
+                    { color: currentTheme.secondary },
+                  ]}
+                >
                   Increase color contrast
                 </Text>
               </View>
@@ -308,7 +408,10 @@ export default function AppearanceScreen() {
             <Switch
               value={highContrast}
               onValueChange={setHighContrast}
-              trackColor={{ false: currentTheme.border, true: currentTheme.primary + "80" }}
+              trackColor={{
+                false: currentTheme.border,
+                true: currentTheme.primary + "80",
+              }}
               thumbColor={highContrast ? currentTheme.primary : "#f4f3f4"}
             />
           </View>
@@ -333,7 +436,9 @@ export default function AppearanceScreen() {
                 styles.previewText,
                 {
                   color: currentTheme.text,
-                  fontSize: fontSizeOptions.find((opt) => opt.value === fontSize)?.size,
+                  fontSize: fontSizeOptions.find(
+                    (opt) => opt.value === fontSize,
+                  )?.size,
                   fontWeight: boldText ? "bold" : "normal",
                 },
               ]}
@@ -341,19 +446,51 @@ export default function AppearanceScreen() {
               This is how your text will look with the current settings.
             </Text>
             <View style={styles.previewMeta}>
-              <View style={[styles.previewBadge, { backgroundColor: currentTheme.primary + "20" }]}>
-                <Text style={[styles.previewBadgeText, { color: currentTheme.primary }]}>
-                  {themeMode === "system" ? "System" : themeMode.charAt(0).toUpperCase() + themeMode.slice(1)}
+              <View
+                style={[
+                  styles.previewBadge,
+                  { backgroundColor: currentTheme.primary + "20" },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.previewBadgeText,
+                    { color: currentTheme.primary },
+                  ]}
+                >
+                  {themeMode === "system"
+                    ? "System"
+                    : themeMode.charAt(0).toUpperCase() + themeMode.slice(1)}
                 </Text>
               </View>
-              <View style={[styles.previewBadge, { backgroundColor: currentTheme.primary + "20" }]}>
-                <Text style={[styles.previewBadgeText, { color: currentTheme.primary }]}>
+              <View
+                style={[
+                  styles.previewBadge,
+                  { backgroundColor: currentTheme.primary + "20" },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.previewBadgeText,
+                    { color: currentTheme.primary },
+                  ]}
+                >
                   {fontSize}
                 </Text>
               </View>
               {boldText && (
-                <View style={[styles.previewBadge, { backgroundColor: currentTheme.primary + "20" }]}>
-                  <Text style={[styles.previewBadgeText, { color: currentTheme.primary }]}>
+                <View
+                  style={[
+                    styles.previewBadge,
+                    { backgroundColor: currentTheme.primary + "20" },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.previewBadgeText,
+                      { color: currentTheme.primary },
+                    ]}
+                  >
                     Bold
                   </Text>
                 </View>
@@ -364,7 +501,13 @@ export default function AppearanceScreen() {
 
         {/* Reset Button */}
         <TouchableOpacity
-          style={[styles.resetButton, { backgroundColor: currentTheme.card, borderColor: currentTheme.border }]}
+          style={[
+            styles.resetButton,
+            {
+              backgroundColor: currentTheme.card,
+              borderColor: currentTheme.border,
+            },
+          ]}
           onPress={resetSettings}
         >
           <Ionicons name="refresh-outline" size={20} color="#FF3B30" />

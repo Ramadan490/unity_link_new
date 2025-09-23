@@ -28,21 +28,22 @@ export default function LoginScreen() {
     password?: string;
   }>({});
 
- useEffect(() => {
-  if (error) {
-    Alert.alert("Authentication Error", error);
-    clearError();
-  }
-}, [error, clearError]);
-
+  useEffect(() => {
+    if (error) {
+      Alert.alert("Authentication Error", error);
+      clearError();
+    }
+  }, [error, clearError]);
 
   function validateForm() {
-    const errors: { credential?: string; password?: string; } = {};
+    const errors: { credential?: string; password?: string } = {};
 
     if (!credential.trim()) {
       errors.credential = "Email or phone number is required";
-    } else if (!/\S+@\S+\.\S+/.test(credential) &&
-      !/^\d{10,15}$/.test(credential)) {
+    } else if (
+      !/\S+@\S+\.\S+/.test(credential) &&
+      !/^\d{10,15}$/.test(credential)
+    ) {
       errors.credential = "Please enter a valid email or phone number";
     }
 
@@ -164,7 +165,7 @@ export default function LoginScreen() {
           </View>
 
           <View style={styles.footer}>
-          <Text style={styles.footerText}>Don&apos;t have an account? </Text>
+            <Text style={styles.footerText}>Don&apos;t have an account? </Text>
             <TouchableOpacity onPress={handleSignupRedirect}>
               <Text style={styles.footerLink}>Sign up</Text>
             </TouchableOpacity>

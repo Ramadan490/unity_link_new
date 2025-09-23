@@ -1,9 +1,8 @@
 // app/(tabs)/index.tsx
-import { ThemeToggle } from "@/shared/components/ThemeToggle";
 import { useTheme } from "@/shared/context/ThemeContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { ReactNode, useCallback, useEffect, useState } from "react";
 import {
   Animated,
   Dimensions,
@@ -11,10 +10,12 @@ import {
   Platform,
   RefreshControl,
   ScrollView,
+  StyleProp,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  ViewStyle,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -113,22 +114,45 @@ const quickLinks: QuickLink[] = [
 ];
 
 // Gradient overlay for hero section
-const GradientOverlay = ({ colors, style, children }: any) => {
+const GradientOverlay = ({
+  colors,
+  style,
+  children,
+}: {
+  colors: string[];
+  style?: StyleProp<ViewStyle>;
+  children?: ReactNode;
+}) => {
   return (
-    <View style={[style, { backgroundColor: "transparent", overflow: "hidden" }]}>
-      <View
-        style={[StyleSheet.absoluteFill, { backgroundColor: colors[0], opacity: 0.4 }]}
-      />
+    <View
+      style={[style, { backgroundColor: "transparent", overflow: "hidden" }]}
+    >
       <View
         style={[
           StyleSheet.absoluteFill,
-          { backgroundColor: colors[1], opacity: 0.2, top: "30%", height: "40%" },
+          { backgroundColor: colors[0], opacity: 0.4 },
         ]}
       />
       <View
         style={[
           StyleSheet.absoluteFill,
-          { backgroundColor: colors[2], opacity: 0.3, top: "60%", height: "40%" },
+          {
+            backgroundColor: colors[1],
+            opacity: 0.2,
+            top: "30%",
+            height: "40%",
+          },
+        ]}
+      />
+      <View
+        style={[
+          StyleSheet.absoluteFill,
+          {
+            backgroundColor: colors[2],
+            opacity: 0.3,
+            top: "60%",
+            height: "40%",
+          },
         ]}
       />
       {children}
@@ -146,12 +170,12 @@ export default function HomeScreen() {
 
   // Smooth fade animation for hero image
   useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 800,
-      useNativeDriver: true,
-    }).start();
-  }, [index]);
+  Animated.timing(fadeAnim, {
+    toValue: 1,
+    duration: 800,
+    useNativeDriver: true,
+  }).start();
+}, [index]);
 
   // Rotate hero image every 5s
   useEffect(() => {
@@ -171,7 +195,10 @@ export default function HomeScreen() {
     <ScrollView
       contentContainerStyle={[
         styles.container,
-        { backgroundColor: theme.colors.background, paddingTop: insets.top + 10 },
+        {
+          backgroundColor: theme.colors.background,
+          paddingTop: insets.top + 10,
+        },
       ]}
       showsVerticalScrollIndicator={false}
       refreshControl={
@@ -187,7 +214,6 @@ export default function HomeScreen() {
         <Text style={[styles.logo, { color: theme.colors.text }]}>
           The Sudanese American Center
         </Text>
-        <ThemeToggle />
       </View>
 
       {/* Hero Section */}
@@ -197,7 +223,10 @@ export default function HomeScreen() {
           style={styles.hero}
           imageStyle={{ borderRadius: 20 }}
         >
-          <GradientOverlay colors={["#000", "#333", "#000"]} style={styles.gradient}>
+          <GradientOverlay
+            colors={["#000", "#333", "#000"]}
+            style={styles.gradient}
+          >
             <Text style={styles.heroTitle}>Discover Sudan</Text>
             <Text style={styles.heroSubtitle}>
               Rich Cultural Heritage & Historic Landmarks
@@ -211,11 +240,13 @@ export default function HomeScreen() {
         <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
           Welcome to Our Community
         </Text>
-        <Text style={[styles.sectionText, { color: theme.colors.textSecondary }]}>
-          SAC in Arizona is a cultural, social, and charitable organization for the
-          pride of the Sudanese Americans, promoting and celebrating the Sudanese
-          heritage and cultural identity. We are proud to be one of the first such
-          organizations in Arizona.
+        <Text
+          style={[styles.sectionText, { color: theme.colors.textSecondary }]}
+        >
+          SAC in Arizona is a cultural, social, and charitable organization for
+          the pride of the Sudanese Americans, promoting and celebrating the
+          Sudanese heritage and cultural identity. We are proud to be one of the
+          first such organizations in Arizona.
         </Text>
       </View>
 
@@ -228,10 +259,11 @@ export default function HomeScreen() {
             icon={link.icon}
             color={link.color}
             description={link.description}
-            onPress={() =>
-              link.isTab
-                ? router.replace(link.route as TabRoutes) // ✅ tab route
-                : router.push(link.route as ExtraRoutes) // ✅ non-tab route
+            onPress={
+              () =>
+                link.isTab
+                  ? router.replace(link.route as TabRoutes) // ✅ tab route
+                  : router.push(link.route as ExtraRoutes) // ✅ non-tab route
             }
           />
         ))}
@@ -242,10 +274,12 @@ export default function HomeScreen() {
         <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
           Featured Content
         </Text>
-        <View style={[styles.featuredCard, { backgroundColor: theme.colors.card }]}>
+        <View
+          style={[styles.featuredCard, { backgroundColor: theme.colors.card }]}
+        >
           <Ionicons name="star" size={20} color="#FFD700" />
           <Text style={[styles.featuredText, { color: theme.colors.text }]}>
-            Cultural Festival this weekend - Don't miss out!
+            Cultural Festival this weekend - Don&apos;t miss out!
           </Text>
           <TouchableOpacity>
             <Text style={styles.featuredLink}>Learn more</Text>
@@ -288,9 +322,16 @@ function Card({
       >
         <Ionicons name={icon} size={24} color={color} />
       </View>
-      <Text style={[styles.cardTitle, { color: theme.colors.text }]}>{title}</Text>
+      <Text style={[styles.cardTitle, { color: theme.colors.text }]}>
+        {title}
+      </Text>
       {description && (
-        <Text style={[styles.cardDescription, { color: theme.colors.textSecondary }]}>
+        <Text
+          style={[
+            styles.cardDescription,
+            { color: theme.colors.textSecondary },
+          ]}
+        >
           {description}
         </Text>
       )}

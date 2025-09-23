@@ -6,18 +6,14 @@ import {
   Alert,
   FlatList,
   Image,
-  Keyboard,
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  TouchableWithoutFeedback,
-  View,
   useColorScheme,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -27,6 +23,7 @@ type Memorial = {
   dates: string;
   description: string;
   image?: string;
+  tributeCount?: number;
 };
 
 const initialMemorials: Memorial[] = [
@@ -35,27 +32,30 @@ const initialMemorials: Memorial[] = [
     name: "John Smith",
     dates: "1950 - 2023",
     description:
-      "Beloved father, husband, and community leader who served on the board for 10 years.",
+      "Beloved father, husband, and community leader who served on the board for 10 years. His dedication to preserving Sudanese culture inspired many.",
     image:
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face",
+    tributeCount: 24,
   },
   {
     id: "2",
     name: "Mary Johnson",
     dates: "1945 - 2022",
     description:
-      "Dedicated volunteer who organized community events and always had a smile for everyone.",
+      "Dedicated volunteer who organized community events and always had a smile for everyone. She helped establish our annual cultural festival.",
     image:
-      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face",
+      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop&crop=face",
+    tributeCount: 18,
   },
   {
     id: "3",
     name: "Robert Davis",
     dates: "1938 - 2021",
     description:
-      "Founding member of our community who helped establish many of the traditions we cherish today.",
+      "Founding member of our community who helped establish many of the traditions we cherish today. His wisdom guided us for decades.",
     image:
-      "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
+      "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop&crop=face",
+    tributeCount: 32,
   },
 ];
 
@@ -77,7 +77,6 @@ export default function MemorialsScreen() {
   const isDark = scheme === "dark";
   const insets = useSafeAreaInsets();
 
-  // ✅ Role checks
   const { isSuperAdmin, isBoardMember } = useRole();
   const canManageMemorials = isSuperAdmin || isBoardMember;
 
@@ -90,6 +89,7 @@ export default function MemorialsScreen() {
     const newItem: Memorial = {
       id: Date.now().toString(),
       ...newMemorial,
+      tributeCount: 0,
     };
     setMemorials((prev) => [newItem, ...prev]);
     setNewMemorial({ name: "", dates: "", description: "", image: "" });
@@ -99,7 +99,7 @@ export default function MemorialsScreen() {
   const deleteMemorial = (id: string) => {
     Alert.alert(
       "Delete Memorial",
-      "Are you sure you want to delete this memorial?",
+      "Are you sure you want to delete this memorial? This action cannot be undone.",
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -127,30 +127,14 @@ export default function MemorialsScreen() {
           styles.card,
           {
             backgroundColor: isDark ? "#1e1e1e" : "#fff",
+            borderLeftWidth: 4,
+            borderLeftColor: isDark ? "#333" : "#eee",
           },
         ]}
       >
-        {/* Header row with image */}
+        {/* Header row */}
         <View style={styles.cardHeader}>
-          {item.image ? (
-            <Image
-              source={{ uri: item.image }}
-              style={styles.memorialImage}
-              resizeMode="cover"
-            />
-          ) : (
-            <View
-              style={[styles.memorialImage, styles.memorialImagePlaceholder]}
-            >
-              <Ionicons
-                name="person-outline"
-                size={24}
-                color={isDark ? "#888" : "#ccc"}
-              />
-            </View>
-          )}
-
-          <View style={styles.memorialInfo}>
+          <View style={styles.titleContainer}>
             <Text
               style={[styles.memorialName, { color: isDark ? "#fff" : "#333" }]}
             >
@@ -178,20 +162,59 @@ export default function MemorialsScreen() {
         </View>
 
         {/* Description preview */}
-        <Text
-          style={[
-            styles.memorialDescription,
-            { color: isDark ? "#bbb" : "#666" },
-          ]}
-          numberOfLines={3}
-        >
-          {item.description}
-        </Text>
+        {item.description && (
+          <Text
+            style={[
+              styles.memorialDescription,
+              { color: isDark ? "#bbb" : "#666" },
+            ]}
+            numberOfLines={2}
+          >
+            {item.description}
+          </Text>
+        )}
 
-        {/* View Details Button */}
+        {/* Details */}
+        <View style={styles.detailsContainer}>
+          <View style={styles.detailRow}>
+            <Ionicons
+              name="heart-outline"
+              size={16}
+              color={isDark ? "#0A84FF" : "#007AFF"}
+            />
+            <Text
+              style={[
+                styles.memorialDetails,
+                { color: isDark ? "#bbb" : "#555" },
+              ]}
+            >
+              {item.tributeCount || 0} tributes
+            </Text>
+          </View>
+
+          {item.image && (
+            <View style={styles.detailRow}>
+              <Ionicons
+                name="image-outline"
+                size={16}
+                color={isDark ? "#0A84FF" : "#007AFF"}
+              />
+              <Text
+                style={[
+                  styles.memorialDetails,
+                  { color: isDark ? "#bbb" : "#555" },
+                ]}
+              >
+                Photo available
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* View Memorial Button */}
         <TouchableOpacity
           style={[
-            styles.viewDetailsButton,
+            styles.viewButton,
             {
               backgroundColor: isDark ? "#2C2C2E" : "#F2F2F7",
               borderColor: isDark ? "#3A3A3C" : "#E5E5EA",
@@ -206,7 +229,7 @@ export default function MemorialsScreen() {
           />
           <Text
             style={[
-              styles.viewDetailsButtonText,
+              styles.viewButtonText,
               { color: isDark ? "#0A84FF" : "#007AFF" },
             ]}
           >
@@ -237,7 +260,8 @@ export default function MemorialsScreen() {
               <Text
                 style={[styles.subtitle, { color: isDark ? "#aaa" : "#666" }]}
               >
-                {memorials.length} memorial{memorials.length !== 1 ? "s" : ""}
+                Honoring {memorials.length} community member
+                {memorials.length !== 1 ? "s" : ""}
               </Text>
             )}
           </View>
@@ -272,8 +296,8 @@ export default function MemorialsScreen() {
           </Text>
           <Text style={[styles.emptyText, { color: isDark ? "#aaa" : "#666" }]}>
             {canManageMemorials
-              ? "Honor community members by creating a memorial"
-              : "Remembering those who have contributed to our community"}
+              ? "Honor community members by creating a memorial to celebrate their life and contributions."
+              : "Remembering those who have contributed to our community. Memorials will appear here once created."}
           </Text>
           {canManageMemorials && (
             <TouchableOpacity
@@ -301,198 +325,6 @@ export default function MemorialsScreen() {
         />
       )}
 
-      {/* Create Memorial Modal */}
-      <Modal transparent visible={modalVisible} animationType="slide">
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            style={styles.modalContainer}
-          >
-            <View style={styles.modalOverlay}>
-              <View
-                style={[
-                  styles.modalBox,
-                  { backgroundColor: isDark ? "#1e1e1e" : "#fff" },
-                ]}
-              >
-                <View style={styles.modalHeader}>
-                  <Text
-                    style={[
-                      styles.modalTitle,
-                      { color: isDark ? "#fff" : "#333" },
-                    ]}
-                  >
-                    Create Memorial
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() => setModalVisible(false)}
-                    style={styles.closeButton}
-                  >
-                    <Ionicons
-                      name="close"
-                      size={24}
-                      color={isDark ? "#fff" : "#000"}
-                    />
-                  </TouchableOpacity>
-                </View>
-
-                <ScrollView style={styles.modalScroll}>
-                  <Text
-                    style={[
-                      styles.inputLabel,
-                      { color: isDark ? "#fff" : "#333" },
-                    ]}
-                  >
-                    Name *
-                  </Text>
-                  <TextInput
-                    placeholder="Enter full name"
-                    placeholderTextColor="#888"
-                    style={[
-                      styles.input,
-                      {
-                        color: isDark ? "#fff" : "#000",
-                        backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7",
-                      },
-                    ]}
-                    value={newMemorial.name}
-                    onChangeText={(t) =>
-                      setNewMemorial((p) => ({ ...p, name: t }))
-                    }
-                  />
-
-                  <Text
-                    style={[
-                      styles.inputLabel,
-                      { color: isDark ? "#fff" : "#333" },
-                    ]}
-                  >
-                    Dates *
-                  </Text>
-                  <TextInput
-                    placeholder="e.g. 1950 - 2023"
-                    placeholderTextColor="#888"
-                    style={[
-                      styles.input,
-                      {
-                        color: isDark ? "#fff" : "#000",
-                        backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7",
-                      },
-                    ]}
-                    value={newMemorial.dates}
-                    onChangeText={(t) =>
-                      setNewMemorial((p) => ({ ...p, dates: t }))
-                    }
-                  />
-
-                  <Text
-                    style={[
-                      styles.inputLabel,
-                      { color: isDark ? "#fff" : "#333" },
-                    ]}
-                  >
-                    Description *
-                  </Text>
-                  <TextInput
-                    placeholder="Share their story and contributions"
-                    placeholderTextColor="#888"
-                    style={[
-                      styles.input,
-                      styles.textArea,
-                      {
-                        color: isDark ? "#fff" : "#000",
-                        backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7",
-                        height: 120,
-                        textAlignVertical: "top",
-                      },
-                    ]}
-                    multiline
-                    numberOfLines={5}
-                    value={newMemorial.description}
-                    onChangeText={(t) =>
-                      setNewMemorial((p) => ({ ...p, description: t }))
-                    }
-                  />
-
-                  <Text
-                    style={[
-                      styles.inputLabel,
-                      { color: isDark ? "#fff" : "#333" },
-                    ]}
-                  >
-                    Image URL (Optional)
-                  </Text>
-                  <TextInput
-                    placeholder="Paste image URL"
-                    placeholderTextColor="#888"
-                    style={[
-                      styles.input,
-                      {
-                        color: isDark ? "#fff" : "#000",
-                        backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7",
-                      },
-                    ]}
-                    value={newMemorial.image}
-                    onChangeText={(t) =>
-                      setNewMemorial((p) => ({ ...p, image: t }))
-                    }
-                  />
-                </ScrollView>
-
-                {/* Modal actions */}
-                <View style={styles.modalActions}>
-                  <TouchableOpacity
-                    style={[
-                      styles.modalBtn,
-                      styles.cancelBtn,
-                      { backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7" },
-                    ]}
-                    onPress={() => setModalVisible(false)}
-                  >
-                    <Text
-                      style={[
-                        styles.modalBtnText,
-                        { color: isDark ? "#fff" : "#000" },
-                      ]}
-                    >
-                      Cancel
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.modalBtn,
-                      styles.saveBtn,
-                      {
-                        backgroundColor:
-                          newMemorial.name &&
-                          newMemorial.dates &&
-                          newMemorial.description
-                            ? isDark
-                              ? "#0A84FF"
-                              : "#007AFF"
-                            : isDark
-                              ? "#444"
-                              : "#ccc",
-                      },
-                    ]}
-                    onPress={addMemorial}
-                    disabled={
-                      !newMemorial.name ||
-                      !newMemorial.dates ||
-                      !newMemorial.description
-                    }
-                  >
-                    <Text style={[styles.modalBtnText, { color: "#fff" }]}>
-                      Create Memorial
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-          </KeyboardAvoidingView>
-        </TouchableWithoutFeedback>
-      </Modal>
-
       {/* Memorial Detail Modal */}
       <Modal transparent visible={detailModalVisible} animationType="fade">
         <View style={styles.modalOverlay}>
@@ -509,7 +341,7 @@ export default function MemorialsScreen() {
                   { color: isDark ? "#fff" : "#333" },
                 ]}
               >
-                Memorial Details
+                Memorial
               </Text>
               <TouchableOpacity
                 onPress={() => setDetailModalVisible(false)}
@@ -525,28 +357,15 @@ export default function MemorialsScreen() {
 
             {selectedMemorial && (
               <ScrollView style={styles.detailContent}>
-                <View style={styles.detailImageContainer}>
-                  {selectedMemorial.image ? (
+                {selectedMemorial.image && (
+                  <View style={styles.detailImageContainer}>
                     <Image
                       source={{ uri: selectedMemorial.image }}
                       style={styles.detailImage}
                       resizeMode="cover"
                     />
-                  ) : (
-                    <View
-                      style={[
-                        styles.detailImage,
-                        styles.detailImagePlaceholder,
-                      ]}
-                    >
-                      <Ionicons
-                        name="person-outline"
-                        size={48}
-                        color={isDark ? "#888" : "#ccc"}
-                      />
-                    </View>
-                  )}
-                </View>
+                  </View>
+                )}
 
                 <Text
                   style={[
@@ -566,32 +385,191 @@ export default function MemorialsScreen() {
                   {selectedMemorial.dates}
                 </Text>
 
-                <Text
-                  style={[
-                    styles.detailDescription,
-                    { color: isDark ? "#bbb" : "#666" },
-                  ]}
-                >
-                  {selectedMemorial.description}
-                </Text>
-
-                <View style={styles.memorialActions}>
-                  <TouchableOpacity
+                {selectedMemorial.description && (
+                  <Text
                     style={[
-                      styles.tributeButton,
-                      {
-                        backgroundColor: isDark ? "#0A84FF" : "#007AFF",
-                      },
+                      styles.detailDescription,
+                      { color: isDark ? "#bbb" : "#666" },
                     ]}
                   >
-                    <Ionicons name="heart-outline" size={20} color="#FFF" />
-                    <Text style={styles.tributeButtonText}>
-                      Leave a Tribute
-                    </Text>
-                  </TouchableOpacity>
+                    {selectedMemorial.description}
+                  </Text>
+                )}
+
+                <View style={styles.detailItem}>
+                  <Ionicons
+                    name="heart-outline"
+                    size={20}
+                    color={isDark ? "#0A84FF" : "#007AFF"}
+                  />
+                  <Text
+                    style={[
+                      styles.detailText,
+                      { color: isDark ? "#fff" : "#333" },
+                    ]}
+                  >
+                    {selectedMemorial.tributeCount || 0} tributes
+                  </Text>
                 </View>
+
+                <TouchableOpacity
+                  style={[
+                    styles.tributeButton,
+                    { backgroundColor: isDark ? "#0A84FF" : "#007AFF" },
+                  ]}
+                >
+                  <Ionicons name="heart-outline" size={20} color="#FFF" />
+                  <Text style={styles.tributeButtonText}>Leave a Tribute</Text>
+                </TouchableOpacity>
               </ScrollView>
             )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Create Memorial Modal */}
+      <Modal transparent visible={modalVisible} animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View
+            style={[
+              styles.createModalBox,
+              { backgroundColor: isDark ? "#1e1e1e" : "#fff" },
+            ]}
+          >
+            <View style={styles.modalHeader}>
+              <Text
+                style={[
+                  styles.detailModalTitle,
+                  { color: isDark ? "#fff" : "#333" },
+                ]}
+              >
+                Create Memorial
+              </Text>
+              <TouchableOpacity
+                onPress={() => setModalVisible(false)}
+                style={styles.closeButton}
+              >
+                <Ionicons
+                  name="close"
+                  size={24}
+                  color={isDark ? "#fff" : "#000"}
+                />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.createContent}>
+              <Text
+                style={[styles.inputLabel, { color: isDark ? "#fff" : "#333" }]}
+              >
+                Full Name *
+              </Text>
+              <View
+                style={[
+                  styles.inputContainer,
+                  { backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7" },
+                ]}
+              >
+                <TextInput
+                  style={[styles.input, { color: isDark ? "#fff" : "#000" }]}
+                  placeholder="Enter full name"
+                  placeholderTextColor={isDark ? "#888" : "#999"}
+                  value={newMemorial.name}
+                  onChangeText={(text: string) =>
+                    setNewMemorial({ ...newMemorial, name: text })
+                  }
+                />
+              </View>
+
+              <Text
+                style={[styles.inputLabel, { color: isDark ? "#fff" : "#333" }]}
+              >
+                Dates *
+              </Text>
+              <View
+                style={[
+                  styles.inputContainer,
+                  { backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7" },
+                ]}
+              >
+                <TextInput
+                  style={[styles.input, { color: isDark ? "#fff" : "#000" }]}
+                  placeholder="e.g., 1950 - 2023"
+                  placeholderTextColor={isDark ? "#888" : "#999"}
+                  value={newMemorial.dates}
+                  onChangeText={(text: string) =>
+                    setNewMemorial({ ...newMemorial, dates: text })
+                  }
+                />
+              </View>
+
+              <Text
+                style={[styles.inputLabel, { color: isDark ? "#fff" : "#333" }]}
+              >
+                Biography *
+              </Text>
+              <View
+                style={[
+                  styles.inputContainer,
+                  {
+                    backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7",
+                    minHeight: 100,
+                  },
+                ]}
+              >
+                <TextInput
+                  style={[
+                    styles.input,
+                    {
+                      color: isDark ? "#fff" : "#000",
+                      textAlignVertical: "top",
+                      paddingTop: 12,
+                    },
+                  ]}
+                  placeholder="Share their story, contributions, and legacy..."
+                  placeholderTextColor={isDark ? "#888" : "#999"}
+                  value={newMemorial.description}
+                  onChangeText={(text: string) =>
+                    setNewMemorial({ ...newMemorial, description: text })
+                  }
+                  multiline
+                  numberOfLines={4}
+                />
+              </View>
+
+              <Text
+                style={[styles.inputLabel, { color: isDark ? "#fff" : "#333" }]}
+              >
+                Photo URL (Optional)
+              </Text>
+              <View
+                style={[
+                  styles.inputContainer,
+                  { backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7" },
+                ]}
+              >
+                <TextInput
+                  style={[styles.input, { color: isDark ? "#fff" : "#000" }]}
+                  placeholder="Paste image URL"
+                  placeholderTextColor={isDark ? "#888" : "#999"}
+                  value={newMemorial.image}
+                  onChangeText={(text: string) =>
+                    setNewMemorial({ ...newMemorial, image: text })
+                  }
+                />
+              </View>
+
+              <TouchableOpacity
+                style={[
+                  styles.createSubmitButton,
+                  { backgroundColor: isDark ? "#0A84FF" : "#007AFF" },
+                ]}
+                onPress={addMemorial}
+              >
+                <Text style={styles.createSubmitButtonText}>
+                  Create Memorial
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -634,39 +612,32 @@ const styles = StyleSheet.create({
   },
   cardHeader: {
     flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 12,
-    gap: 12,
+    marginBottom: 8,
   },
-  memorialImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: "#f2f2f7",
-  },
-  memorialImagePlaceholder: {
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#f2f2f7",
-  },
-  memorialInfo: {
+  titleContainer: {
     flex: 1,
-    justifyContent: "center",
+    marginRight: 12,
   },
   memorialName: { fontSize: 18, fontWeight: "700", marginBottom: 4 },
   memorialDates: { fontSize: 14, fontWeight: "500" },
-  memorialDescription: { fontSize: 14, marginBottom: 16, lineHeight: 20 },
-  deleteBtn: { padding: 4, alignSelf: "flex-start" },
-  viewDetailsButton: {
+  memorialDescription: { fontSize: 14, marginBottom: 12, lineHeight: 20 },
+  detailsContainer: { marginBottom: 12 },
+  detailRow: { flexDirection: "row", alignItems: "center", marginBottom: 6 },
+  memorialDetails: { fontSize: 14, marginLeft: 8 },
+  deleteBtn: { padding: 4 },
+  viewButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 10,
     borderRadius: 12,
     borderWidth: 1,
+    marginTop: 8,
     gap: 6,
   },
-  viewDetailsButtonText: { fontSize: 15, fontWeight: "600" },
+  viewButtonText: { fontSize: 15, fontWeight: "600" },
   emptyState: {
     flex: 1,
     alignItems: "center",
@@ -691,7 +662,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   createFirstMemorialText: { color: "#fff", fontWeight: "600", fontSize: 16 },
-  modalContainer: { flex: 1 },
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
@@ -699,13 +669,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 20,
   },
-  modalBox: {
-    width: "100%",
+  detailModalBox: {
+    width: "90%",
     maxHeight: "80%",
     borderRadius: 20,
     overflow: "hidden",
   },
-  detailModalBox: {
+  createModalBox: {
     width: "90%",
     maxHeight: "80%",
     borderRadius: 20,
@@ -719,46 +689,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "rgba(150,150,150,0.2)",
   },
-  modalTitle: { fontSize: 20, fontWeight: "700" },
   detailModalTitle: { fontSize: 18, fontWeight: "700" },
   closeButton: { padding: 4 },
-  modalScroll: { maxHeight: 400, paddingHorizontal: 20 },
-  inputLabel: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 8,
-    marginTop: 16,
-  },
-  input: {
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  textArea: {
-    height: 120,
-    textAlignVertical: "top",
-  },
-  modalActions: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    padding: 20,
-    gap: 12,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(150,150,150,0.2)",
-  },
-  modalBtn: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    minWidth: 100,
-    alignItems: "center",
-  },
-  cancelBtn: { backgroundColor: "#f2f2f7" },
-  saveBtn: { backgroundColor: "#007AFF" },
-  modalBtnText: { fontSize: 16, fontWeight: "600" },
   detailContent: { padding: 20 },
+  createContent: { padding: 20 },
   detailImageContainer: {
     alignItems: "center",
     marginBottom: 20,
@@ -767,15 +701,9 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: "#f2f2f7",
-  },
-  detailImagePlaceholder: {
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#f2f2f7",
   },
   detailName: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "700",
     textAlign: "center",
     marginBottom: 8,
@@ -792,18 +720,50 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: "center",
   },
-  memorialActions: {
-    marginTop: 20,
+  detailItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+    gap: 12,
+    justifyContent: "center",
   },
+  detailText: { fontSize: 16, fontWeight: "500" },
   tributeButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 16,
     borderRadius: 12,
+    marginTop: 20,
     gap: 8,
   },
   tributeButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 16,
+  },
+  inputLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 8,
+    marginTop: 16,
+  },
+  inputContainer: {
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    marginBottom: 8,
+  },
+  input: {
+    fontSize: 16,
+    paddingVertical: 12,
+  },
+  createSubmitButton: {
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: "center",
+    marginTop: 24,
+  },
+  createSubmitButtonText: {
     color: "#fff",
     fontWeight: "600",
     fontSize: 16,

@@ -60,8 +60,8 @@ export default function ForgotPasswordScreen() {
           <Ionicons name="checkmark-circle-outline" size={80} color="#34C759" />
           <Text style={styles.title}>Check Your Email</Text>
           <Text style={styles.subtitle}>
-               We&apos;ve sent password reset instructions to{"\n"}
-          <Text style={styles.emailText}>{email}</Text>
+            We&apos;ve sent password reset instructions to{"\n"}
+            <Text style={styles.emailText}>{email}</Text>
           </Text>
 
           <TouchableOpacity style={styles.button} onPress={handleBackToLogin}>

@@ -1,1 +1,1 @@
-declare module 'xcode';
+declare module "xcode";

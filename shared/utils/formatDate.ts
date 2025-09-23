@@ -12,7 +12,7 @@ export const formatDate = (
     year: "numeric",
     month: "short",
     day: "numeric",
-  }
+  },
 ): string => {
   try {
     return new Date(date).toLocaleDateString(i18n.language, options);

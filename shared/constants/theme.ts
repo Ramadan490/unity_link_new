@@ -1,5 +1,5 @@
 // constants/Colors.ts
-import { DarkTheme, LightTheme } from '@/shared/context/ThemeContext';
+import { DarkTheme, LightTheme } from "@/shared/context/ThemeContext";
 
 // Map your old color names to the new theme system
 export const Colors = {

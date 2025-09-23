@@ -1,7 +1,13 @@
-export type User = {
+// shared/types/user.ts
+export type UserRole = "super_admin" | "board_member" | "community_member";
+
+export type RoleKey = UserRole;
+export interface User {
   id: string;
   name: string;
-  email: string;
-  role: "super_admin" | "board_member" | "community_member";
-  avatar?: string; // ✅ optional so profile page works
-};
+  email: string; // REQUIRED now
+  role: UserRole;
+  avatar?: string;
+  createdAt?: string;
+  lastActive?: string;
+}

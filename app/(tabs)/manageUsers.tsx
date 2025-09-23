@@ -1,8 +1,9 @@
-// app/(tabs)/manage-users.tsx
+// app/(tabs)/manageUsers.tsx
 import { useRole } from "@/shared/hooks/useRole";
 import { useRoleManagement } from "@/shared/hooks/useRoleManagement";
+import { User, UserRole } from "@/shared/types/user";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -17,16 +18,6 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-// Define types locally since they're not available in the imported module
-type UserRole = "super_admin" | "board_member" | "community_member";
-
-interface User {
-  id: string;
-  name: string;
-  email?: string;
-  role: UserRole;
-}
-
 export default function ManageUsersScreen() {
   const { users, updateUserRole, loading, error, refetch } =
     useRoleManagement();
@@ -34,9 +25,25 @@ export default function ManageUsersScreen() {
   const scheme = useColorScheme() || "light";
   const isDark = scheme === "dark";
   const insets = useSafeAreaInsets();
+
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
+  const [selectedRoleFilter, setSelectedRoleFilter] = useState<
+    UserRole | "all"
+  >("all");
+
+  // Debug log
+  useEffect(() => {
+    console.log("=== ManageUsers Debug Info ===");
+    console.log("Users:", users);
+    console.log("Loading:", loading);
+    console.log("Error:", error);
+    console.log("isSuperAdmin:", isSuperAdmin);
+    console.log("=============================");
+  }, [users, loading, error, isSuperAdmin]);
+
+  const safeUsers = useMemo(() => (Array.isArray(users) ? users : []), [users]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -45,363 +52,781 @@ export default function ManageUsersScreen() {
   }, [refetch]);
 
   const handleRoleUpdate = async (userId: string, newRole: UserRole) => {
+    if (!userId) return;
     setUpdatingUserId(userId);
     try {
       await updateUserRole(userId, newRole);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Unknown error";
-      Alert.alert(
-        "Update Failed",
-        `Failed to update user role: ${errorMessage}`
-      );
+      console.error("Role update failed:", err);
+      Alert.alert("Error", "Failed to update user role. Please try again.");
     } finally {
       setUpdatingUserId(null);
     }
   };
 
   const confirmRoleChange = (user: User, newRole: UserRole) => {
+    const action = newRole === "community_member" ? "demote" : "promote";
+    const roleName = roleDisplayNames[newRole];
+    const currentRoleName = roleDisplayNames[user.role];
+
     Alert.alert(
-      "Confirm Role Change",
-      `Are you sure you want to change ${user.name}'s role to ${newRole.replace('_', ' ')}?`,
+      "Change Role",
+      `Change ${user.name}'s role from ${currentRoleName} to ${roleName}?`,
       [
         { text: "Cancel", style: "cancel" },
-        { text: "Confirm", onPress: () => handleRoleUpdate(user.id, newRole) },
-      ]
+        {
+          text: "Confirm",
+          style: action === "demote" ? "destructive" : "default",
+          onPress: () => handleRoleUpdate(user.id, newRole),
+        },
+      ],
     );
   };
 
-  const filteredUsers = users.filter(user =>
-    user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.email?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredUsers = useMemo(() => {
+    let result = safeUsers.filter(
+      (user) =>
+        user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchQuery.toLowerCase()),
+    );
 
-  const roleDisplayNames: Record<UserRole, string> = {
-    super_admin: "Super Admin",
-    board_member: "Board Member",
-    community_member: "Community Member",
-  };
+    if (selectedRoleFilter !== "all") {
+      result = result.filter((user) => user.role === selectedRoleFilter);
+    }
+
+    return result.sort((a, b) => {
+      if (roleOrder[a.role] !== roleOrder[b.role]) {
+        return roleOrder[a.role] - roleOrder[b.role];
+      }
+      return a.name.localeCompare(b.name);
+    });
+  }, [safeUsers, searchQuery, selectedRoleFilter]);
+
+  const roleFilters: { key: UserRole | "all"; label: string; count: number }[] =
+    [
+      { key: "all", label: "All", count: safeUsers.length },
+      {
+        key: "super_admin",
+        label: "Admins",
+        count: safeUsers.filter((u) => u.role === "super_admin").length,
+      },
+      {
+        key: "board_member",
+        label: "Board",
+        count: safeUsers.filter((u) => u.role === "board_member").length,
+      },
+      {
+        key: "community_member",
+        label: "Members",
+        count: safeUsers.filter((u) => u.role === "community_member").length,
+      },
+    ];
 
   if (!isSuperAdmin) {
     return (
-      <View style={[styles.centered, { backgroundColor: isDark ? "#121212" : "#fff" }]}>
-        <Ionicons name="lock-closed-outline" size={40} color="#ff3b30" />
-        <Text style={[styles.permissionText, { color: isDark ? "#fff" : "#333" }]}>
-          🚫 You do not have permission to view this page.
-        </Text>
+      <View
+        style={[
+          styles.container,
+          { backgroundColor: isDark ? "#000" : "#f8f9fa" },
+        ]}
+      >
+        <View style={[styles.centered, { paddingTop: insets.top + 100 }]}>
+          <View
+            style={[
+              styles.iconContainer,
+              { backgroundColor: isDark ? "#1c1c1e" : "#e9ecef" },
+            ]}
+          >
+            <Ionicons
+              name="shield-outline"
+              size={48}
+              color={isDark ? "#666" : "#999"}
+            />
+          </View>
+          <Text
+            style={[
+              styles.permissionTitle,
+              { color: isDark ? "#fff" : "#333" },
+            ]}
+          >
+            Access Restricted
+          </Text>
+          <Text
+            style={[styles.permissionText, { color: isDark ? "#ccc" : "#666" }]}
+          >
+            Super administrator privileges required to manage users
+          </Text>
+        </View>
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: isDark ? "#121212" : "#fff" }]}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: isDark ? "#000" : "#f8f9fa" },
+      ]}
+    >
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 20 }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <View>
-          <Text style={[styles.headerTitle, { color: isDark ? "#fff" : "#2f4053" }]}>
-            👥 Manage Users
+          <Text style={[styles.title, { color: isDark ? "#fff" : "#000" }]}>
+            Manage Users
           </Text>
-          <Text style={[styles.subheader, { color: isDark ? "#aaa" : "#666" }]}>
-            Promote or demote members of your community
+          <Text style={[styles.subtitle, { color: isDark ? "#ccc" : "#666" }]}>
+            {safeUsers.length} community member
+            {safeUsers.length !== 1 ? "s" : ""}
           </Text>
         </View>
       </View>
 
-      {/* Search Bar */}
-      <View style={[styles.searchContainer, { backgroundColor: isDark ? "#1e1e1e" : "#f2f2f7" }]}>
-        <Ionicons name="search-outline" size={20} color={isDark ? "#aaa" : "#666"} style={styles.searchIcon} />
-        <TextInput
-          style={[styles.searchInput, { color: isDark ? "#fff" : "#000" }]}
-          placeholder="Search users..."
-          placeholderTextColor={isDark ? "#aaa" : "#999"}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => setSearchQuery("")}>
-            <Ionicons name="close-circle" size={20} color={isDark ? "#aaa" : "#666"} />
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* Loading State */}
-      {loading && !refreshing && (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={[styles.loadingText, { color: isDark ? "#fff" : "#333" }]}>Loading users...</Text>
-        </View>
-      )}
-
-      {/* Error State */}
-      {error && !refreshing && (
-        <View style={styles.centered}>
-          <Ionicons name="warning-outline" size={40} color="#ffcc00" />
-          <Text style={[styles.errorText, { color: isDark ? "#fff" : "#333" }]}>
-            Failed to load users: {error}
-          </Text>
-          <TouchableOpacity
-            style={[styles.retryButton, { backgroundColor: "#007AFF", marginTop: 16 }]}
-            onPress={refetch}
-          >
-            <Text style={styles.buttonText}>Retry</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* User List */}
-      {!loading && !error && (
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={isDark ? "#fff" : "#000"}
-            />
-          }
+      {/* Search + Filters */}
+      <View style={styles.controlsContainer}>
+        <View
+          style={[
+            styles.searchContainer,
+            { backgroundColor: isDark ? "#1c1c1e" : "#fff" },
+          ]}
         >
-          {filteredUsers.length === 0 ? (
-            <View style={styles.centered}>
+          <Ionicons name="search" size={20} color={isDark ? "#999" : "#666"} />
+          <TextInput
+            style={[styles.searchInput, { color: isDark ? "#fff" : "#000" }]}
+            placeholder="Search users by name or email..."
+            placeholderTextColor={isDark ? "#666" : "#999"}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity
+              onPress={() => setSearchQuery("")}
+              style={styles.clearButton}
+            >
               <Ionicons
-                name={searchQuery ? "search-outline" : "people-outline"}
-                size={48}
-                color={isDark ? "#555" : "#999"}
+                name="close-circle"
+                size={20}
+                color={isDark ? "#666" : "#999"}
               />
-              <Text style={[styles.emptyText, { color: isDark ? "#aaa" : "#666" }]}>
-                {searchQuery ? "No users match your search" : "No users found"}
-              </Text>
-            </View>
-          ) : (
-            filteredUsers.map((user) => (
-              <View
-                key={user.id}
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filtersScrollContent}
+        >
+          {roleFilters.map((filter) => (
+            <TouchableOpacity
+              key={filter.key}
+              style={[
+                styles.filterButton,
+                {
+                  backgroundColor:
+                    selectedRoleFilter === filter.key
+                      ? getRoleColor(filter.key, isDark)
+                      : "transparent",
+                  borderColor:
+                    selectedRoleFilter === filter.key
+                      ? getRoleColor(filter.key, isDark)
+                      : isDark
+                        ? "#333"
+                        : "#ddd",
+                },
+              ]}
+              onPress={() => setSelectedRoleFilter(filter.key)}
+            >
+              <Text
                 style={[
-                  styles.userCard,
-                  { backgroundColor: isDark ? "#1e1e1e" : "#fff" },
-                  updatingUserId === user.id && styles.updatingCard,
+                  styles.filterText,
+                  {
+                    color:
+                      selectedRoleFilter === filter.key
+                        ? "#fff"
+                        : isDark
+                          ? "#ccc"
+                          : "#666",
+                    fontWeight:
+                      selectedRoleFilter === filter.key ? "700" : "500",
+                  },
                 ]}
               >
-                <View style={styles.userInfo}>
-                  <Ionicons
-                    name="person-circle-outline"
-                    size={40}
-                    color={isDark ? "#0A84FF" : "#007AFF"}
-                  />
-                  <View style={styles.userDetails}>
+                {filter.label}
+              </Text>
+              <View
+                style={[
+                  styles.filterCount,
+                  {
+                    backgroundColor:
+                      selectedRoleFilter === filter.key
+                        ? "rgba(255,255,255,0.2)"
+                        : isDark
+                          ? "#333"
+                          : "#e9ecef",
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.filterCountText,
+                    {
+                      color:
+                        selectedRoleFilter === filter.key
+                          ? "#fff"
+                          : isDark
+                            ? "#999"
+                            : "#666",
+                    },
+                  ]}
+                >
+                  {filter.count}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
+      {/* Content */}
+      <View style={styles.content}>
+        {loading && !refreshing ? (
+          <View style={styles.centered}>
+            <ActivityIndicator size="large" color="#007AFF" />
+            <Text
+              style={[styles.loadingText, { color: isDark ? "#ccc" : "#666" }]}
+            >
+              Loading users...
+            </Text>
+          </View>
+        ) : error ? (
+          <View style={styles.centered}>
+            <View
+              style={[
+                styles.iconContainer,
+                { backgroundColor: isDark ? "#1c1c1e" : "#e9ecef" },
+              ]}
+            >
+              <Ionicons name="warning-outline" size={48} color="#ff9500" />
+            </View>
+            <Text
+              style={[styles.errorText, { color: isDark ? "#fff" : "#000" }]}
+            >
+              Failed to load users
+            </Text>
+            <Text
+              style={[styles.errorSubtext, { color: isDark ? "#ccc" : "#666" }]}
+            >
+              {typeof error === "string"
+                ? error
+                : "Please check your connection"}
+            </Text>
+            <TouchableOpacity style={styles.retryButton} onPress={refetch}>
+              <Text style={styles.retryButtonText}>Try Again</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor={isDark ? "#fff" : "#000"}
+              />
+            }
+          >
+            {(searchQuery || selectedRoleFilter !== "all") &&
+              filteredUsers.length > 0 && (
+                <View style={styles.resultsInfo}>
+                  <View style={styles.resultsTextContainer}>
                     <Text
-                      style={[styles.userName, { color: isDark ? "#fff" : "#333" }]}
-                      numberOfLines={1}
+                      style={[
+                        styles.resultsText,
+                        { color: isDark ? "#ccc" : "#666" },
+                      ]}
                     >
-                      {user.name}
+                      {filteredUsers.length} user
+                      {filteredUsers.length !== 1 ? "s" : ""} found
                     </Text>
-                    {user.email && (
+                    {searchQuery && (
                       <Text
-                        style={[styles.userEmail, { color: isDark ? "#bbb" : "#666" }]}
-                        numberOfLines={1}
-                      >
-                        {user.email}
-                      </Text>
-                    )}
-                    <View style={styles.roleContainer}>
-                      <View
                         style={[
-                          styles.roleBadge,
-                          { backgroundColor: getRoleColor(user.role, isDark) },
+                          styles.searchQueryText,
+                          { color: isDark ? "#999" : "#888" },
                         ]}
                       >
-                        <Text style={styles.roleText}>
-                          {roleDisplayNames[user.role]}
+                        for "{searchQuery}"
+                      </Text>
+                    )}
+                  </View>
+                  <TouchableOpacity
+                    style={styles.clearButton}
+                    onPress={() => {
+                      setSearchQuery("");
+                      setSelectedRoleFilter("all");
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: "#007AFF",
+                        fontWeight: "600",
+                        fontSize: 15,
+                      }}
+                    >
+                      Clear all
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+            {filteredUsers.length === 0 ? (
+              <View style={styles.emptyState}>
+                <View
+                  style={[
+                    styles.iconContainer,
+                    { backgroundColor: isDark ? "#1c1c1e" : "#e9ecef" },
+                  ]}
+                >
+                  <Ionicons
+                    name="people-outline"
+                    size={48}
+                    color={isDark ? "#666" : "#999"}
+                  />
+                </View>
+                <Text
+                  style={[
+                    styles.emptyTitle,
+                    { color: isDark ? "#fff" : "#000" },
+                  ]}
+                >
+                  {searchQuery || selectedRoleFilter !== "all"
+                    ? "No users found"
+                    : "No users available"}
+                </Text>
+                <Text
+                  style={[
+                    styles.emptyText,
+                    { color: isDark ? "#ccc" : "#666" },
+                  ]}
+                >
+                  {searchQuery
+                    ? "Try adjusting your search terms"
+                    : selectedRoleFilter !== "all"
+                      ? `No ${roleFilters.find((f) => f.key === selectedRoleFilter)?.label.toLowerCase()} found`
+                      : "There are no users in the community yet"}
+                </Text>
+                {(searchQuery || selectedRoleFilter !== "all") && (
+                  <TouchableOpacity
+                    style={[styles.clearButton, styles.clearAllButton]}
+                    onPress={() => {
+                      setSearchQuery("");
+                      setSelectedRoleFilter("all");
+                    }}
+                  >
+                    <Text style={{ color: "#007AFF", fontWeight: "600" }}>
+                      Clear filters
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            ) : (
+              filteredUsers.map((user) => (
+                <View
+                  key={user.id}
+                  style={[
+                    styles.userCard,
+                    {
+                      backgroundColor: isDark ? "#1c1c1e" : "#fff",
+                      borderLeftWidth: 4,
+                      borderLeftColor: getRoleColor(user.role, isDark),
+                    },
+                  ]}
+                >
+                  <View style={styles.userMain}>
+                    <View style={styles.userInfo}>
+                      <View
+                        style={[
+                          styles.avatarContainer,
+                          {
+                            backgroundColor:
+                              getRoleColor(user.role, isDark) + "20",
+                          },
+                        ]}
+                      >
+                        <Ionicons
+                          name={getRoleIcon(user.role)}
+                          size={24}
+                          color={getRoleColor(user.role, isDark)}
+                        />
+                      </View>
+                      <View style={styles.userDetails}>
+                        <Text
+                          style={[
+                            styles.userName,
+                            { color: isDark ? "#fff" : "#000" },
+                          ]}
+                        >
+                          {user.name}
                         </Text>
+                        <Text
+                          style={[
+                            styles.userEmail,
+                            { color: isDark ? "#999" : "#666" },
+                          ]}
+                        >
+                          {user.email}
+                        </Text>
+                        <View
+                          style={[
+                            styles.roleBadge,
+                            {
+                              backgroundColor: getRoleColor(user.role, isDark),
+                            },
+                          ]}
+                        >
+                          <Ionicons
+                            name={getRoleIcon(user.role)}
+                            size={12}
+                            color="#fff"
+                            style={styles.roleIcon}
+                          />
+                          <Text style={styles.roleText}>
+                            {roleDisplayNames[user.role]}
+                          </Text>
+                        </View>
                       </View>
                     </View>
+
+                    {updatingUserId === user.id ? (
+                      <ActivityIndicator size="small" color="#007AFF" />
+                    ) : (
+                      <View style={styles.actions}>
+                        {user.role !== "super_admin" && (
+                          <>
+                            {user.role !== "board_member" && (
+                              <TouchableOpacity
+                                style={[
+                                  styles.actionButton,
+                                  styles.promoteButton,
+                                ]}
+                                onPress={() =>
+                                  confirmRoleChange(user, "board_member")
+                                }
+                              >
+                                <Ionicons
+                                  name="arrow-up"
+                                  size={16}
+                                  color="#fff"
+                                />
+                                <Text style={styles.actionButtonText}>
+                                  Promote
+                                </Text>
+                              </TouchableOpacity>
+                            )}
+                            {user.role !== "community_member" && (
+                              <TouchableOpacity
+                                style={[
+                                  styles.actionButton,
+                                  styles.demoteButton,
+                                ]}
+                                onPress={() =>
+                                  confirmRoleChange(user, "community_member")
+                                }
+                              >
+                                <Ionicons
+                                  name="arrow-down"
+                                  size={16}
+                                  color="#fff"
+                                />
+                                <Text style={styles.actionButtonText}>
+                                  Demote
+                                </Text>
+                              </TouchableOpacity>
+                            )}
+                          </>
+                        )}
+                      </View>
+                    )}
                   </View>
                 </View>
-
-                <View style={styles.actions}>
-                  {user.role !== "board_member" && (
-                    <TouchableOpacity
-                      style={[
-                        styles.roleButton,
-                        { backgroundColor: "#34C759" },
-                        updatingUserId === user.id && styles.buttonDisabled,
-                      ]}
-                      onPress={() => confirmRoleChange(user, "board_member")}
-                      disabled={updatingUserId !== null}
-                    >
-                      {updatingUserId === user.id ? (
-                        <ActivityIndicator size="small" color="#fff" />
-                      ) : (
-                        <Text style={styles.buttonText}>Make Board</Text>
-                      )}
-                    </TouchableOpacity>
-                  )}
-                  
-                  {user.role !== "community_member" && (
-                    <TouchableOpacity
-                      style={[
-                        styles.roleButton,
-                        { backgroundColor: "#007AFF" },
-                        updatingUserId === user.id && styles.buttonDisabled,
-                      ]}
-                      onPress={() => confirmRoleChange(user, "community_member")}
-                      disabled={updatingUserId !== null}
-                    >
-                      {updatingUserId === user.id ? (
-                        <ActivityIndicator size="small" color="#fff" />
-                      ) : (
-                        <Text style={styles.buttonText}>Make Member</Text>
-                      )}
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </View>
-            ))
-          )}
-        </ScrollView>
-      )}
+              ))
+            )}
+          </ScrollView>
+        )}
+      </View>
     </View>
   );
 }
 
-// Helper function to get role-specific colors
-const getRoleColor = (role: UserRole, isDark: boolean): string => {
-  const colors: Record<UserRole, string> = {
-    super_admin: isDark ? "#5856d6" : "#5856d6",
-    board_member: isDark ? "#34C759" : "#34C759",
-    community_member: isDark ? "#007AFF" : "#007AFF",
+const roleDisplayNames: Record<UserRole, string> = {
+  super_admin: "Super Admin",
+  board_member: "Board Member",
+  community_member: "Community Member",
+};
+
+const roleOrder: Record<UserRole, number> = {
+  super_admin: 0,
+  board_member: 1,
+  community_member: 2,
+};
+
+const getRoleColor = (role: UserRole | "all", isDark: boolean): string => {
+  const colors: Record<UserRole | "all", string> = {
+    super_admin: "#ff3b30",
+    board_member: "#34c759",
+    community_member: "#007aff",
+    all: "#8e8e93",
   };
-  return colors[role] || (isDark ? "#555" : "#ddd");
+  return colors[role] ?? "#ccc";
+};
+
+// FIXED: Use only valid Ionicons names
+const getRoleIcon = (role: UserRole): keyof typeof Ionicons.glyphMap => {
+  const icons: Record<UserRole, keyof typeof Ionicons.glyphMap> = {
+    super_admin: "shield",
+    board_member: "people",
+    community_member: "person",
+  };
+  return icons[role] ?? "person";
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-  },
-  headerTitle: {
-    fontSize: 26,
-    fontWeight: "800",
-  },
-  subheader: {
-    fontSize: 14,
-    marginTop: 4,
-  },
+  container: { flex: 1 },
+  header: { paddingHorizontal: 20, paddingBottom: 20 },
+  title: { fontSize: 32, fontWeight: "800", letterSpacing: -0.5 },
+  subtitle: { fontSize: 16, marginTop: 4, opacity: 0.7 },
+  controlsContainer: { paddingHorizontal: 20, paddingBottom: 16, gap: 16 },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginHorizontal: 20,
-    marginBottom: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-  },
-  searchIcon: {
-    marginRight: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "transparent",
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
-    paddingVertical: 4,
+    marginLeft: 12,
+    marginRight: 8,
+    fontWeight: "500",
   },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+  clearButton: {
+    padding: 4,
   },
-  userCard: {
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 3,
-    elevation: 2,
+  filtersScrollContent: {
+    paddingHorizontal: 4,
+    gap: 8,
   },
-  updatingCard: {
-    opacity: 0.7,
-  },
-  userInfo: {
+  filterButton: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 2,
+    gap: 8,
   },
-  userDetails: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  userName: {
-    fontSize: 16,
+  filterText: {
+    fontSize: 14,
     fontWeight: "600",
-    marginBottom: 2,
   },
-  userEmail: {
-    fontSize: 13,
-    marginBottom: 6,
-  },
-  roleContainer: {
-    flexDirection: "row",
-  },
-  roleBadge: {
+  filterCount: {
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 2,
     borderRadius: 12,
   },
-  roleText: {
-    color: "#fff",
+  filterCountText: {
     fontSize: 12,
     fontWeight: "600",
   },
-  actions: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    gap: 8,
-  },
-  roleButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    minWidth: 110,
-    alignItems: "center",
-  },
-  retryButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: 14,
-  },
+  content: { flex: 1 },
   centered: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
   },
-  permissionText: {
-    marginTop: 12,
-    fontSize: 16,
-    textAlign: "center",
+  iconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
   },
   loadingText: {
-    marginTop: 10,
-    fontSize: 14,
+    marginTop: 16,
+    fontSize: 16,
+    fontWeight: "500",
   },
   errorText: {
-    marginTop: 12,
-    fontSize: 14,
+    marginTop: 16,
+    fontSize: 18,
+    marginBottom: 8,
+    fontWeight: "700",
+  },
+  errorSubtext: {
+    fontSize: 15,
     textAlign: "center",
+    marginBottom: 24,
+    lineHeight: 20,
+  },
+  retryButton: {
+    backgroundColor: "#007AFF",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 10,
+    shadowColor: "#007AFF",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  retryButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 16,
+  },
+  resultsInfo: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(0,0,0,0.1)",
+  },
+  resultsTextContainer: {
+    flex: 1,
+  },
+  resultsText: {
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  searchQueryText: {
+    fontSize: 14,
+    marginTop: 2,
+  },
+  emptyState: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 80,
+    paddingHorizontal: 20,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    marginTop: 16,
+    marginBottom: 8,
   },
   emptyText: {
-    marginTop: 8,
-    fontSize: 14,
+    fontSize: 16,
     textAlign: "center",
+    lineHeight: 22,
+    opacity: 0.7,
+  },
+  clearAllButton: {
+    marginTop: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    backgroundColor: "rgba(0,122,255,0.1)",
+    borderRadius: 8,
+  },
+  userCard: {
+    marginHorizontal: 20,
+    marginBottom: 12,
+    padding: 16,
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  userMain: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  userInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  avatarContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  userDetails: {
+    marginLeft: 16,
+    flex: 1,
+  },
+  userName: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 2,
+  },
+  userEmail: {
+    fontSize: 15,
+    marginBottom: 8,
+    opacity: 0.7,
+  },
+  roleBadge: {
+    flexDirection: "row",
+    alignSelf: "flex-start",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  roleIcon: {
+    marginRight: 4,
+  },
+  roleText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  actions: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  actionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
+    minWidth: 80,
+    justifyContent: "center",
+  },
+  actionButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  promoteButton: {
+    backgroundColor: "#34c759",
+  },
+  demoteButton: {
+    backgroundColor: "#ff3b30",
+  },
+  permissionTitle: {
+    fontSize: 24,
+    fontWeight: "700",
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  permissionText: {
+    fontSize: 16,
+    textAlign: "center",
+    lineHeight: 22,
+    opacity: 0.7,
   },
 });

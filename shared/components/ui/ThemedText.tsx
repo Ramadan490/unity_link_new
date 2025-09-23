@@ -1,18 +1,18 @@
 // shared/components/ui/ThemedText.tsx
-import { useTheme } from '@/shared/context/ThemeContext';
-import { Text, type TextProps } from 'react-native';
+import { useTheme } from "@/shared/context/ThemeContext";
+import { Text, type TextProps } from "react-native";
 
 export type ThemedTextProps = TextProps & {
   lightColor?: string;
   darkColor?: string;
-  type?: 'default' | 'title' | 'defaultSemiBold' | 'subtitle' | 'link';
+  type?: "default" | "title" | "defaultSemiBold" | "subtitle" | "link";
 };
 
-export function ThemedText({
+export default function ThemedText({
   style,
   lightColor,
   darkColor,
-  type = 'default',
+  type = "default",
   ...rest
 }: ThemedTextProps) {
   const { theme } = useTheme();
@@ -22,11 +22,19 @@ export function ThemedText({
     <Text
       style={[
         { color },
-        type === 'default' ? { fontSize: 16, lineHeight: 24 } : null,
-        type === 'title' ? { fontSize: 32, fontWeight: 'bold', lineHeight: 40 } : null,
-        type === 'defaultSemiBold' ? { fontSize: 16, fontWeight: '600', lineHeight: 24 } : null,
-        type === 'subtitle' ? { fontSize: 20, fontWeight: 'bold', lineHeight: 28 } : null,
-        type === 'link' ? { color: theme.colors.primary, fontSize: 16, lineHeight: 24 } : null,
+        type === "default" ? { fontSize: 16, lineHeight: 24 } : null,
+        type === "title"
+          ? { fontSize: 32, fontWeight: "bold", lineHeight: 40 }
+          : null,
+        type === "defaultSemiBold"
+          ? { fontSize: 16, fontWeight: "600", lineHeight: 24 }
+          : null,
+        type === "subtitle"
+          ? { fontSize: 20, fontWeight: "bold", lineHeight: 28 }
+          : null,
+        type === "link"
+          ? { color: theme.colors.primary, fontSize: 16, lineHeight: 24 }
+          : null,
         style,
       ]}
       {...rest}

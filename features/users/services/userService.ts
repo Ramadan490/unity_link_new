@@ -1,13 +1,51 @@
-import { RoleKey } from "@/shared/constants/Roles";
-import { User } from "@/shared/types/user";
+import { User, UserRole } from "@/shared/types/user";
 import { apiFetch } from "@/shared/utils/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+// ---- Role Normalization ----
+const roleMap: Record<string, UserRole> = {
+  superadmin: "super_admin",
+  super_admin: "super_admin",
+  board: "board_member",
+  board_member: "board_member",
+  member: "community_member",
+  community_member: "community_member",
+};
+
+// Raw API response type (unknown structure)
+type RawUser = {
+  id?: string | number;
+  name?: string;
+  email?: string;
+  avatar?: string;
+  role?: string;
+};
+
+function normalizeUser(raw: RawUser): User {
+  return {
+    id: String(raw.id ?? Date.now()),
+    name: raw.name ?? "Unknown",
+    email: raw.email ?? `${(raw.name || "user").toLowerCase()}@example.com`,
+    avatar: raw.avatar ?? "",
+    role: roleMap[raw.role ?? ""] || "community_member",
+  };
+}
+
 // ---- Mock fallback users ----
 let mockUsers: User[] = [
-  { id: "1", name: "Alice", email: "alice@example.com", role: "community_member" },
+  {
+    id: "1",
+    name: "Alice",
+    email: "alice@example.com",
+    role: "community_member",
+  },
   { id: "2", name: "Bob", email: "bob@example.com", role: "board_member" },
-  { id: "3", name: "Charlie", email: "charlie@example.com", role: "super_admin" },
+  {
+    id: "3",
+    name: "Charlie",
+    email: "charlie@example.com",
+    role: "super_admin",
+  },
 ];
 
 // ---- Storage Key ----
@@ -35,8 +73,12 @@ export async function clearUserFromStorage(): Promise<void> {
 }
 
 export async function getCurrentUser(): Promise<User | null> {
-  const json = await AsyncStorage.getItem(STORAGE_KEY);
-  return json ? JSON.parse(json) : null;
+  try {
+    const json = await AsyncStorage.getItem(STORAGE_KEY);
+    return json ? (JSON.parse(json) as User) : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function loadUserFromStorage(): Promise<User | null> {
@@ -46,15 +88,15 @@ export async function loadUserFromStorage(): Promise<User | null> {
 // ---- Auth Actions ----
 export async function loginUser(name: string, password: string): Promise<User> {
   try {
-    // 🔗 Real backend: POST login
-    const loggedIn = await apiFetch<User>("/login", {
+    const loggedIn: RawUser = await apiFetch<RawUser>("/login", {
       method: "POST",
       body: JSON.stringify({ name, password }),
     });
-    await saveUserToStorage(loggedIn);
-    return loggedIn;
+    const normalized = normalizeUser(loggedIn);
+    await saveUserToStorage(normalized);
+    return normalized;
   } catch {
-    // Mock fallback
+    // fallback to mock
     let user = mockUsers.find((u) => u.name === name);
     if (!user) {
       user = {
@@ -70,14 +112,18 @@ export async function loginUser(name: string, password: string): Promise<User> {
   }
 }
 
-export async function registerUser(name: string, password: string): Promise<User> {
+export async function registerUser(
+  name: string,
+  password: string,
+): Promise<User> {
   try {
-    const newUser = await apiFetch<User>("/register", {
+    const newUser: RawUser = await apiFetch<RawUser>("/register", {
       method: "POST",
       body: JSON.stringify({ name, password }),
     });
-    await saveUserToStorage(newUser);
-    return newUser;
+    const normalized = normalizeUser(newUser);
+    await saveUserToStorage(normalized);
+    return normalized;
   } catch {
     const newUser: User = {
       id: String(mockUsers.length + 1),
@@ -98,26 +144,41 @@ export async function logoutUser(): Promise<void> {
 // ---- User Management ----
 export async function getUsers(): Promise<User[]> {
   try {
-    return await apiFetch<User[]>("/users");
+    const raw: RawUser[] = await apiFetch<RawUser[]>("/users");
+    return raw.map(normalizeUser);
   } catch {
     return new Promise((resolve) => setTimeout(() => resolve(mockUsers), 500));
   }
 }
 
-export async function updateUserRole(userId: string, role: RoleKey): Promise<User> {
+export async function updateUserRole(
+  userId: string,
+  role: UserRole,
+): Promise<User> {
   try {
-    const updated = await apiFetch<User>(`/users/${userId}`, {
+    const updated: RawUser = await apiFetch<RawUser>(`/users/${userId}`, {
       method: "PATCH",
       body: JSON.stringify({ role }),
     });
-    await saveUserToStorage(updated);
-    return updated;
+    const normalized = normalizeUser(updated);
+
+    const current = await getCurrentUser();
+    if (current?.id === normalized.id) {
+      await saveUserToStorage(normalized);
+    }
+
+    return normalized;
   } catch {
     mockUsers = mockUsers.map((u) => (u.id === userId ? { ...u, role } : u));
     const updatedUser = mockUsers.find((u) => u.id === userId)!;
-    await saveUserToStorage(updatedUser);
+
+    const current = await getCurrentUser();
+    if (current?.id === updatedUser.id) {
+      await saveUserToStorage(updatedUser);
+    }
+
     return new Promise((resolve) =>
-      setTimeout(() => resolve(updatedUser), 300)
+      setTimeout(() => resolve(updatedUser), 300),
     );
   }
 }

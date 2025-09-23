@@ -1,22 +1,19 @@
 // app/(tabs)/events.tsx
 import { useRole } from "@/shared/hooks/useRole";
 import { Ionicons } from "@expo/vector-icons";
+import { t } from "i18next";
 import React, { useState } from "react";
 import {
   Alert,
   FlatList,
-  Keyboard,
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   View,
-  useColorScheme,
+  useColorScheme
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -27,6 +24,7 @@ type Event = {
   location: string;
   description?: string;
   attending?: boolean;
+  attendeesCount?: number;
 };
 
 const initialEvents: Event[] = [
@@ -35,26 +33,27 @@ const initialEvents: Event[] = [
     title: "Community BBQ",
     date: "Sept 20, 2025",
     location: "Central Park",
-    description:
-      "Join us for our annual community BBQ with food, games, and fun activities for all ages!",
+    description: "Join us for our annual community BBQ with food, games, and fun activities for all ages!",
     attending: true,
+    attendeesCount: 12,
   },
   {
     id: "2",
     title: "Board Meeting",
     date: "Sept 25, 2025",
     location: "Clubhouse",
-    description:
-      "Monthly board meeting to discuss community matters and upcoming initiatives.",
+    description: "Monthly board meeting to discuss community matters and upcoming initiatives.",
+    attending: false,
+    attendeesCount: 5,
   },
   {
     id: "3",
     title: "Memorial Service",
     date: "Oct 2, 2025",
     location: "Main Hall",
-    description:
-      "A special service to honor and remember our beloved community members.",
+    description: "A special service to honor and remember our beloved community members.",
     attending: false,
+    attendeesCount: 20,
   },
 ];
 
@@ -74,13 +73,15 @@ export default function EventsScreen() {
   const isDark = scheme === "dark";
   const insets = useSafeAreaInsets();
 
-  // ✅ Role checks
   const { isSuperAdmin, isBoardMember } = useRole();
   const canManageEvents = isSuperAdmin || isBoardMember;
 
   const addEvent = () => {
     if (!newEvent.title || !newEvent.date || !newEvent.location) {
-      Alert.alert("Missing Info", "Please fill out all required fields.");
+      Alert.alert(
+        t("events.errors.missingInfo"),
+        t("events.errors.fillFields")
+      );
       return;
     }
 
@@ -88,6 +89,7 @@ export default function EventsScreen() {
       id: Date.now().toString(),
       ...newEvent,
       attending: false,
+      attendeesCount: 0,
     };
     setEvents((prev) => [newItem, ...prev]);
     setNewEvent({ title: "", date: "", location: "", description: "" });
@@ -95,22 +97,72 @@ export default function EventsScreen() {
   };
 
   const deleteEvent = (id: string) => {
-    Alert.alert("Delete Event", "Are you sure you want to delete this event?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: () => setEvents((prev) => prev.filter((e) => e.id !== id)),
-      },
-    ]);
+    Alert.alert(
+      t("events.deleteConfirm"),
+      t("events.deleteConfirmMsg"),
+      [
+        { text: t("cancel"), style: "cancel" },
+        {
+          text: t("buttons.delete"),
+          style: "destructive",
+          onPress: () => setEvents((prev) => prev.filter((e) => e.id !== id)),
+        },
+      ]
+    );
   };
 
   const toggleAttendance = (id: string) => {
     setEvents((prev) =>
       prev.map((event) =>
-        event.id === id ? { ...event, attending: !event.attending } : event,
+        event.id === id
+          ? {
+              ...event,
+              attending: !event.attending,
+              attendeesCount: event.attending
+                ? Math.max(0, (event.attendeesCount || 0) - 1)
+                : (event.attendeesCount || 0) + 1,
+            }
+          : event,
       ),
     );
+  };
+
+  const confirmToggleAttendance = (event: Event) => {
+    if (event.attending) {
+      Alert.alert(
+        t("events.cancelAttendance"),
+        t("events.cancelAttendanceMsg"),
+        [
+          { text: t("buttons.no"), style: "cancel" },
+          {
+            text: t("buttons.yes"),
+            onPress: () => {
+              toggleAttendance(event.id);
+              if (detailModalVisible) {
+                setDetailModalVisible(false);
+              }
+            },
+          },
+        ]
+      );
+    } else {
+      Alert.alert(
+        t("events.confirmAttendance"),
+        t("events.confirmAttendanceMsg"),
+        [
+          { text: t("buttons.no"), style: "cancel" },
+          {
+            text: t("buttons.yes"),
+            onPress: () => {
+              toggleAttendance(event.id);
+              if (detailModalVisible) {
+                setDetailModalVisible(false);
+              }
+            },
+          },
+        ]
+      );
+    }
   };
 
   const openEventDetails = (event: Event) => {
@@ -132,8 +184,8 @@ export default function EventsScreen() {
             borderLeftColor: item.attending
               ? "#34C759"
               : isDark
-                ? "#333"
-                : "#eee",
+              ? "#333"
+              : "#eee",
           },
         ]}
       >
@@ -195,6 +247,18 @@ export default function EventsScreen() {
               {item.location}
             </Text>
           </View>
+          <View style={styles.detailRow}>
+            <Ionicons
+              name="people-outline"
+              size={16}
+              color={isDark ? "#0A84FF" : "#007AFF"}
+            />
+            <Text
+              style={[styles.eventDetails, { color: isDark ? "#bbb" : "#555" }]}
+            >
+              {item.attendeesCount || 0} {t("events.attending")}
+            </Text>
+          </View>
         </View>
 
         {/* RSVP Button */}
@@ -207,16 +271,16 @@ export default function EventsScreen() {
                   ? "#2C7A4A"
                   : "#34C759"
                 : isDark
-                  ? "#2C2C2E"
-                  : "#F2F2F7",
+                ? "#2C2C2E"
+                : "#F2F2F7",
               borderColor: item.attending
                 ? "transparent"
                 : isDark
-                  ? "#3A3A3C"
-                  : "#E5E5EA",
+                ? "#3A3A3C"
+                : "#E5E5EA",
             },
           ]}
-          onPress={() => toggleAttendance(item.id)}
+          onPress={() => confirmToggleAttendance(item)}
         >
           <Ionicons
             name={item.attending ? "checkmark-circle" : "add-circle-outline"}
@@ -231,12 +295,15 @@ export default function EventsScreen() {
               },
             ]}
           >
-            {item.attending ? "Attending" : "RSVP"}
+            {item.attending ? t("events.attending") : t("events.rsvp")}
           </Text>
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );
+
+  const eventCount = events.length;
+  const eventText = t("events.count", { count: eventCount });
 
   return (
     <View
@@ -252,13 +319,13 @@ export default function EventsScreen() {
             <Text
               style={[styles.title, { color: isDark ? "#fff" : "#2f4053" }]}
             >
-              Upcoming Events
+              {t("events.title")}
             </Text>
             {events.length > 0 && (
               <Text
                 style={[styles.subtitle, { color: isDark ? "#aaa" : "#666" }]}
               >
-                {events.length} event{events.length !== 1 ? "s" : ""}
+                {eventText}
               </Text>
             )}
           </View>
@@ -270,10 +337,10 @@ export default function EventsScreen() {
                 { backgroundColor: isDark ? "#0A84FF" : "#007AFF" },
               ]}
               onPress={() => setModalVisible(true)}
-              accessibilityLabel="Add new event"
+              accessibilityLabel={t("events.create")}
             >
               <Ionicons name="add" size={20} color="#fff" />
-              <Text style={styles.createButtonText}>Create</Text>
+              <Text style={styles.createButtonText}>{t("events.create")}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -289,12 +356,12 @@ export default function EventsScreen() {
           <Text
             style={[styles.emptyTitle, { color: isDark ? "#fff" : "#333" }]}
           >
-            No events scheduled
+            {t("events.noEvents")}
           </Text>
           <Text style={[styles.emptyText, { color: isDark ? "#aaa" : "#666" }]}>
             {canManageEvents
-              ? "Get started by creating your first event"
-              : "Check back later for upcoming events"}
+              ? t("events.emptyManage")
+              : t("events.emptyView")}
           </Text>
           {canManageEvents && (
             <TouchableOpacity
@@ -305,7 +372,9 @@ export default function EventsScreen() {
               onPress={() => setModalVisible(true)}
             >
               <Ionicons name="add" size={20} color="#fff" />
-              <Text style={styles.createFirstEventText}>Create Event</Text>
+              <Text style={styles.createFirstEventText}>
+                {t("events.createFirst")}
+              </Text>
             </TouchableOpacity>
           )}
         </View>
@@ -319,194 +388,6 @@ export default function EventsScreen() {
           showsVerticalScrollIndicator={false}
         />
       )}
-
-      {/* Create Event Modal */}
-      <Modal transparent visible={modalVisible} animationType="slide">
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            style={styles.modalContainer}
-          >
-            <View style={styles.modalOverlay}>
-              <View
-                style={[
-                  styles.modalBox,
-                  { backgroundColor: isDark ? "#1e1e1e" : "#fff" },
-                ]}
-              >
-                <View style={styles.modalHeader}>
-                  <Text
-                    style={[
-                      styles.modalTitle,
-                      { color: isDark ? "#fff" : "#333" },
-                    ]}
-                  >
-                    Create New Event
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() => setModalVisible(false)}
-                    style={styles.closeButton}
-                  >
-                    <Ionicons
-                      name="close"
-                      size={24}
-                      color={isDark ? "#fff" : "#000"}
-                    />
-                  </TouchableOpacity>
-                </View>
-
-                <ScrollView style={styles.modalScroll}>
-                  <Text
-                    style={[
-                      styles.inputLabel,
-                      { color: isDark ? "#fff" : "#333" },
-                    ]}
-                  >
-                    Event Title *
-                  </Text>
-                  <TextInput
-                    placeholder="Enter event title"
-                    placeholderTextColor="#888"
-                    style={[
-                      styles.input,
-                      {
-                        color: isDark ? "#fff" : "#000",
-                        backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7",
-                      },
-                    ]}
-                    value={newEvent.title}
-                    onChangeText={(t) =>
-                      setNewEvent((p) => ({ ...p, title: t }))
-                    }
-                  />
-
-                  <Text
-                    style={[
-                      styles.inputLabel,
-                      { color: isDark ? "#fff" : "#333" },
-                    ]}
-                  >
-                    Date *
-                  </Text>
-                  <TextInput
-                    placeholder="e.g. Sept 20, 2025"
-                    placeholderTextColor="#888"
-                    style={[
-                      styles.input,
-                      {
-                        color: isDark ? "#fff" : "#000",
-                        backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7",
-                      },
-                    ]}
-                    value={newEvent.date}
-                    onChangeText={(t) =>
-                      setNewEvent((p) => ({ ...p, date: t }))
-                    }
-                  />
-
-                  <Text
-                    style={[
-                      styles.inputLabel,
-                      { color: isDark ? "#fff" : "#333" },
-                    ]}
-                  >
-                    Location *
-                  </Text>
-                  <TextInput
-                    placeholder="Enter location"
-                    placeholderTextColor="#888"
-                    style={[
-                      styles.input,
-                      {
-                        color: isDark ? "#fff" : "#000",
-                        backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7",
-                      },
-                    ]}
-                    value={newEvent.location}
-                    onChangeText={(t) =>
-                      setNewEvent((p) => ({ ...p, location: t }))
-                    }
-                  />
-
-                  <Text
-                    style={[
-                      styles.inputLabel,
-                      { color: isDark ? "#fff" : "#333" },
-                    ]}
-                  >
-                    Description (Optional)
-                  </Text>
-                  <TextInput
-                    placeholder="Describe the event"
-                    placeholderTextColor="#888"
-                    style={[
-                      styles.input,
-                      styles.textArea,
-                      {
-                        color: isDark ? "#fff" : "#000",
-                        backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7",
-                        height: 100,
-                        textAlignVertical: "top",
-                      },
-                    ]}
-                    multiline
-                    numberOfLines={4}
-                    value={newEvent.description}
-                    onChangeText={(t) =>
-                      setNewEvent((p) => ({ ...p, description: t }))
-                    }
-                  />
-                </ScrollView>
-
-                {/* Modal actions */}
-                <View style={styles.modalActions}>
-                  <TouchableOpacity
-                    style={[
-                      styles.modalBtn,
-                      styles.cancelBtn,
-                      { backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7" },
-                    ]}
-                    onPress={() => setModalVisible(false)}
-                  >
-                    <Text
-                      style={[
-                        styles.modalBtnText,
-                        { color: isDark ? "#fff" : "#000" },
-                      ]}
-                    >
-                      Cancel
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.modalBtn,
-                      styles.saveBtn,
-                      {
-                        backgroundColor:
-                          newEvent.title && newEvent.date && newEvent.location
-                            ? isDark
-                              ? "#0A84FF"
-                              : "#007AFF"
-                            : isDark
-                              ? "#444"
-                              : "#ccc",
-                      },
-                    ]}
-                    onPress={addEvent}
-                    disabled={
-                      !newEvent.title || !newEvent.date || !newEvent.location
-                    }
-                  >
-                    <Text style={[styles.modalBtnText, { color: "#fff" }]}>
-                      Create Event
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-          </KeyboardAvoidingView>
-        </TouchableWithoutFeedback>
-      </Modal>
 
       {/* Event Detail Modal */}
       <Modal transparent visible={detailModalVisible} animationType="fade">
@@ -524,7 +405,7 @@ export default function EventsScreen() {
                   { color: isDark ? "#fff" : "#333" },
                 ]}
               >
-                Event Details
+                {t("events.details")}
               </Text>
               <TouchableOpacity
                 onPress={() => setDetailModalVisible(false)}
@@ -592,6 +473,22 @@ export default function EventsScreen() {
                   </Text>
                 </View>
 
+                <View style={styles.detailItem}>
+                  <Ionicons
+                    name="people-outline"
+                    size={20}
+                    color={isDark ? "#0A84FF" : "#007AFF"}
+                  />
+                  <Text
+                    style={[
+                      styles.detailText,
+                      { color: isDark ? "#fff" : "#333" },
+                    ]}
+                  >
+                    {selectedEvent.attendeesCount || 0} {t("events.attending")}
+                  </Text>
+                </View>
+
                 <TouchableOpacity
                   style={[
                     styles.detailRsvpButton,
@@ -601,14 +498,11 @@ export default function EventsScreen() {
                           ? "#2C7A4A"
                           : "#34C759"
                         : isDark
-                          ? "#0A84FF"
-                          : "#007AFF",
+                        ? "#0A84FF"
+                        : "#007AFF",
                     },
                   ]}
-                  onPress={() => {
-                    toggleAttendance(selectedEvent.id);
-                    setDetailModalVisible(false);
-                  }}
+                  onPress={() => confirmToggleAttendance(selectedEvent)}
                 >
                   <Ionicons
                     name={
@@ -621,12 +515,151 @@ export default function EventsScreen() {
                   />
                   <Text style={styles.detailRsvpButtonText}>
                     {selectedEvent.attending
-                      ? "You're Attending"
-                      : "RSVP to this Event"}
+                      ? t("events.attendingDetail")
+                      : t("events.rsvpDetail")}
                   </Text>
                 </TouchableOpacity>
               </ScrollView>
             )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Create Event Modal */}
+      <Modal transparent visible={modalVisible} animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View
+            style={[
+              styles.createModalBox,
+              { backgroundColor: isDark ? "#1e1e1e" : "#fff" },
+            ]}
+          >
+            <View style={styles.modalHeader}>
+              <Text
+                style={[
+                  styles.detailModalTitle,
+                  { color: isDark ? "#fff" : "#333" },
+                ]}
+              >
+                {t("events.createNew")}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setModalVisible(false)}
+                style={styles.closeButton}
+              >
+                <Ionicons
+                  name="close"
+                  size={24}
+                  color={isDark ? "#fff" : "#000"}
+                />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.createContent}>
+              <Text style={[styles.inputLabel, { color: isDark ? "#fff" : "#333" }]}>
+                {t("events.form.title")}
+              </Text>
+              <View
+                style={[
+                  styles.inputContainer,
+                  { backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7" },
+                ]}
+              >
+                <TextInput
+                  style={[styles.input, { color: isDark ? "#fff" : "#000" }]}
+                  placeholder={t("events.form.titlePlaceholder")}
+                  placeholderTextColor={isDark ? "#888" : "#999"}
+                  value={newEvent.title}
+                  onChangeText={(text: string) =>
+                    setNewEvent({ ...newEvent, title: text })
+                  }
+                />
+              </View>
+
+              <Text style={[styles.inputLabel, { color: isDark ? "#fff" : "#333" }]}>
+                {t("events.form.date")}
+              </Text>
+              <View
+                style={[
+                  styles.inputContainer,
+                  { backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7" },
+                ]}
+              >
+                <TextInput
+                  style={[styles.input, { color: isDark ? "#fff" : "#000" }]}
+                  placeholder={t("events.form.datePlaceholder")}
+                  placeholderTextColor={isDark ? "#888" : "#999"}
+                  value={newEvent.date}
+                  onChangeText={(text: string) =>
+                    setNewEvent({ ...newEvent, date: text })
+                  }
+                />
+              </View>
+
+              <Text style={[styles.inputLabel, { color: isDark ? "#fff" : "#333" }]}>
+                {t("events.form.location")}
+              </Text>
+              <View
+                style={[
+                  styles.inputContainer,
+                  { backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7" },
+                ]}
+              >
+                <TextInput
+                  style={[styles.input, { color: isDark ? "#fff" : "#000" }]}
+                  placeholder={t("events.form.locationPlaceholder")}
+                  placeholderTextColor={isDark ? "#888" : "#999"}
+                  value={newEvent.location}
+                  onChangeText={(text: string) =>
+                    setNewEvent({ ...newEvent, location: text })
+                  }
+                />
+              </View>
+
+              <Text style={[styles.inputLabel, { color: isDark ? "#fff" : "#333" }]}>
+                {t("events.form.description")}
+              </Text>
+              <View
+                style={[
+                  styles.inputContainer,
+                  { 
+                    backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7",
+                    minHeight: 100,
+                  },
+                ]}
+              >
+                <TextInput
+                  style={[
+                    styles.input, 
+                    { 
+                      color: isDark ? "#fff" : "#000",
+                      textAlignVertical: 'top',
+                      paddingTop: 12,
+                    }
+                  ]}
+                  placeholder={t("events.form.descriptionPlaceholder")}
+                  placeholderTextColor={isDark ? "#888" : "#999"}
+                  value={newEvent.description}
+                  onChangeText={(text: string) =>
+                    setNewEvent({ ...newEvent, description: text })
+                  }
+                  multiline
+                  numberOfLines={4}
+                />
+              </View>
+
+              <TouchableOpacity
+                style={[
+                  styles.createSubmitButton,
+                  { backgroundColor: isDark ? "#0A84FF" : "#007AFF" },
+                ]}
+                onPress={addEvent}
+              >
+                <Text style={styles.createSubmitButtonText}>
+                  {t("events.buttons.create")}
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -714,7 +747,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   createFirstEventText: { color: "#fff", fontWeight: "600", fontSize: 16 },
-  modalContainer: { flex: 1 },
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
@@ -722,13 +754,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 20,
   },
-  modalBox: {
-    width: "100%",
+  detailModalBox: {
+    width: "90%",
     maxHeight: "80%",
     borderRadius: 20,
     overflow: "hidden",
   },
-  detailModalBox: {
+  createModalBox: {
     width: "90%",
     maxHeight: "80%",
     borderRadius: 20,
@@ -742,46 +774,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "rgba(150,150,150,0.2)",
   },
-  modalTitle: { fontSize: 20, fontWeight: "700" },
   detailModalTitle: { fontSize: 18, fontWeight: "700" },
   closeButton: { padding: 4 },
-  modalScroll: { maxHeight: 400, paddingHorizontal: 20 },
-  inputLabel: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 8,
-    marginTop: 16,
-  },
-  input: {
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  textArea: {
-    height: 100,
-    textAlignVertical: "top",
-  },
-  modalActions: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    padding: 20,
-    gap: 12,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(150,150,150,0.2)",
-  },
-  modalBtn: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    minWidth: 100,
-    alignItems: "center",
-  },
-  cancelBtn: { backgroundColor: "#f2f2f7" },
-  saveBtn: { backgroundColor: "#007AFF" },
-  modalBtnText: { fontSize: 16, fontWeight: "600" },
   detailContent: { padding: 20 },
+  createContent: { padding: 20 },
   detailTitle: { fontSize: 22, fontWeight: "700", marginBottom: 12 },
   detailDescription: { fontSize: 16, lineHeight: 24, marginBottom: 20 },
   detailItem: {
@@ -801,6 +797,32 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   detailRsvpButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 16,
+  },
+  inputLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 8,
+    marginTop: 16,
+  },
+  inputContainer: {
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    marginBottom: 8,
+  },
+  input: {
+    fontSize: 16,
+    paddingVertical: 12,
+  },
+  createSubmitButton: {
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: "center",
+    marginTop: 24,
+  },
+  createSubmitButtonText: {
     color: "#fff",
     fontWeight: "600",
     fontSize: 16,

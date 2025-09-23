@@ -17,7 +17,12 @@ export default function EmptyState({ message, icon }: EmptyStateProps) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: "center", justifyContent: "center", padding: 20 },
+  container: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
+  },
   icon: { marginBottom: 12 },
   text: { fontSize: 16, color: "#666", textAlign: "center" },
 });

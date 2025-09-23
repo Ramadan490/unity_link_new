@@ -42,7 +42,10 @@ function safeJSONParse<T>(data: string | null): T | null {
 }
 
 export class StorageError extends Error {
-  constructor(message: string, public operation: string) {
+  constructor(
+    message: string,
+    public operation: string,
+  ) {
     super(message);
     this.name = "StorageError";
   }
@@ -61,7 +64,10 @@ export const Storage = {
   },
 
   async setUserData(data: UserData) {
-    await SecureStore.setItemAsync(STORAGE_KEYS.USER_DATA, JSON.stringify(data));
+    await SecureStore.setItemAsync(
+      STORAGE_KEYS.USER_DATA,
+      JSON.stringify(data),
+    );
   },
   async getUserData(): Promise<UserData | null> {
     const parsed = safeJSONParse<UserData>(

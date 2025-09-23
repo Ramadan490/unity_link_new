@@ -195,10 +195,7 @@ export default function HelpScreen() {
         >
           <View style={styles.faqQuestionContainer}>
             <Text
-              style={[
-                styles.faqQuestion,
-                { color: isDark ? "#fff" : "#333" },
-              ]}
+              style={[styles.faqQuestion, { color: isDark ? "#fff" : "#333" }]}
             >
               {faq.question}
             </Text>
@@ -227,9 +224,7 @@ export default function HelpScreen() {
         </TouchableOpacity>
 
         <Animated.View style={[styles.answerContainer, { height }]}>
-          <Text
-            style={[styles.faqAnswer, { color: isDark ? "#ccc" : "#555" }]}
-          >
+          <Text style={[styles.faqAnswer, { color: isDark ? "#ccc" : "#555" }]}>
             {faq.answer}
           </Text>
         </Animated.View>
@@ -266,7 +261,9 @@ export default function HelpScreen() {
           <Text style={[styles.header, { color: themeColors.text }]}>
             Help & Support
           </Text>
-          <Text style={[styles.subheader, { color: themeColors.secondaryText }]}>
+          <Text
+            style={[styles.subheader, { color: themeColors.secondaryText }]}
+          >
             Find answers to common questions or contact support for assistance
           </Text>
         </View>
@@ -482,7 +479,9 @@ export default function HelpScreen() {
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: themeColors.secondaryText }]}>
+          <Text
+            style={[styles.footerText, { color: themeColors.secondaryText }]}
+          >
             App Version 1.0.0
           </Text>
         </View>

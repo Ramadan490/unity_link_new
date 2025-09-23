@@ -1,8 +1,16 @@
-// constants/Roles.ts
-export const ROLE_LABELS = {
-  super_admin: "Super Admin ",
-  board_member: "Board Member ",
-  community_member: "Community Member ",
-} as const;
+// shared/constants/Roles.ts
+import { UserRole } from "@/shared/types/user";
 
-export type RoleKey = keyof typeof ROLE_LABELS;
+// Use UserRole consistently everywhere
+export const ROLE_LABELS: Record<UserRole, string> = {
+  super_admin: "Super Admin",
+  board_member: "Board Member",
+  community_member: "Community Member",
+};
+
+// ✅ Order for sorting
+export const ROLE_ORDER: Record<UserRole, number> = {
+  super_admin: 0,
+  board_member: 1,
+  community_member: 2,
+};

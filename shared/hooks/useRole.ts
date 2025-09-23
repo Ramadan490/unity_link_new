@@ -1,29 +1,25 @@
-// hooks/useRole.ts
-import { RoleKey, useAuth } from "@/shared/context/AuthContext";
-import { User } from "@/types/user";
+// shared/hooks/useRole.ts
+import { useAuth } from "@/shared/context/AuthContext";
+import { UserRole } from "@/shared/types/user";
 
 export const useRole = () => {
-  const { user, role, setRole } = useAuth();
+  const { user, role } = useAuth();
 
-  // Mock data for users - replace with actual API call
-  const users: User[] = [
-    // Your users data here
-  ];
+  // ✅ Ensure we always get a proper UserRole (fallback to "community_member")
+  const userRole: UserRole = (role ||
+    user?.role ||
+    "community_member") as UserRole;
 
-  const updateUserRole = async (userId: string, newRole: RoleKey) => {
-    // Implement your role update logic here
-    console.log(`Updating user ${userId} to role ${newRole}`);
-    // await updateUserRoleAPI(userId, newRole);
-  };
+  // ✅ Check against normalized role values
+  const isSuperAdmin = userRole === "super_admin";
+  const isBoardMember = userRole === "board_member";
+  const isCommunityMember = userRole === "community_member";
 
   return {
-    isSuperAdmin: role === "super_admin",
-    isBoardMember: role === "board_member",
-    isCommunityMember: role === "community_member",
-   
-    role,
     user,
-    users, // Add this
-    updateUserRole, // Add this
+    isSuperAdmin,
+    isBoardMember,
+    isCommunityMember,
+    currentRole: userRole,
   };
 };

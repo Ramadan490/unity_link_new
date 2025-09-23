@@ -53,7 +53,9 @@ export default function RequestsScreen() {
   });
 
   const [replyText, setReplyText] = useState<Record<string, string>>({});
-  const [expandedRequests, setExpandedRequests] = useState<Set<string>>(new Set());
+  const [expandedRequests, setExpandedRequests] = useState<Set<string>>(
+    new Set(),
+  );
 
   const { isSuperAdmin, isBoardMember, user } = useRole();
   const scheme = useColorScheme() || "light";
@@ -66,15 +68,17 @@ export default function RequestsScreen() {
 
   // Filter and search requests
   const filteredRequests = useMemo(() => {
-    return requests.filter(request => {
-      const matchesFilter = activeFilter === "all" || request.status === activeFilter;
-      const matchesSearch = searchQuery === "" || 
+    return requests.filter((request) => {
+      const matchesFilter =
+        activeFilter === "all" || request.status === activeFilter;
+      const matchesSearch =
+        searchQuery === "" ||
         request.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         request.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (request.replies ?? []).some(reply => 
-          reply.text.toLowerCase().includes(searchQuery.toLowerCase())
+        (request.replies ?? []).some((reply) =>
+          reply.text.toLowerCase().includes(searchQuery.toLowerCase()),
         );
-      
+
       return matchesFilter && matchesSearch;
     });
   }, [requests, activeFilter, searchQuery]);
@@ -94,7 +98,7 @@ export default function RequestsScreen() {
       }));
 
       setRequests(normalized);
-      
+
       // Fade in animation
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -139,7 +143,10 @@ export default function RequestsScreen() {
     }
 
     if (newRequest.description.length > 1000) {
-      Alert.alert("Description Too Long", "Description must be less than 1000 characters.");
+      Alert.alert(
+        "Description Too Long",
+        "Description must be less than 1000 characters.",
+      );
       return;
     }
 
@@ -157,10 +164,10 @@ export default function RequestsScreen() {
       setRequests((prev) => [createdRequest, ...prev]);
       setNewRequest({ title: "", description: "", status: "open" });
       setModalVisible(false);
-      
+
       // Show success feedback
       Alert.alert("Success", "Your request has been submitted!", [
-        { text: "OK", onPress: () => {} }
+        { text: "OK", onPress: () => {} },
       ]);
     } catch (err) {
       console.error("⚠️ Failed to create request:", err);
@@ -171,22 +178,26 @@ export default function RequestsScreen() {
   /** Delete request */
   const handleDelete = (id: string, title: string) => {
     if (!canDeleteRequests) return;
-    Alert.alert("Confirm Delete", `Are you sure you want to delete "${title}"?`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await deleteRequest(id);
-            setRequests((prev) => prev.filter((r) => r.id !== id));
-          } catch (err) {
-            console.error("⚠️ Failed to delete request:", err);
-            Alert.alert("Error", "Unable to delete request.");
-          }
+    Alert.alert(
+      "Confirm Delete",
+      `Are you sure you want to delete "${title}"?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteRequest(id);
+              setRequests((prev) => prev.filter((r) => r.id !== id));
+            } catch (err) {
+              console.error("⚠️ Failed to delete request:", err);
+              Alert.alert("Error", "Unable to delete request.");
+            }
+          },
         },
-      },
-    ]);
+      ],
+    );
   };
 
   /** Add reply */
@@ -203,7 +214,10 @@ export default function RequestsScreen() {
       prev.map((req) => {
         if (req.id === requestId) {
           if ((req.replies ?? []).length >= 10) {
-            Alert.alert("Limit Reached", "This request already has 10 replies.");
+            Alert.alert(
+              "Limit Reached",
+              "This request already has 10 replies.",
+            );
             return req;
           }
           const newReply: Reply = {
@@ -265,7 +279,8 @@ export default function RequestsScreen() {
             <Text
               style={[styles.subtitle, { color: isDark ? "#aaa" : "#666" }]}
             >
-              {filteredRequests.length} of {requests.length} request{requests.length !== 1 ? "s" : ""}
+              {filteredRequests.length} of {requests.length} request
+              {requests.length !== 1 ? "s" : ""}
             </Text>
           )}
         </View>
@@ -285,8 +300,17 @@ export default function RequestsScreen() {
 
       {/* Search and Filter */}
       <View style={styles.filterContainer}>
-        <View style={[styles.searchContainer, { backgroundColor: isDark ? "#1e1e1e" : "#f2f2f7" }]}>
-          <Ionicons name="search-outline" size={18} color={isDark ? "#aaa" : "#666"} />
+        <View
+          style={[
+            styles.searchContainer,
+            { backgroundColor: isDark ? "#1e1e1e" : "#f2f2f7" },
+          ]}
+        >
+          <Ionicons
+            name="search-outline"
+            size={18}
+            color={isDark ? "#aaa" : "#666"}
+          />
           <TextInput
             style={[styles.searchInput, { color: isDark ? "#fff" : "#000" }]}
             placeholder="Search requests..."
@@ -296,53 +320,69 @@ export default function RequestsScreen() {
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery("")}>
-              <Ionicons name="close-circle" size={18} color={isDark ? "#aaa" : "#666"} />
+              <Ionicons
+                name="close-circle"
+                size={18}
+                color={isDark ? "#aaa" : "#666"}
+              />
             </TouchableOpacity>
           )}
         </View>
 
-        <ScrollView 
-          horizontal 
+        <ScrollView
+          horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.filterScroll}
           contentContainerStyle={styles.filterContent}
         >
-          {(["all", "open", "in_progress", "closed"] as FilterOption[]).map((filter) => (
-            <TouchableOpacity
-              key={filter}
-              style={[
-                styles.filterPill,
-                {
-                  backgroundColor: activeFilter === filter 
-                    ? getStatusColor(filter === "all" ? "open" : filter)
-                    : isDark ? "#2a2a2a" : "#f0f0f0",
-                },
-              ]}
-              onPress={() => setActiveFilter(filter)}
-            >
-              <Text
+          {(["all", "open", "in_progress", "closed"] as FilterOption[]).map(
+            (filter) => (
+              <TouchableOpacity
+                key={filter}
                 style={[
-                  styles.filterText,
+                  styles.filterPill,
                   {
-                    color: activeFilter === filter 
-                      ? "#fff" 
-                      : isDark ? "#fff" : "#333",
+                    backgroundColor:
+                      activeFilter === filter
+                        ? getStatusColor(filter === "all" ? "open" : filter)
+                        : isDark
+                          ? "#2a2a2a"
+                          : "#f0f0f0",
                   },
                 ]}
+                onPress={() => setActiveFilter(filter)}
               >
-                {filter === "all" ? "All" : 
-                 filter === "open" ? "Open" :
-                 filter === "in_progress" ? "In Progress" : "Closed"}
-              </Text>
-              {filter !== "all" && (
-                <View style={styles.filterCount}>
-                  <Text style={styles.filterCountText}>
-                    {requests.filter(r => r.status === filter).length}
-                  </Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          ))}
+                <Text
+                  style={[
+                    styles.filterText,
+                    {
+                      color:
+                        activeFilter === filter
+                          ? "#fff"
+                          : isDark
+                            ? "#fff"
+                            : "#333",
+                    },
+                  ]}
+                >
+                  {filter === "all"
+                    ? "All"
+                    : filter === "open"
+                      ? "Open"
+                      : filter === "in_progress"
+                        ? "In Progress"
+                        : "Closed"}
+                </Text>
+                {filter !== "all" && (
+                  <View style={styles.filterCount}>
+                    <Text style={styles.filterCountText}>
+                      {requests.filter((r) => r.status === filter).length}
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            ),
+          )}
         </ScrollView>
       </View>
 
@@ -354,51 +394,67 @@ export default function RequestsScreen() {
             size={64}
             color={isDark ? "#444" : "#ccc"}
           />
-          <Text style={[styles.emptyTitle, { color: isDark ? "#fff" : "#333" }]}>
+          <Text
+            style={[styles.emptyTitle, { color: isDark ? "#fff" : "#333" }]}
+          >
             Failed to load requests
           </Text>
           <Text style={[styles.emptyText, { color: isDark ? "#aaa" : "#666" }]}>
             {error}
           </Text>
           <TouchableOpacity
-            style={[styles.clearButton, { backgroundColor: isDark ? "#0A84FF" : "#007AFF" }]}
+            style={[
+              styles.clearButton,
+              { backgroundColor: isDark ? "#0A84FF" : "#007AFF" },
+            ]}
             onPress={loadRequests}
           >
-            <Text style={{ color: "#fff", fontWeight: "600" }}>
-              Try Again
-            </Text>
+            <Text style={{ color: "#fff", fontWeight: "600" }}>Try Again</Text>
           </TouchableOpacity>
         </View>
       ) : filteredRequests.length === 0 ? (
         <View style={styles.emptyState}>
           <Ionicons
-            name={searchQuery || activeFilter !== "all" ? "search-outline" : "document-text-outline"}
+            name={
+              searchQuery || activeFilter !== "all"
+                ? "search-outline"
+                : "document-text-outline"
+            }
             size={64}
             color={isDark ? "#444" : "#ccc"}
           />
           <Text
             style={[styles.emptyTitle, { color: isDark ? "#fff" : "#333" }]}
           >
-            {searchQuery ? "No matching requests" : 
-             activeFilter !== "all" ? `No ${activeFilter.replace('_', ' ')} requests` : 
-             "No requests found"}
+            {searchQuery
+              ? "No matching requests"
+              : activeFilter !== "all"
+                ? `No ${activeFilter.replace("_", " ")} requests`
+                : "No requests found"}
           </Text>
           <Text style={[styles.emptyText, { color: isDark ? "#aaa" : "#666" }]}>
-            {searchQuery ? "Try a different search term" : 
-             activeFilter !== "all" ? `There are no ${activeFilter.replace('_', ' ')} requests` :
-             canCreateRequests
-              ? "Be the first to create a request."
-              : "No requests have been posted yet."}
+            {searchQuery
+              ? "Try a different search term"
+              : activeFilter !== "all"
+                ? `There are no ${activeFilter.replace("_", " ")} requests`
+                : canCreateRequests
+                  ? "Be the first to create a request."
+                  : "No requests have been posted yet."}
           </Text>
           {(searchQuery || activeFilter !== "all") && (
             <TouchableOpacity
-              style={[styles.clearButton, { backgroundColor: isDark ? "#2a2a2a" : "#f0f0f0" }]}
+              style={[
+                styles.clearButton,
+                { backgroundColor: isDark ? "#2a2a2a" : "#f0f0f0" },
+              ]}
               onPress={() => {
                 setSearchQuery("");
                 setActiveFilter("all");
               }}
             >
-              <Text style={{ color: isDark ? "#fff" : "#333", fontWeight: "600" }}>
+              <Text
+                style={{ color: isDark ? "#fff" : "#333", fontWeight: "600" }}
+              >
                 Clear Filters
               </Text>
             </TouchableOpacity>
@@ -410,8 +466,8 @@ export default function RequestsScreen() {
             data={filteredRequests}
             keyExtractor={(item) => item.id}
             refreshControl={
-              <RefreshControl 
-                refreshing={refreshing} 
+              <RefreshControl
+                refreshing={refreshing}
                 onRefresh={onRefresh}
                 tintColor={isDark ? "#fff" : "#000"}
               />
@@ -443,16 +499,23 @@ export default function RequestsScreen() {
                     </Text>
                   </View>
                   <View style={styles.headerActions}>
-                    <View style={[
-                      styles.statusBadge,
-                      { backgroundColor: getStatusBgColor(item.status) }
-                    ]}>
-                      <Text style={[
-                        styles.statusText,
-                        { color: getStatusColor(item.status) }
-                      ]}>
-                        {item.status === "open" ? "Open" :
-                         item.status === "in_progress" ? "In Progress" : "Closed"}
+                    <View
+                      style={[
+                        styles.statusBadge,
+                        { backgroundColor: getStatusBgColor(item.status) },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.statusText,
+                          { color: getStatusColor(item.status) },
+                        ]}
+                      >
+                        {item.status === "open"
+                          ? "Open"
+                          : item.status === "in_progress"
+                            ? "In Progress"
+                            : "Closed"}
                       </Text>
                     </View>
                     {canDeleteRequests && (
@@ -460,7 +523,11 @@ export default function RequestsScreen() {
                         onPress={() => handleDelete(item.id, item.title)}
                         style={styles.deleteButton}
                       >
-                        <Ionicons name="trash-outline" size={18} color="#FF3B30" />
+                        <Ionicons
+                          name="trash-outline"
+                          size={18}
+                          color="#FF3B30"
+                        />
                       </TouchableOpacity>
                     )}
                   </View>
@@ -479,11 +546,16 @@ export default function RequestsScreen() {
                   <Text
                     style={[styles.meta, { color: isDark ? "#aaa" : "#888" }]}
                   >
-                    Posted by {item.createdBy} • {new Date(item.createdAt).toLocaleDateString()}
+                    Posted by {item.createdBy} •{" "}
+                    {new Date(item.createdAt).toLocaleDateString()}
                   </Text>
                   <TouchableOpacity onPress={() => toggleExpand(item.id)}>
                     <Ionicons
-                      name={expandedRequests.has(item.id) ? "chevron-up" : "chevron-down"}
+                      name={
+                        expandedRequests.has(item.id)
+                          ? "chevron-up"
+                          : "chevron-down"
+                      }
                       size={16}
                       color={isDark ? "#aaa" : "#888"}
                     />
@@ -491,7 +563,8 @@ export default function RequestsScreen() {
                 </View>
 
                 {/* Replies - Only show when expanded or if there are replies */}
-                {((item.replies ?? []).length > 0 || expandedRequests.has(item.id)) && (
+                {((item.replies ?? []).length > 0 ||
+                  expandedRequests.has(item.id)) && (
                   <View style={styles.repliesSection}>
                     <View style={styles.repliesHeader}>
                       <Text
@@ -503,7 +576,7 @@ export default function RequestsScreen() {
                         Replies ({(item.replies ?? []).length})
                       </Text>
                     </View>
-                    
+
                     {(item.replies ?? []).map((r) => (
                       <View
                         key={r.id}
@@ -568,7 +641,7 @@ export default function RequestsScreen() {
                           onPress={() => handleAddReply(item.id)}
                           style={[
                             styles.sendButton,
-                            { opacity: replyText[item.id]?.trim() ? 1 : 0.5 }
+                            { opacity: replyText[item.id]?.trim() ? 1 : 0.5 },
                           ]}
                           disabled={!replyText[item.id]?.trim()}
                         >
@@ -611,7 +684,7 @@ export default function RequestsScreen() {
                   >
                     Create New Request
                   </Text>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     onPress={() => setModalVisible(false)}
                     style={styles.closeButton}
                   >
@@ -709,7 +782,8 @@ export default function RequestsScreen() {
                       styles.modalBtn,
                       {
                         backgroundColor:
-                          newRequest.title.trim() && newRequest.description.trim()
+                          newRequest.title.trim() &&
+                          newRequest.description.trim()
                             ? isDark
                               ? "#0A84FF"
                               : "#007AFF"
@@ -719,7 +793,9 @@ export default function RequestsScreen() {
                       },
                     ]}
                     onPress={handleCreateRequest}
-                    disabled={!newRequest.title.trim() || !newRequest.description.trim()}
+                    disabled={
+                      !newRequest.title.trim() || !newRequest.description.trim()
+                    }
                   >
                     <Text style={{ color: "#fff", fontWeight: "600" }}>
                       Create Request
@@ -756,7 +832,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   createButtonText: { color: "#fff", fontWeight: "600", fontSize: 16 },
-  
+
   // Filter and Search
   filterContainer: {
     paddingHorizontal: 16,
@@ -807,7 +883,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
   },
-  
+
   // Card Styles
   card: {
     padding: 20,
@@ -837,18 +913,18 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   info: { fontSize: 18, fontWeight: "700", flex: 1 },
-  statusBadge: { 
-    paddingHorizontal: 12, 
-    paddingVertical: 6, 
+  statusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 16,
   },
   statusText: { fontSize: 12, fontWeight: "600" },
   deleteButton: {
     padding: 4,
   },
-  desc: { 
-    fontSize: 14, 
-    marginBottom: 12, 
+  desc: {
+    fontSize: 14,
+    marginBottom: 12,
     lineHeight: 20,
   },
   metaContainer: {
@@ -858,7 +934,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   meta: { fontSize: 12 },
-  
+
   // Replies
   repliesSection: {
     marginTop: 12,
@@ -870,12 +946,12 @@ const styles = StyleSheet.create({
   repliesHeader: {
     marginBottom: 8,
   },
-  repliesTitle: { 
-    fontSize: 14, 
+  repliesTitle: {
+    fontSize: 14,
     fontWeight: "600",
   },
-  replyCard: { 
-    padding: 12, 
+  replyCard: {
+    padding: 12,
     borderRadius: 8,
     gap: 4,
   },
@@ -884,15 +960,15 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  replyAuthor: { 
-    fontSize: 12, 
+  replyAuthor: {
+    fontSize: 12,
     fontWeight: "600",
   },
   replyDate: {
     fontSize: 11,
   },
-  replyText: { 
-    fontSize: 14, 
+  replyText: {
+    fontSize: 14,
     lineHeight: 18,
   },
   replyInputRow: {
@@ -909,10 +985,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     minHeight: 40,
   },
-  sendButton: { 
+  sendButton: {
     padding: 8,
   },
-  
+
   // Empty State
   emptyState: {
     flex: 1,
@@ -921,8 +997,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
     gap: 16,
   },
-  emptyTitle: { 
-    fontSize: 20, 
+  emptyTitle: {
+    fontSize: 20,
     fontWeight: "700",
     textAlign: "center",
   },
@@ -937,7 +1013,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginTop: 8,
   },
-  
+
   // Modal
   modalContainer: { flex: 1 },
   modalOverlay: {
@@ -946,9 +1022,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: 20,
   },
-  modalBox: { 
-    width: "100%", 
-    borderRadius: 20, 
+  modalBox: {
+    width: "100%",
+    borderRadius: 20,
     overflow: "hidden",
     maxHeight: "80%",
   },
@@ -960,8 +1036,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "rgba(150,150,150,0.2)",
   },
-  modalTitle: { 
-    fontSize: 20, 
+  modalTitle: {
+    fontSize: 20,
     fontWeight: "700",
   },
   closeButton: {
@@ -984,8 +1060,8 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     marginHorizontal: 20,
   },
-  textArea: { 
-    height: 120, 
+  textArea: {
+    height: 120,
     textAlignVertical: "top",
   },
   charCount: {

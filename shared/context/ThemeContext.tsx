@@ -44,6 +44,10 @@ export interface Theme {
 
     card: string;
     notification: string;
+
+    // ✅ Added
+    danger: string;
+    disabled: string;
   };
   spacing: {
     none: number;
@@ -101,6 +105,10 @@ export const LightTheme: Theme = {
 
     card: "#FFFFFF",
     notification: "#FF453A",
+
+    // ✅ New colors
+    danger: "#FF3B30",
+    disabled: "#A9A9A9",
   },
   spacing: {
     none: 0,
@@ -158,6 +166,10 @@ export const DarkTheme: Theme = {
 
     card: "#1C1C1E",
     notification: "#FF453A",
+
+    // ✅ New colors
+    danger: "#FF453A",
+    disabled: "#5A5A5A",
   },
   spacing: {
     none: 0,
@@ -221,7 +233,7 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({
     try {
       await AsyncStorage.setItem(
         "themePreference",
-        darkMode ? "dark" : "light"
+        darkMode ? "dark" : "light",
       );
     } catch (error) {
       console.error("Error saving theme preference:", error);

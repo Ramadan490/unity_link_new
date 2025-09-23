@@ -15,7 +15,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function TermsScreen() {
   const [accepted, setAccepted] = useState(false);
-  const [expandedSections, setExpandedSections] = useState<Set<number>>(new Set([0]));
+  const [expandedSections, setExpandedSections] = useState<Set<number>>(
+    new Set([0]),
+  );
   const scheme = useColorScheme();
   const isDark = scheme === "dark";
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -45,7 +47,7 @@ export default function TermsScreen() {
   };
 
   const toggleSection = (index: number) => {
-    setExpandedSections(prev => {
+    setExpandedSections((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(index)) {
         newSet.delete(index);
@@ -67,66 +69,97 @@ export default function TermsScreen() {
   const termsSections = [
     {
       title: "1. Introduction",
-      content: "By accessing or using this application, you agree to be bound by these Terms & Conditions. If you do not agree with any part of these terms, please do not use our application."
+      content:
+        "By accessing or using this application, you agree to be bound by these Terms & Conditions. If you do not agree with any part of these terms, please do not use our application.",
     },
     {
       title: "2. User Accounts",
-      content: "When you create an account with us, you must provide accurate and complete information. You are responsible for maintaining the confidentiality of your account and password."
+      content:
+        "When you create an account with us, you must provide accurate and complete information. You are responsible for maintaining the confidentiality of your account and password.",
     },
     {
       title: "3. Community Guidelines",
-      content: "You agree to use our community features responsibly. Harassment, hate speech, spam, or any form of inappropriate content will not be tolerated and may result in account termination."
+      content:
+        "You agree to use our community features responsibly. Harassment, hate speech, spam, or any form of inappropriate content will not be tolerated and may result in account termination.",
     },
     {
       title: "4. Intellectual Property",
-      content: "The application and its original content, features, and functionality are owned by Community App and are protected by international copyright, trademark, and other intellectual property laws."
+      content:
+        "The application and its original content, features, and functionality are owned by Community App and are protected by international copyright, trademark, and other intellectual property laws.",
     },
     {
       title: "5. Termination",
-      content: "We may terminate or suspend your account immediately, without prior notice or liability, for any reason whatsoever, including without limitation if you breach the Terms."
+      content:
+        "We may terminate or suspend your account immediately, without prior notice or liability, for any reason whatsoever, including without limitation if you breach the Terms.",
     },
     {
       title: "6. Limitation of Liability",
-      content: "In no event shall Community App, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential or punitive damages."
+      content:
+        "In no event shall Community App, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential or punitive damages.",
     },
     {
       title: "7. Changes to Terms",
-      content: "We reserve the right, at our sole discretion, to modify or replace these Terms at any time. If a revision is material we will provide at least 30 days' notice prior to any new terms taking effect."
+      content:
+        "We reserve the right, at our sole discretion, to modify or replace these Terms at any time. If a revision is material we will provide at least 30 days' notice prior to any new terms taking effect.",
     },
     {
       title: "8. Contact Information",
-      content: "If you have any questions about these Terms, please contact us at support@example.com."
-    }
+      content:
+        "If you have any questions about these Terms, please contact us at support@example.com.",
+    },
   ];
 
   const lastUpdated = "December 15, 2023";
   const appVersion = "v2.1.0";
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]} edges={["top", "bottom"]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: themeColors.background }]}
+      edges={["top", "bottom"]}
+    >
       <Animated.View style={{ opacity: fadeAnim, flex: 1 }}>
         {/* Header */}
         <View style={styles.header}>
-          <Ionicons name="document-text-outline" size={32} color={themeColors.primary} />
+          <Ionicons
+            name="document-text-outline"
+            size={32}
+            color={themeColors.primary}
+          />
           <Text style={[styles.headerTitle, { color: themeColors.text }]}>
             Terms & Conditions
           </Text>
-          <Text style={[styles.subheader, { color: themeColors.secondaryText }]}>
+          <Text
+            style={[styles.subheader, { color: themeColors.secondaryText }]}
+          >
             Please read these carefully before using the app
           </Text>
         </View>
 
         {/* Meta Information */}
-        <View style={[styles.metaContainer, { backgroundColor: themeColors.card }]}>
+        <View
+          style={[styles.metaContainer, { backgroundColor: themeColors.card }]}
+        >
           <View style={styles.metaItem}>
-            <Ionicons name="time-outline" size={16} color={themeColors.secondaryText} />
-            <Text style={[styles.metaText, { color: themeColors.secondaryText }]}>
+            <Ionicons
+              name="time-outline"
+              size={16}
+              color={themeColors.secondaryText}
+            />
+            <Text
+              style={[styles.metaText, { color: themeColors.secondaryText }]}
+            >
               Last updated: {lastUpdated}
             </Text>
           </View>
           <View style={styles.metaItem}>
-            <Ionicons name="phone-portrait-outline" size={16} color={themeColors.secondaryText} />
-            <Text style={[styles.metaText, { color: themeColors.secondaryText }]}>
+            <Ionicons
+              name="phone-portrait-outline"
+              size={16}
+              color={themeColors.secondaryText}
+            />
+            <Text
+              style={[styles.metaText, { color: themeColors.secondaryText }]}
+            >
               App version: {appVersion}
             </Text>
           </View>
@@ -139,28 +172,41 @@ export default function TermsScreen() {
           showsVerticalScrollIndicator={false}
         >
           <Text style={[styles.introText, { color: themeColors.text }]}>
-            Welcome to our Community App. These Terms & Conditions govern your use of our application and services.
+            Welcome to our Community App. These Terms & Conditions govern your
+            use of our application and services.
           </Text>
 
           {termsSections.map((section, index) => (
-            <View key={index} style={[styles.section, { backgroundColor: themeColors.card }]}>
+            <View
+              key={index}
+              style={[styles.section, { backgroundColor: themeColors.card }]}
+            >
               <TouchableOpacity
                 style={styles.sectionHeader}
                 onPress={() => toggleSection(index)}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.sectionTitle, { color: themeColors.text }]}>
+                <Text
+                  style={[styles.sectionTitle, { color: themeColors.text }]}
+                >
                   {section.title}
                 </Text>
                 <Ionicons
-                  name={expandedSections.has(index) ? "chevron-up" : "chevron-down"}
+                  name={
+                    expandedSections.has(index) ? "chevron-up" : "chevron-down"
+                  }
                   size={20}
                   color={themeColors.secondaryText}
                 />
               </TouchableOpacity>
-              
+
               {expandedSections.has(index) && (
-                <Text style={[styles.sectionContent, { color: themeColors.secondaryText }]}>
+                <Text
+                  style={[
+                    styles.sectionContent,
+                    { color: themeColors.secondaryText },
+                  ]}
+                >
                   {section.content}
                 </Text>
               )}
@@ -168,39 +214,72 @@ export default function TermsScreen() {
           ))}
 
           {/* Additional Links */}
-          <View style={[styles.linksContainer, { backgroundColor: themeColors.card }]}>
-            <TouchableOpacity style={styles.linkItem} onPress={openPrivacyPolicy}>
-              <Ionicons name="shield-checkmark-outline" size={20} color={themeColors.primary} />
+          <View
+            style={[
+              styles.linksContainer,
+              { backgroundColor: themeColors.card },
+            ]}
+          >
+            <TouchableOpacity
+              style={styles.linkItem}
+              onPress={openPrivacyPolicy}
+            >
+              <Ionicons
+                name="shield-checkmark-outline"
+                size={20}
+                color={themeColors.primary}
+              />
               <Text style={[styles.linkText, { color: themeColors.primary }]}>
                 Privacy Policy
               </Text>
-              <Ionicons name="open-outline" size={16} color={themeColors.primary} />
+              <Ionicons
+                name="open-outline"
+                size={16}
+                color={themeColors.primary}
+              />
             </TouchableOpacity>
-            
-            <View style={[styles.divider, { backgroundColor: themeColors.border }]} />
-            
+
+            <View
+              style={[styles.divider, { backgroundColor: themeColors.border }]}
+            />
+
             <TouchableOpacity style={styles.linkItem} onPress={openContact}>
-              <Ionicons name="mail-outline" size={20} color={themeColors.primary} />
+              <Ionicons
+                name="mail-outline"
+                size={20}
+                color={themeColors.primary}
+              />
               <Text style={[styles.linkText, { color: themeColors.primary }]}>
                 Contact Support
               </Text>
-              <Ionicons name="open-outline" size={16} color={themeColors.primary} />
+              <Ionicons
+                name="open-outline"
+                size={16}
+                color={themeColors.primary}
+              />
             </TouchableOpacity>
           </View>
         </ScrollView>
 
         {/* Footer Actions */}
-        <View style={[styles.footer, { backgroundColor: themeColors.background }]}>
+        <View
+          style={[styles.footer, { backgroundColor: themeColors.background }]}
+        >
           <TouchableOpacity
             style={styles.checkboxContainer}
             onPress={() => setAccepted(!accepted)}
             activeOpacity={0.7}
           >
-            <View style={[
-              styles.checkbox,
-              { borderColor: themeColors.primary },
-              accepted && [styles.checkboxChecked, { backgroundColor: themeColors.primary }]
-            ]}>
+            <View
+              style={[
+                styles.checkbox,
+                { borderColor: themeColors.primary },
+                accepted && [
+                  styles.checkboxChecked,
+                  { backgroundColor: themeColors.primary },
+                ],
+              ]}
+            >
               {accepted && <Ionicons name="checkmark" size={16} color="#fff" />}
             </View>
             <Text style={[styles.checkboxLabel, { color: themeColors.text }]}>
@@ -211,7 +290,11 @@ export default function TermsScreen() {
           <TouchableOpacity
             style={[
               styles.button,
-              { backgroundColor: accepted ? themeColors.primary : themeColors.border },
+              {
+                backgroundColor: accepted
+                  ? themeColors.primary
+                  : themeColors.border,
+              },
             ]}
             onPress={handleAccept}
             disabled={!accepted}

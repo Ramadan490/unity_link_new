@@ -10,7 +10,7 @@ import {
   Text,
   TouchableOpacity,
   View,
-  useColorScheme
+  useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -21,7 +21,7 @@ export default function SecurityScreen() {
   const [locationSharing, setLocationSharing] = useState(true);
   const [activityTracking, setActivityTracking] = useState(false);
   const [appLock, setAppLock] = useState(false);
-  
+
   const scheme = useColorScheme();
   const isDark = scheme === "dark";
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
@@ -53,8 +53,11 @@ export default function SecurityScreen() {
       "You will be redirected to the password change screen.",
       [
         { text: "Cancel", style: "cancel" },
-        { text: "Continue", onPress: () => console.log("Navigate to change password") }
-      ]
+        {
+          text: "Continue",
+          onPress: () => console.log("Navigate to change password"),
+        },
+      ],
     );
   };
 
@@ -64,14 +67,17 @@ export default function SecurityScreen() {
       "This will add an extra layer of security to your account. You'll need to verify your identity using an authentication app.",
       [
         { text: "Not Now", style: "cancel" },
-        { 
-          text: "Enable", 
+        {
+          text: "Enable",
           onPress: () => {
             setTwoFA(true);
-            Alert.alert("Success", "Two-factor authentication has been enabled.");
-          }
-        }
-      ]
+            Alert.alert(
+              "Success",
+              "Two-factor authentication has been enabled.",
+            );
+          },
+        },
+      ],
     );
   };
 
@@ -81,24 +87,24 @@ export default function SecurityScreen() {
       "Are you sure you want to disable this security feature?",
       [
         { text: "Cancel", style: "cancel" },
-        { 
-          text: "Disable", 
+        {
+          text: "Disable",
           style: "destructive",
-          onPress: () => setTwoFA(false)
-        }
-      ]
+          onPress: () => setTwoFA(false),
+        },
+      ],
     );
   };
 
-  const SecurityItem = ({ 
-    icon, 
-    label, 
-    description, 
-    value, 
-    onValueChange, 
+  const SecurityItem = ({
+    icon,
+    label,
+    description,
+    value,
+    onValueChange,
     type = "toggle",
     onPress,
-    color = themeColors.primary 
+    color = themeColors.primary,
   }: {
     icon: string;
     label: string;
@@ -115,15 +121,19 @@ export default function SecurityScreen() {
           <Ionicons name={icon as any} size={20} color={color} />
         </View>
         <View style={styles.textContainer}>
-          <Text style={[styles.label, { color: themeColors.text }]}>{label}</Text>
+          <Text style={[styles.label, { color: themeColors.text }]}>
+            {label}
+          </Text>
           {description && (
-            <Text style={[styles.description, { color: themeColors.secondaryText }]}>
+            <Text
+              style={[styles.description, { color: themeColors.secondaryText }]}
+            >
               {description}
             </Text>
           )}
         </View>
       </View>
-      
+
       {type === "toggle" ? (
         <Switch
           value={value}
@@ -133,32 +143,47 @@ export default function SecurityScreen() {
         />
       ) : (
         <TouchableOpacity onPress={onPress}>
-          <Ionicons name="chevron-forward" size={20} color={themeColors.secondaryText} />
+          <Ionicons
+            name="chevron-forward"
+            size={20}
+            color={themeColors.secondaryText}
+          />
         </TouchableOpacity>
       )}
     </View>
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]} edges={["top"]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: themeColors.background }]}
+      edges={["top"]}
+    >
       <Animated.View style={{ opacity: fadeAnim, flex: 1 }}>
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}
         >
           {/* Header */}
           <View style={styles.header}>
-            <Ionicons name="shield-checkmark-outline" size={32} color={themeColors.primary} />
+            <Ionicons
+              name="shield-checkmark-outline"
+              size={32}
+              color={themeColors.primary}
+            />
             <Text style={[styles.headerTitle, { color: themeColors.text }]}>
               Privacy & Security
             </Text>
-            <Text style={[styles.subheader, { color: themeColors.secondaryText }]}>
+            <Text
+              style={[styles.subheader, { color: themeColors.secondaryText }]}
+            >
               Manage your account security and privacy preferences
             </Text>
           </View>
 
           {/* Authentication Section */}
-          <Text style={[styles.sectionTitle, { color: themeColors.secondaryText }]}>
+          <Text
+            style={[styles.sectionTitle, { color: themeColors.secondaryText }]}
+          >
             AUTHENTICATION
           </Text>
           <View style={[styles.card, { backgroundColor: themeColors.card }]}>
@@ -170,7 +195,7 @@ export default function SecurityScreen() {
               onValueChange={setBiometric}
               color={themeColors.primary}
             />
-            
+
             <SecurityItem
               icon="shield-checkmark-outline"
               label="Two-Factor Authentication"
@@ -179,7 +204,7 @@ export default function SecurityScreen() {
               onValueChange={twoFA ? handleDisable2FA : handleEnable2FA}
               color={twoFA ? themeColors.success : themeColors.primary}
             />
-            
+
             <SecurityItem
               icon="lock-closed-outline"
               label="App Lock"
@@ -191,7 +216,9 @@ export default function SecurityScreen() {
           </View>
 
           {/* Privacy Section */}
-          <Text style={[styles.sectionTitle, { color: themeColors.secondaryText }]}>
+          <Text
+            style={[styles.sectionTitle, { color: themeColors.secondaryText }]}
+          >
             PRIVACY SETTINGS
           </Text>
           <View style={[styles.card, { backgroundColor: themeColors.card }]}>
@@ -203,7 +230,7 @@ export default function SecurityScreen() {
               onValueChange={setDataSharing}
               color={themeColors.primary}
             />
-            
+
             <SecurityItem
               icon="location-outline"
               label="Location Services"
@@ -212,7 +239,7 @@ export default function SecurityScreen() {
               onValueChange={setLocationSharing}
               color={themeColors.primary}
             />
-            
+
             <SecurityItem
               icon="analytics-outline"
               label="Activity Tracking"
@@ -224,7 +251,9 @@ export default function SecurityScreen() {
           </View>
 
           {/* Security Actions */}
-          <Text style={[styles.sectionTitle, { color: themeColors.secondaryText }]}>
+          <Text
+            style={[styles.sectionTitle, { color: themeColors.secondaryText }]}
+          >
             SECURITY ACTIONS
           </Text>
           <View style={[styles.card, { backgroundColor: themeColors.card }]}>
@@ -236,56 +265,93 @@ export default function SecurityScreen() {
               onPress={handleChangePassword}
               color={themeColors.primary}
             />
-            
+
             <SecurityItem
               icon="log-out-outline"
               label="Log Out All Devices"
               description="Sign out from all connected devices"
               type="button"
-              onPress={() => Alert.alert("Log Out All Devices", "This will sign you out from all devices.")}
+              onPress={() =>
+                Alert.alert(
+                  "Log Out All Devices",
+                  "This will sign you out from all devices.",
+                )
+              }
               color={themeColors.warning}
             />
-            
+
             <SecurityItem
               icon="trash-outline"
               label="Delete Account"
               description="Permanently delete your account and data"
               type="button"
-              onPress={() => Alert.alert("Delete Account", "This action cannot be undone.")}
+              onPress={() =>
+                Alert.alert("Delete Account", "This action cannot be undone.")
+              }
               color={themeColors.error}
             />
           </View>
 
           {/* Security Status */}
-          <View style={[styles.statusCard, { backgroundColor: themeColors.card }]}>
-            <Ionicons name="shield-checkmark" size={24} color={themeColors.success} />
+          <View
+            style={[styles.statusCard, { backgroundColor: themeColors.card }]}
+          >
+            <Ionicons
+              name="shield-checkmark"
+              size={24}
+              color={themeColors.success}
+            />
             <View style={styles.statusContent}>
               <Text style={[styles.statusTitle, { color: themeColors.text }]}>
                 Security Status: {twoFA && biometric ? "Excellent" : "Good"}
               </Text>
-              <Text style={[styles.statusText, { color: themeColors.secondaryText }]}>
-                {twoFA && biometric 
+              <Text
+                style={[
+                  styles.statusText,
+                  { color: themeColors.secondaryText },
+                ]}
+              >
+                {twoFA && biometric
                   ? "Your account is well protected with multiple security layers."
-                  : "Consider enabling additional security features for better protection."
-                }
+                  : "Consider enabling additional security features for better protection."}
               </Text>
             </View>
           </View>
 
           {/* Last Activity */}
-          <View style={[styles.activityCard, { backgroundColor: themeColors.card }]}>
+          <View
+            style={[styles.activityCard, { backgroundColor: themeColors.card }]}
+          >
             <Text style={[styles.activityTitle, { color: themeColors.text }]}>
               Last Activity
             </Text>
             <View style={styles.activityItem}>
-              <Ionicons name="phone-portrait-outline" size={16} color={themeColors.secondaryText} />
-              <Text style={[styles.activityText, { color: themeColors.secondaryText }]}>
+              <Ionicons
+                name="phone-portrait-outline"
+                size={16}
+                color={themeColors.secondaryText}
+              />
+              <Text
+                style={[
+                  styles.activityText,
+                  { color: themeColors.secondaryText },
+                ]}
+              >
                 iPhone 13 Pro • Today at 2:30 PM
               </Text>
             </View>
             <View style={styles.activityItem}>
-              <Ionicons name="desktop-outline" size={16} color={themeColors.secondaryText} />
-              <Text style={[styles.activityText, { color: themeColors.secondaryText }]}>
+              <Ionicons
+                name="desktop-outline"
+                size={16}
+                color={themeColors.secondaryText}
+              />
+              <Text
+                style={[
+                  styles.activityText,
+                  { color: themeColors.secondaryText },
+                ]}
+              >
                 Web Browser • Yesterday at 9:15 AM
               </Text>
             </View>

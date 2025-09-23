@@ -8,7 +8,12 @@ type ButtonProps = {
   style?: ViewStyle; // ✅ allow style override
 };
 
-export default function Button({ label, onPress, variant = "primary", style }: ButtonProps) {
+export default function Button({
+  label,
+  onPress,
+  variant = "primary",
+  style,
+}: ButtonProps) {
   return (
     <TouchableOpacity
       onPress={onPress}

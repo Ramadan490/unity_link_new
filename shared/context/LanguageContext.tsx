@@ -9,7 +9,9 @@ type LanguageContextType = {
   switchLanguage: () => void;
 };
 
-const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+const LanguageContext = createContext<LanguageContextType | undefined>(
+  undefined,
+);
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguage] = useState(i18n.language);
@@ -41,6 +43,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
 export function useLanguage() {
   const context = useContext(LanguageContext);
-  if (!context) throw new Error("useLanguage must be used within a LanguageProvider");
+  if (!context)
+    throw new Error("useLanguage must be used within a LanguageProvider");
   return context;
 }

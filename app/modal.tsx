@@ -8,15 +8,7 @@ interface Props extends TextProps {
 }
 
 export default function ThemedText({ style, type = "body", ...props }: Props) {
-  return (
-    <Text
-      {...props}
-      style={[
-        styles[type],
-        style,
-      ]}
-    />
-  );
+  return <Text {...props} style={[styles[type], style]} />;
 }
 
 const styles = StyleSheet.create({

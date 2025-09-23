@@ -1,5 +1,6 @@
-import { Event } from "@/types/events";
-import { apiFetch } from "@/utils/api"; // ✅ correct utils path
+// features/events/services/eventService.ts
+import { Event } from "@/shared/types/events";
+import { apiFetch } from "@/shared/utils/api"; // ✅ correct path
 
 let mockEvents: Event[] = [
   {
@@ -13,6 +14,7 @@ let mockEvents: Event[] = [
     status: "upcoming",
     donations: 1200,
     goal: 2000,
+    attending: ["u1", "u2"], // ✅ example attendees
   },
   {
     id: "2",
@@ -24,6 +26,7 @@ let mockEvents: Event[] = [
     status: "upcoming",
     donations: 450,
     goal: 1000,
+    attending: [], // ✅ empty initially
   },
 ];
 
@@ -32,9 +35,7 @@ export async function getEvents(): Promise<Event[]> {
   try {
     return await apiFetch<Event[]>("/events");
   } catch {
-    return new Promise((resolve) =>
-      setTimeout(() => resolve(mockEvents), 500)
-    );
+    return new Promise((resolve) => setTimeout(() => resolve(mockEvents), 500));
   }
 }
 
@@ -49,11 +50,10 @@ export async function addEvent(event: Event): Promise<Event> {
     const newEvent: Event = {
       ...event,
       id: String(mockEvents.length + 1),
+      attending: [],
     };
     mockEvents.push(newEvent);
-    return new Promise((resolve) =>
-      setTimeout(() => resolve(newEvent), 300)
-    );
+    return new Promise((resolve) => setTimeout(() => resolve(newEvent), 300));
   }
 }
 
@@ -63,5 +63,33 @@ export async function deleteEvent(id: string): Promise<void> {
     await apiFetch<void>(`/events/${id}`, { method: "DELETE" });
   } catch {
     mockEvents = mockEvents.filter((e) => e.id !== id);
+  }
+}
+
+// ✅ RSVP / Cancel RSVP
+export async function toggleRSVP(
+  eventId: string,
+  userId: string,
+): Promise<Event | null> {
+  try {
+    // If backend exists
+    return await apiFetch<Event>(`/events/${eventId}/rsvp`, {
+      method: "POST",
+      body: JSON.stringify({ userId }),
+    });
+  } catch {
+    // Fallback mock logic
+    mockEvents = mockEvents.map((event) =>
+      event.id === eventId
+        ? {
+            ...event,
+            attending: event.attending.includes(userId)
+              ? event.attending.filter((id) => id !== userId) // cancel RSVP
+              : [...event.attending, userId], // add RSVP
+          }
+        : event,
+    );
+
+    return mockEvents.find((e) => e.id === eventId) || null;
   }
 }
