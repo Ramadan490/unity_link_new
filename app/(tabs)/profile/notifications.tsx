@@ -1,10 +1,13 @@
+import { useTheme } from "@/shared/context/ThemeContext";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Alert,
   Animated,
   Easing,
   FlatList,
+  I18nManager,
   Platform,
   RefreshControl,
   StyleSheet,
@@ -119,6 +122,8 @@ const generateMockNotifications = (): Notification[] => [
 ];
 
 export default function NotificationsScreen() {
+  const { isRTL } = useTheme();
+  const { t } = useTranslation();
   const [notifications, setNotifications] = useState<Notification[]>(
     generateMockNotifications(),
   );
@@ -136,6 +141,14 @@ export default function NotificationsScreen() {
       useNativeDriver: true,
     }).start();
   }, []);
+
+  // Apply RTL layout changes
+  React.useEffect(() => {
+    if (isRTL !== I18nManager.isRTL) {
+      I18nManager.forceRTL(isRTL);
+      // Note: You may need to restart the app for RTL changes to take full effect
+    }
+  }, [isRTL]);
 
   const themeColors = {
     background: isDark ? "#121212" : "#f9f9f9",
@@ -167,12 +180,12 @@ export default function NotificationsScreen() {
 
   const clearAllNotifications = () => {
     Alert.alert(
-      "Clear All Notifications",
-      "Are you sure you want to clear all notifications?",
+      t("notifications.clearAllTitle"),
+      t("notifications.clearAllMessage"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Clear All",
+          text: t("notifications.clearAll"),
           style: "destructive",
           onPress: () => setNotifications([]),
         },
@@ -231,13 +244,18 @@ export default function NotificationsScreen() {
         style={[
           styles.card,
           { backgroundColor: themeColors.card },
-          !item.read && styles.unreadCard,
+          !item.read && [
+            styles.unreadCard,
+            isRTL 
+              ? { borderRightWidth: 4, borderRightColor: "#007AFF" } 
+              : { borderLeftWidth: 4, borderLeftColor: "#007AFF" }
+          ],
         ]}
         onPress={() => markAsRead(item.id)}
         activeOpacity={0.7}
-        accessibilityLabel={`Notification: ${item.title}`}
+        accessibilityLabel={t("notifications.notificationItem", { title: item.title })}
       >
-        <View style={styles.cardContent}>
+        <View style={[styles.cardContent, isRTL && styles.cardContentRTL]}>
           <View style={styles.iconContainer}>
             <Ionicons
               name={getIcon(item.type) as any}
@@ -252,7 +270,7 @@ export default function NotificationsScreen() {
           </View>
 
           <View style={styles.content}>
-            <View style={styles.headerRow}>
+            <View style={[styles.headerRow, isRTL && styles.headerRowRTL]}>
               <Text style={[styles.title, { color: themeColors.text }]}>
                 {item.title}
               </Text>
@@ -263,7 +281,7 @@ export default function NotificationsScreen() {
                 ]}
               >
                 <Text style={[styles.priorityText, { color: priorityColor }]}>
-                  {item.priority}
+                  {t(`notifications.priority.${item.priority}`)}
                 </Text>
               </View>
             </View>
@@ -274,7 +292,7 @@ export default function NotificationsScreen() {
               {item.message}
             </Text>
 
-            <View style={styles.footer}>
+            <View style={[styles.footer, isRTL && styles.footerRTL]}>
               <Text style={[styles.time, { color: themeColors.secondaryText }]}>
                 {item.time}
               </Text>
@@ -304,28 +322,28 @@ export default function NotificationsScreen() {
     >
       <Animated.View style={{ opacity: fadeAnim, flex: 1 }}>
         {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerContent}>
+        <View style={[styles.header, isRTL && styles.headerRTL]}>
+          <View style={[styles.headerContent, isRTL && styles.headerContentRTL]}>
             <Ionicons
               name="notifications-outline"
               size={28}
               color={themeColors.primary}
             />
-            <View>
+            <View style={isRTL && styles.headerTextRTL}>
               <Text style={[styles.headerTitle, { color: themeColors.text }]}>
-                Notifications
+                {t("notifications.title")}
               </Text>
               <Text
                 style={[styles.subheader, { color: themeColors.secondaryText }]}
               >
                 {unreadCount > 0
-                  ? `${unreadCount} unread notifications`
-                  : "All caught up!"}
+                  ? t("notifications.unreadCount", { count: unreadCount })
+                  : t("notifications.allCaughtUp")}
               </Text>
             </View>
           </View>
 
-          <View style={styles.headerActions}>
+          <View style={[styles.headerActions, isRTL && styles.headerActionsRTL]}>
             {unreadCount > 0 && (
               <TouchableOpacity
                 onPress={markAllAsRead}
@@ -337,7 +355,7 @@ export default function NotificationsScreen() {
                     { color: themeColors.primary },
                   ]}
                 >
-                  Mark all read
+                  {t("notifications.markAllRead")}
                 </Text>
               </TouchableOpacity>
             )}
@@ -359,6 +377,7 @@ export default function NotificationsScreen() {
           style={[
             styles.filterContainer,
             { backgroundColor: themeColors.card },
+            isRTL && styles.filterContainerRTL,
           ]}
         >
           <TouchableOpacity
@@ -378,7 +397,7 @@ export default function NotificationsScreen() {
                 { color: filter === "all" ? "#fff" : themeColors.text },
               ]}
             >
-              All
+              {t("notifications.filter.all")}
             </Text>
           </TouchableOpacity>
 
@@ -399,7 +418,7 @@ export default function NotificationsScreen() {
                 { color: filter === "unread" ? "#fff" : themeColors.text },
               ]}
             >
-              Unread
+              {t("notifications.filter.unread")}
             </Text>
             {unreadCount > 0 && (
               <View
@@ -428,8 +447,8 @@ export default function NotificationsScreen() {
             />
             <Text style={[styles.emptyText, { color: themeColors.text }]}>
               {filter === "unread"
-                ? "No unread notifications"
-                : "No notifications yet"}
+                ? t("notifications.noUnread")
+                : t("notifications.noNotifications")}
             </Text>
             <Text
               style={[
@@ -438,8 +457,8 @@ export default function NotificationsScreen() {
               ]}
             >
               {filter === "unread"
-                ? "You're all caught up!"
-                : "Notifications will appear here"}
+                ? t("notifications.allCaughtUp")
+                : t("notifications.willAppearHere")}
             </Text>
           </View>
         ) : (
@@ -482,10 +501,19 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 16,
   },
+  headerRTL: {
+    flexDirection: "row-reverse",
+  },
   headerContent: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
+  },
+  headerContentRTL: {
+    flexDirection: "row-reverse",
+  },
+  headerTextRTL: {
+    alignItems: "flex-end",
   },
   headerTitle: {
     fontSize: 24,
@@ -499,6 +527,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 16,
+  },
+  headerActionsRTL: {
+    flexDirection: "row-reverse",
   },
   headerButton: {
     padding: 4,
@@ -524,6 +555,9 @@ const styles = StyleSheet.create({
         elevation: 2,
       },
     }),
+  },
+  filterContainerRTL: {
+    flexDirection: "row-reverse",
   },
   filterTab: {
     flex: 1,
@@ -577,13 +611,15 @@ const styles = StyleSheet.create({
     }),
   },
   unreadCard: {
-    borderLeftWidth: 4,
-    borderLeftColor: "#007AFF",
+    // borderLeftWidth and borderLeftColor are applied conditionally based on RTL
   },
   cardContent: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 12,
+  },
+  cardContentRTL: {
+    flexDirection: "row-reverse",
   },
   iconContainer: {
     position: "relative",
@@ -606,10 +642,14 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     gap: 8,
   },
+  headerRowRTL: {
+    flexDirection: "row-reverse",
+  },
   title: {
     fontSize: 16,
     fontWeight: "600",
     flex: 1,
+    textAlign: "left", // This will be automatically flipped in RTL
   },
   priorityBadge: {
     paddingHorizontal: 8,
@@ -624,12 +664,16 @@ const styles = StyleSheet.create({
   message: {
     fontSize: 14,
     lineHeight: 20,
+    textAlign: "left", // This will be automatically flipped in RTL
   },
   footer: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginTop: 8,
+  },
+  footerRTL: {
+    flexDirection: "row-reverse",
   },
   time: {
     fontSize: 12,

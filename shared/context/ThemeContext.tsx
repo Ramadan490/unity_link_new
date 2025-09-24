@@ -7,7 +7,7 @@ import React, {
   useEffect,
   useState,
 } from "react";
-import { Appearance, useColorScheme } from "react-native";
+import { Appearance, I18nManager, useColorScheme } from "react-native";
 
 // ---- Theme Interfaces ----
 export interface Theme {
@@ -45,7 +45,6 @@ export interface Theme {
     card: string;
     notification: string;
 
-    // ✅ Added
     danger: string;
     disabled: string;
   };
@@ -106,7 +105,6 @@ export const LightTheme: Theme = {
     card: "#FFFFFF",
     notification: "#FF453A",
 
-    // ✅ New colors
     danger: "#FF3B30",
     disabled: "#A9A9A9",
   },
@@ -167,7 +165,6 @@ export const DarkTheme: Theme = {
     card: "#1C1C1E",
     notification: "#FF453A",
 
-    // ✅ New colors
     danger: "#FF453A",
     disabled: "#5A5A5A",
   },
@@ -196,6 +193,7 @@ export const DarkTheme: Theme = {
 interface ThemeContextType {
   theme: Theme;
   isDark: boolean;
+  isRTL: boolean; // ✅ Added
   toggleTheme: () => void;
 }
 
@@ -206,8 +204,8 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({
 }) => {
   const systemColorScheme = useColorScheme();
   const [isDark, setIsDark] = useState(systemColorScheme === "dark");
+  const [isRTL, setIsRTL] = useState(I18nManager.isRTL);
 
-  // Load saved theme or fallback to system
   useEffect(() => {
     loadThemePreference();
 
@@ -233,7 +231,7 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({
     try {
       await AsyncStorage.setItem(
         "themePreference",
-        darkMode ? "dark" : "light",
+        darkMode ? "dark" : "light"
       );
     } catch (error) {
       console.error("Error saving theme preference:", error);
@@ -249,6 +247,7 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({
   const value = {
     theme: isDark ? DarkTheme : LightTheme,
     isDark,
+    isRTL, // ✅ exposed here
     toggleTheme,
   };
 

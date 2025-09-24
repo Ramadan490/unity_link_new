@@ -50,7 +50,7 @@ export default function ProfileScreen() {
             router.replace("/(auth)/login" as Href);
           },
         },
-      ],
+      ]
     );
   };
 
@@ -96,7 +96,7 @@ export default function ProfileScreen() {
     },
     {
       id: "notifications",
-      title: t("notifications"),
+      title: t("notifications.title"),
       icon: "notifications-outline",
       route: "/(tabs)/profile/notifications" as Href,
       color: "#FF9500",

@@ -3,8 +3,8 @@ import { ThemedText, ThemedView } from "@/shared/components/ui";
 import { useTheme } from "@/shared/context/ThemeContext";
 import { useRole } from "@/shared/hooks/useRole";
 import { Ionicons } from "@expo/vector-icons";
-import { t } from "i18next";
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Alert,
   FlatList,
@@ -56,6 +56,8 @@ const initialAnnouncements: Announcement[] = [
 ];
 
 export default function AnnouncementsScreen() {
+  const { isRTL } = useTheme();
+  const { t } = useTranslation();
   const [announcements, setAnnouncements] = useState<Announcement[]>(initialAnnouncements);
   const [modalVisible, setModalVisible] = useState(false);
   const [newAnnouncement, setNewAnnouncement] = useState({

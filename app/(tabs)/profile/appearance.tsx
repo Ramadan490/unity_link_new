@@ -1,5 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useTranslation } from "react-i18next";
+
 import React, { useEffect, useState } from "react";
 import {
   Appearance,
@@ -68,6 +70,7 @@ const themeOptions: {
 ];
 
 export default function AppearanceScreen() {
+  const { t } = useTranslation();
   const systemColorScheme = useColorScheme();
   const [themeMode, setThemeMode] = useState<"light" | "dark" | "system">(
     "system",
@@ -165,17 +168,17 @@ export default function AppearanceScreen() {
             color={currentTheme.primary}
           />
           <Text style={[styles.header, { color: currentTheme.text }]}>
-            Appearance Settings
+            {t("Appearance Settings")}
           </Text>
           <Text style={[styles.subheader, { color: currentTheme.secondary }]}>
-            Customize how the app looks and feels
+            {t("Customize how the app looks and feels")}
           </Text>
         </View>
 
         {/* Theme Selection */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: currentTheme.text }]}>
-            Theme
+            {t("Theme")}
           </Text>
           <View style={styles.themeOptionsContainer}>
             {themeOptions.map((option) => (
@@ -231,7 +234,7 @@ export default function AppearanceScreen() {
         {/* Font Size Options */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: currentTheme.text }]}>
-            Font Size
+            {t("Font Size")}
           </Text>
           <View style={styles.fontSizeOptionsContainer}>
             {fontSizeOptions.map((option) => (
@@ -264,7 +267,7 @@ export default function AppearanceScreen() {
                     },
                   ]}
                 >
-                  Aa
+                  {t("Aa")}
                 </Text>
                 <Text
                   style={[
@@ -287,7 +290,7 @@ export default function AppearanceScreen() {
         {/* Accessibility Options */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: currentTheme.text }]}>
-            Accessibility
+            {t("Accessibility")}
           </Text>
 
           <View
@@ -309,7 +312,7 @@ export default function AppearanceScreen() {
                 <Text
                   style={[styles.settingText, { color: currentTheme.text }]}
                 >
-                  Reduce Motion
+                  {t("Reduce Motion")}
                 </Text>
                 <Text
                   style={[
@@ -317,7 +320,7 @@ export default function AppearanceScreen() {
                     { color: currentTheme.secondary },
                   ]}
                 >
-                  Limit animations and transitions
+                  {t("Limit animations and transitions")}
                 </Text>
               </View>
             </View>
@@ -351,7 +354,7 @@ export default function AppearanceScreen() {
                 <Text
                   style={[styles.settingText, { color: currentTheme.text }]}
                 >
-                  Bold Text
+                  {t("Bold Text")}
                 </Text>
                 <Text
                   style={[
@@ -359,7 +362,7 @@ export default function AppearanceScreen() {
                     { color: currentTheme.secondary },
                   ]}
                 >
-                  Use heavier font weights
+                  {t("Use heavier font weights")}
                 </Text>
               </View>
             </View>
@@ -393,7 +396,7 @@ export default function AppearanceScreen() {
                 <Text
                   style={[styles.settingText, { color: currentTheme.text }]}
                 >
-                  High Contrast
+                  {t("High Contrast")}
                 </Text>
                 <Text
                   style={[
@@ -401,7 +404,7 @@ export default function AppearanceScreen() {
                     { color: currentTheme.secondary },
                   ]}
                 >
-                  Increase color contrast
+                  {t("Increase color contrast")}
                 </Text>
               </View>
             </View>
@@ -420,7 +423,7 @@ export default function AppearanceScreen() {
         {/* Preview Section */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: currentTheme.text }]}>
-            Preview
+            {t("Preview")}
           </Text>
           <View
             style={[
@@ -443,7 +446,7 @@ export default function AppearanceScreen() {
                 },
               ]}
             >
-              This is how your text will look with the current settings.
+              {t("This is how your text will look with the current settings.")}
             </Text>
             <View style={styles.previewMeta}>
               <View
@@ -491,7 +494,7 @@ export default function AppearanceScreen() {
                       { color: currentTheme.primary },
                     ]}
                   >
-                    Bold
+                    {t("Bold")}
                   </Text>
                 </View>
               )}
@@ -512,13 +515,13 @@ export default function AppearanceScreen() {
         >
           <Ionicons name="refresh-outline" size={20} color="#FF3B30" />
           <Text style={[styles.resetButtonText, { color: "#FF3B30" }]}>
-            Reset to Default Settings
+            {t("Reset to Default Settings")}
           </Text>
         </TouchableOpacity>
 
         <View style={styles.footer}>
           <Text style={[styles.footerText, { color: currentTheme.secondary }]}>
-            Changes apply immediately
+            {t("Changes apply immediately")}
           </Text>
         </View>
       </ScrollView>

@@ -1,8 +1,11 @@
 // app/(tabs)/manageUsers.tsx
+import { useTheme } from "@/shared/context/ThemeContext";
 import { useRole } from "@/shared/hooks/useRole";
 import { useRoleManagement } from "@/shared/hooks/useRoleManagement";
 import { User, UserRole } from "@/shared/types/user";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
+
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -19,6 +22,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function ManageUsersScreen() {
+  const { t } = useTranslation();
+  const { isRTL } = useTheme();
   const { users, updateUserRole, loading, error, refetch } =
     useRoleManagement();
   const { isSuperAdmin } = useRole();
@@ -58,7 +63,7 @@ export default function ManageUsersScreen() {
       await updateUserRole(userId, newRole);
     } catch (err) {
       console.error("Role update failed:", err);
-      Alert.alert("Error", "Failed to update user role. Please try again.");
+      Alert.alert(t("error"), t("manageUsers.roleUpdateFailed"));
     } finally {
       setUpdatingUserId(null);
     }
@@ -70,12 +75,16 @@ export default function ManageUsersScreen() {
     const currentRoleName = roleDisplayNames[user.role];
 
     Alert.alert(
-      "Change Role",
-      `Change ${user.name}'s role from ${currentRoleName} to ${roleName}?`,
+      t("manageUsers.changeRole"),
+      t("manageUsers.confirmRoleChange", {
+        userName: user.name,
+        currentRole: currentRoleName,
+        newRole: roleName,
+      }),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("cancel"), style: "cancel" },
         {
-          text: "Confirm",
+          text: t("confirm"),
           style: action === "demote" ? "destructive" : "default",
           onPress: () => handleRoleUpdate(user.id, newRole),
         },
@@ -104,20 +113,20 @@ export default function ManageUsersScreen() {
 
   const roleFilters: { key: UserRole | "all"; label: string; count: number }[] =
     [
-      { key: "all", label: "All", count: safeUsers.length },
+      { key: "all", label: t("manageUsers.filters.all"), count: safeUsers.length },
       {
         key: "super_admin",
-        label: "Admins",
+        label: t("manageUsers.filters.admins"),
         count: safeUsers.filter((u) => u.role === "super_admin").length,
       },
       {
         key: "board_member",
-        label: "Board",
+        label: t("manageUsers.filters.board"),
         count: safeUsers.filter((u) => u.role === "board_member").length,
       },
       {
         key: "community_member",
-        label: "Members",
+        label: t("manageUsers.filters.members"),
         count: safeUsers.filter((u) => u.role === "community_member").length,
       },
     ];
@@ -149,12 +158,12 @@ export default function ManageUsersScreen() {
               { color: isDark ? "#fff" : "#333" },
             ]}
           >
-            Access Restricted
+            {t("manageUsers.accessRestricted")}
           </Text>
           <Text
             style={[styles.permissionText, { color: isDark ? "#ccc" : "#666" }]}
           >
-            Super administrator privileges required to manage users
+            {t("manageUsers.superAdminRequired")}
           </Text>
         </View>
       </View>
@@ -172,11 +181,10 @@ export default function ManageUsersScreen() {
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <View>
           <Text style={[styles.title, { color: isDark ? "#fff" : "#000" }]}>
-            Manage Users
+            {t("manageUsers.title")}
           </Text>
           <Text style={[styles.subtitle, { color: isDark ? "#ccc" : "#666" }]}>
-            {safeUsers.length} community member
-            {safeUsers.length !== 1 ? "s" : ""}
+            {t("manageUsers.subtitle", { count: safeUsers.length })}
           </Text>
         </View>
       </View>
@@ -192,7 +200,7 @@ export default function ManageUsersScreen() {
           <Ionicons name="search" size={20} color={isDark ? "#999" : "#666"} />
           <TextInput
             style={[styles.searchInput, { color: isDark ? "#fff" : "#000" }]}
-            placeholder="Search users by name or email..."
+            placeholder={t("manageUsers.searchPlaceholder")}
             placeholderTextColor={isDark ? "#666" : "#999"}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -295,7 +303,7 @@ export default function ManageUsersScreen() {
             <Text
               style={[styles.loadingText, { color: isDark ? "#ccc" : "#666" }]}
             >
-              Loading users...
+              {t("manageUsers.loading")}
             </Text>
           </View>
         ) : error ? (
@@ -311,17 +319,17 @@ export default function ManageUsersScreen() {
             <Text
               style={[styles.errorText, { color: isDark ? "#fff" : "#000" }]}
             >
-              Failed to load users
+              {t("manageUsers.loadFailed")}
             </Text>
             <Text
               style={[styles.errorSubtext, { color: isDark ? "#ccc" : "#666" }]}
             >
               {typeof error === "string"
                 ? error
-                : "Please check your connection"}
+                : t("manageUsers.checkConnection")}
             </Text>
             <TouchableOpacity style={styles.retryButton} onPress={refetch}>
-              <Text style={styles.retryButtonText}>Try Again</Text>
+              <Text style={styles.retryButtonText}>{t("tryAgain")}</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -345,8 +353,7 @@ export default function ManageUsersScreen() {
                         { color: isDark ? "#ccc" : "#666" },
                       ]}
                     >
-                      {filteredUsers.length} user
-                      {filteredUsers.length !== 1 ? "s" : ""} found
+                      {t("manageUsers.usersFound", { count: filteredUsers.length })}
                     </Text>
                     {searchQuery && (
                       <Text
@@ -355,7 +362,7 @@ export default function ManageUsersScreen() {
                           { color: isDark ? "#999" : "#888" },
                         ]}
                       >
-                        for "{searchQuery}"
+                        {t("manageUsers.searchFor", { query: searchQuery })}
                       </Text>
                     )}
                   </View>
@@ -373,7 +380,7 @@ export default function ManageUsersScreen() {
                         fontSize: 15,
                       }}
                     >
-                      Clear all
+                      {t("manageUsers.clearAll")}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -400,8 +407,8 @@ export default function ManageUsersScreen() {
                   ]}
                 >
                   {searchQuery || selectedRoleFilter !== "all"
-                    ? "No users found"
-                    : "No users available"}
+                    ? t("manageUsers.noUsersFound")
+                    : t("manageUsers.noUsersAvailable")}
                 </Text>
                 <Text
                   style={[
@@ -410,10 +417,12 @@ export default function ManageUsersScreen() {
                   ]}
                 >
                   {searchQuery
-                    ? "Try adjusting your search terms"
+                    ? t("manageUsers.adjustSearchTerms")
                     : selectedRoleFilter !== "all"
-                      ? `No ${roleFilters.find((f) => f.key === selectedRoleFilter)?.label.toLowerCase()} found`
-                      : "There are no users in the community yet"}
+                      ? t("manageUsers.noFilteredUsers", { 
+                          role: roleFilters.find((f) => f.key === selectedRoleFilter)?.label.toLowerCase() 
+                        })
+                      : t("manageUsers.noUsersInCommunity")}
                 </Text>
                 {(searchQuery || selectedRoleFilter !== "all") && (
                   <TouchableOpacity
@@ -424,7 +433,7 @@ export default function ManageUsersScreen() {
                     }}
                   >
                     <Text style={{ color: "#007AFF", fontWeight: "600" }}>
-                      Clear filters
+                      {t("manageUsers.clearFilters")}
                     </Text>
                   </TouchableOpacity>
                 )}
@@ -519,7 +528,7 @@ export default function ManageUsersScreen() {
                                   color="#fff"
                                 />
                                 <Text style={styles.actionButtonText}>
-                                  Promote
+                                  {t("manageUsers.promote")}
                                 </Text>
                               </TouchableOpacity>
                             )}
@@ -539,7 +548,7 @@ export default function ManageUsersScreen() {
                                   color="#fff"
                                 />
                                 <Text style={styles.actionButtonText}>
-                                  Demote
+                                  {t("manageUsers.demote")}
                                 </Text>
                               </TouchableOpacity>
                             )}
@@ -580,7 +589,6 @@ const getRoleColor = (role: UserRole | "all", isDark: boolean): string => {
   return colors[role] ?? "#ccc";
 };
 
-// FIXED: Use only valid Ionicons names
 const getRoleIcon = (role: UserRole): keyof typeof Ionicons.glyphMap => {
   const icons: Record<UserRole, keyof typeof Ionicons.glyphMap> = {
     super_admin: "shield",

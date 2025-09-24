@@ -1,20 +1,39 @@
 {
   "extends": "expo/tsconfig.base.json",
   "compilerOptions": {
+    "jsx": "react-jsx",
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "strict": true,
     "baseUrl": ".",
     "paths": {
-      "@/config/*": ["shared/config/*"],
-      "@/services/*": ["features/users/services/*"],
-      "@/utils/*": ["shared/utils/*"],
-      "@/components/*": ["shared/components/*"],
-      "@/context/*": ["shared/context/*"],
-      "@/hooks/*": ["shared/hooks/*"],
-      "@/types/*": ["shared/types/*"],
-      "@/constants/*": ["shared/constants/*"],
-      "@/*": ["*"]
+      "@/config/*": [
+        "shared/config/*"
+      ],
+      "@/services/*": [
+        "features/users/services/*"
+      ],
+      "@/utils/*": [
+        "shared/utils/*"
+      ],
+      "@/components/*": [
+        "shared/components/*"
+      ],
+      "@/context/*": [
+        "shared/context/*"
+      ],
+      "@/hooks/*": [
+        "shared/hooks/*"
+      ],
+      "@/types/*": [
+        "shared/types/*"
+      ],
+      "@/constants/*": [
+        "shared/constants/*"
+      ],
+      "@/*": [
+        "*"
+      ]
     }
   },
   "include": [

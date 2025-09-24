@@ -2,9 +2,11 @@ import {
   deleteRequest,
   getRequests,
 } from "@/features/requests/services/requestService";
+import { useTheme } from "@/shared/context/ThemeContext";
 import { Reply, Request } from "@/types/request";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Alert,
   Animated,
@@ -37,6 +39,8 @@ type FilterOption = "all" | RequestStatus;
 
 export default function RequestsScreen() {
   useAuthGuard();
+  const { t, i18n } = useTranslation();
+  const { isRTL } = useTheme();
 
   const [requests, setRequests] = useState<Request[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,7 +58,7 @@ export default function RequestsScreen() {
 
   const [replyText, setReplyText] = useState<Record<string, string>>({});
   const [expandedRequests, setExpandedRequests] = useState<Set<string>>(
-    new Set(),
+    new Set()
   );
 
   const { isSuperAdmin, isBoardMember, user } = useRole();
@@ -66,6 +70,9 @@ export default function RequestsScreen() {
   const canDeleteRequests = isSuperAdmin || isBoardMember;
   const canReply = !!user;
 
+  // Check if current language is Arabic
+  const isArabic = i18n.language === "ar";
+
   // Filter and search requests
   const filteredRequests = useMemo(() => {
     return requests.filter((request) => {
@@ -76,7 +83,7 @@ export default function RequestsScreen() {
         request.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         request.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (request.replies ?? []).some((reply) =>
-          reply.text.toLowerCase().includes(searchQuery.toLowerCase()),
+          reply.text.toLowerCase().includes(searchQuery.toLowerCase())
         );
 
       return matchesFilter && matchesSearch;
@@ -108,12 +115,12 @@ export default function RequestsScreen() {
       }).start();
     } catch (err) {
       console.error("⚠️ Failed to fetch requests:", err);
-      setError("Failed to load requests. Please try again.");
+      setError(t("requests.failedToLoad"));
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [fadeAnim]);
+  }, [fadeAnim, t]);
 
   useEffect(() => {
     loadRequests();
@@ -133,19 +140,19 @@ export default function RequestsScreen() {
   /** Create a request */
   const handleCreateRequest = () => {
     if (!newRequest.title.trim() || !newRequest.description.trim()) {
-      Alert.alert("Missing Info", "Please fill out all required fields.");
+      Alert.alert(t("common.missingInfo"), t("requests.fillAllFields"));
       return;
     }
 
     if (newRequest.title.length > 100) {
-      Alert.alert("Title Too Long", "Title must be less than 100 characters.");
+      Alert.alert(t("common.titleTooLong"), t("requests.titleMaxLength"));
       return;
     }
 
     if (newRequest.description.length > 1000) {
       Alert.alert(
-        "Description Too Long",
-        "Description must be less than 1000 characters.",
+        t("common.descriptionTooLong"),
+        t("requests.descriptionMaxLength")
       );
       return;
     }
@@ -156,7 +163,7 @@ export default function RequestsScreen() {
         title: newRequest.title.trim(),
         description: newRequest.description.trim(),
         status: "open",
-        createdBy: user?.name || user?.email || "Current User",
+        createdBy: user?.name || user?.email || t("common.currentUser"),
         createdAt: new Date().toISOString(),
         replies: [],
       };
@@ -166,12 +173,12 @@ export default function RequestsScreen() {
       setModalVisible(false);
 
       // Show success feedback
-      Alert.alert("Success", "Your request has been submitted!", [
-        { text: "OK", onPress: () => {} },
+      Alert.alert(t("common.success"), t("requests.requestSubmitted"), [
+        { text: t("common.ok"), onPress: () => {} },
       ]);
     } catch (err) {
       console.error("⚠️ Failed to create request:", err);
-      Alert.alert("Error", "Unable to create request. Please try again.");
+      Alert.alert(t("common.error"), t("requests.createError"));
     }
   };
 
@@ -179,12 +186,12 @@ export default function RequestsScreen() {
   const handleDelete = (id: string, title: string) => {
     if (!canDeleteRequests) return;
     Alert.alert(
-      "Confirm Delete",
-      `Are you sure you want to delete "${title}"?`,
+      t("common.confirmDelete"),
+      t("requests.deleteConfirmation", { title }),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Delete",
+          text: t("common.delete"),
           style: "destructive",
           onPress: async () => {
             try {
@@ -192,11 +199,11 @@ export default function RequestsScreen() {
               setRequests((prev) => prev.filter((r) => r.id !== id));
             } catch (err) {
               console.error("⚠️ Failed to delete request:", err);
-              Alert.alert("Error", "Unable to delete request.");
+              Alert.alert(t("common.error"), t("requests.deleteError"));
             }
           },
         },
-      ],
+      ]
     );
   };
 
@@ -206,7 +213,7 @@ export default function RequestsScreen() {
     if (!text) return;
 
     if (text.length > 500) {
-      Alert.alert("Reply Too Long", "Reply must be less than 500 characters.");
+      Alert.alert(t("common.replyTooLong"), t("requests.replyMaxLength"));
       return;
     }
 
@@ -215,21 +222,21 @@ export default function RequestsScreen() {
         if (req.id === requestId) {
           if ((req.replies ?? []).length >= 10) {
             Alert.alert(
-              "Limit Reached",
-              "This request already has 10 replies.",
+              t("common.limitReached"),
+              t("requests.maxRepliesReached")
             );
             return req;
           }
           const newReply: Reply = {
             id: Date.now().toString(),
             text,
-            createdBy: user?.name || user?.email || "User",
+            createdBy: user?.name || user?.email || t("common.user"),
             createdAt: new Date().toISOString(),
           };
           return { ...req, replies: [...(req.replies ?? []), newReply] };
         }
         return req;
-      }),
+      })
     );
 
     setReplyText((prev) => ({ ...prev, [requestId]: "" }));
@@ -260,7 +267,30 @@ export default function RequestsScreen() {
     return colors[status];
   };
 
-  if (loading) return <Loading message="Loading requests..." />;
+  // Get status text translation
+  const getStatusText = (status: RequestStatus) => {
+    switch (status) {
+      case "open":
+        return t("requests.status.open");
+      case "in_progress":
+        return t("requests.status.inProgress");
+      case "closed":
+        return t("requests.status.closed");
+      default:
+        return status;
+    }
+  };
+
+  // RTL styles
+  const rtlStyles = isArabic
+    ? {
+        textAlign: "right" as const,
+        writingDirection: "rtl" as const,
+        flexDirection: "row-reverse" as const,
+      }
+    : {};
+
+  if (loading) return <Loading message={t("requests.loading")} />;
 
   return (
     <View
@@ -271,16 +301,30 @@ export default function RequestsScreen() {
     >
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 20 }]}>
-        <View style={styles.headerContent}>
-          <Text style={[styles.title, { color: isDark ? "#fff" : "#2f4053" }]}>
-            ❓ Requests
+        <View
+          style={[styles.headerContent, isArabic && { alignItems: "flex-end" }]}
+        >
+          <Text
+            style={[
+              styles.title,
+              { color: isDark ? "#fff" : "#2f4053" },
+              rtlStyles,
+            ]}
+          >
+            {t("requests.title")}
           </Text>
           {requests.length > 0 && (
             <Text
-              style={[styles.subtitle, { color: isDark ? "#aaa" : "#666" }]}
+              style={[
+                styles.subtitle,
+                { color: isDark ? "#aaa" : "#666" },
+                rtlStyles,
+              ]}
             >
-              {filteredRequests.length} of {requests.length} request
-              {requests.length !== 1 ? "s" : ""}
+              {t("requests.requestCount", {
+                filtered: filteredRequests.length,
+                total: requests.length,
+              })}
             </Text>
           )}
         </View>
@@ -289,21 +333,23 @@ export default function RequestsScreen() {
             style={[
               styles.createButton,
               { backgroundColor: isDark ? "#0A84FF" : "#007AFF" },
+              isArabic && styles.rtlButton,
             ]}
             onPress={() => setModalVisible(true)}
           >
             <Ionicons name="add" size={20} color="#fff" />
-            <Text style={styles.createButtonText}>Create</Text>
+            <Text style={styles.createButtonText}>{t("requests.create")}</Text>
           </TouchableOpacity>
         )}
       </View>
 
       {/* Search and Filter */}
-      <View style={styles.filterContainer}>
+      <View style={[styles.filterContainer, isArabic && styles.rtlContainer]}>
         <View
           style={[
             styles.searchContainer,
             { backgroundColor: isDark ? "#1e1e1e" : "#f2f2f7" },
+            isArabic && styles.rtlSearchContainer,
           ]}
         >
           <Ionicons
@@ -312,11 +358,16 @@ export default function RequestsScreen() {
             color={isDark ? "#aaa" : "#666"}
           />
           <TextInput
-            style={[styles.searchInput, { color: isDark ? "#fff" : "#000" }]}
-            placeholder="Search requests..."
+            style={[
+              styles.searchInput,
+              { color: isDark ? "#fff" : "#000" },
+              rtlStyles,
+            ]}
+            placeholder={t("requests.searchPlaceholder")}
             placeholderTextColor={isDark ? "#aaa" : "#999"}
             value={searchQuery}
             onChangeText={setSearchQuery}
+            textAlign={isArabic ? "right" : "left"}
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery("")}>
@@ -333,7 +384,10 @@ export default function RequestsScreen() {
           horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.filterScroll}
-          contentContainerStyle={styles.filterContent}
+          contentContainerStyle={[
+            styles.filterContent,
+            isArabic && { flexDirection: "row-reverse" },
+          ]}
         >
           {(["all", "open", "in_progress", "closed"] as FilterOption[]).map(
             (filter) => (
@@ -365,13 +419,7 @@ export default function RequestsScreen() {
                     },
                   ]}
                 >
-                  {filter === "all"
-                    ? "All"
-                    : filter === "open"
-                      ? "Open"
-                      : filter === "in_progress"
-                        ? "In Progress"
-                        : "Closed"}
+                  {filter === "all" ? t("common.all") : getStatusText(filter)}
                 </Text>
                 {filter !== "all" && (
                   <View style={styles.filterCount}>
@@ -381,7 +429,7 @@ export default function RequestsScreen() {
                   </View>
                 )}
               </TouchableOpacity>
-            ),
+            )
           )}
         </ScrollView>
       </View>
@@ -395,11 +443,21 @@ export default function RequestsScreen() {
             color={isDark ? "#444" : "#ccc"}
           />
           <Text
-            style={[styles.emptyTitle, { color: isDark ? "#fff" : "#333" }]}
+            style={[
+              styles.emptyTitle,
+              { color: isDark ? "#fff" : "#333" },
+              rtlStyles,
+            ]}
           >
-            Failed to load requests
+            {t("requests.loadError")}
           </Text>
-          <Text style={[styles.emptyText, { color: isDark ? "#aaa" : "#666" }]}>
+          <Text
+            style={[
+              styles.emptyText,
+              { color: isDark ? "#aaa" : "#666" },
+              rtlStyles,
+            ]}
+          >
             {error}
           </Text>
           <TouchableOpacity
@@ -409,7 +467,9 @@ export default function RequestsScreen() {
             ]}
             onPress={loadRequests}
           >
-            <Text style={{ color: "#fff", fontWeight: "600" }}>Try Again</Text>
+            <Text style={{ color: "#fff", fontWeight: "600" }}>
+              {t("common.tryAgain")}
+            </Text>
           </TouchableOpacity>
         </View>
       ) : filteredRequests.length === 0 ? (
@@ -424,22 +484,36 @@ export default function RequestsScreen() {
             color={isDark ? "#444" : "#ccc"}
           />
           <Text
-            style={[styles.emptyTitle, { color: isDark ? "#fff" : "#333" }]}
+            style={[
+              styles.emptyTitle,
+              { color: isDark ? "#fff" : "#333" },
+              rtlStyles,
+            ]}
           >
             {searchQuery
-              ? "No matching requests"
+              ? t("requests.noMatchingRequests")
               : activeFilter !== "all"
-                ? `No ${activeFilter.replace("_", " ")} requests`
-                : "No requests found"}
+                ? t("requests.noStatusRequests", {
+                    status: getStatusText(activeFilter),
+                  })
+                : t("requests.noRequestsFound")}
           </Text>
-          <Text style={[styles.emptyText, { color: isDark ? "#aaa" : "#666" }]}>
+          <Text
+            style={[
+              styles.emptyText,
+              { color: isDark ? "#aaa" : "#666" },
+              rtlStyles,
+            ]}
+          >
             {searchQuery
-              ? "Try a different search term"
+              ? t("requests.tryDifferentSearch")
               : activeFilter !== "all"
-                ? `There are no ${activeFilter.replace("_", " ")} requests`
+                ? t("requests.noRequestsForStatus", {
+                    status: getStatusText(activeFilter),
+                  })
                 : canCreateRequests
-                  ? "Be the first to create a request."
-                  : "No requests have been posted yet."}
+                  ? t("requests.beFirstToCreate")
+                  : t("requests.noRequestsPosted")}
           </Text>
           {(searchQuery || activeFilter !== "all") && (
             <TouchableOpacity
@@ -455,7 +529,7 @@ export default function RequestsScreen() {
               <Text
                 style={{ color: isDark ? "#fff" : "#333", fontWeight: "600" }}
               >
-                Clear Filters
+                {t("common.clearFilters")}
               </Text>
             </TouchableOpacity>
           )}
@@ -484,21 +558,37 @@ export default function RequestsScreen() {
                 ]}
               >
                 {/* Title Row */}
-                <View style={styles.cardHeader}>
-                  <View style={styles.cardTitleContainer}>
+                <View
+                  style={[styles.cardHeader, isArabic && styles.rtlCardHeader]}
+                >
+                  <View
+                    style={[
+                      styles.cardTitleContainer,
+                      isArabic && styles.rtlTitleContainer,
+                    ]}
+                  >
                     <Ionicons
                       name="document-text-outline"
                       size={20}
                       color={getStatusColor(item.status)}
                     />
                     <Text
-                      style={[styles.info, { color: isDark ? "#fff" : "#333" }]}
+                      style={[
+                        styles.info,
+                        { color: isDark ? "#fff" : "#333" },
+                        rtlStyles,
+                      ]}
                       numberOfLines={1}
                     >
                       {item.title}
                     </Text>
                   </View>
-                  <View style={styles.headerActions}>
+                  <View
+                    style={[
+                      styles.headerActions,
+                      isArabic && styles.rtlActions,
+                    ]}
+                  >
                     <View
                       style={[
                         styles.statusBadge,
@@ -511,11 +601,7 @@ export default function RequestsScreen() {
                           { color: getStatusColor(item.status) },
                         ]}
                       >
-                        {item.status === "open"
-                          ? "Open"
-                          : item.status === "in_progress"
-                            ? "In Progress"
-                            : "Closed"}
+                        {getStatusText(item.status)}
                       </Text>
                     </View>
                     {canDeleteRequests && (
@@ -535,19 +621,36 @@ export default function RequestsScreen() {
 
                 {/* Description */}
                 <Text
-                  style={[styles.desc, { color: isDark ? "#bbb" : "#666" }]}
+                  style={[
+                    styles.desc,
+                    { color: isDark ? "#bbb" : "#666" },
+                    rtlStyles,
+                  ]}
                   numberOfLines={expandedRequests.has(item.id) ? undefined : 3}
                 >
                   {item.description}
                 </Text>
 
                 {/* Meta */}
-                <View style={styles.metaContainer}>
+                <View
+                  style={[
+                    styles.metaContainer,
+                    isArabic && styles.rtlMetaContainer,
+                  ]}
+                >
                   <Text
-                    style={[styles.meta, { color: isDark ? "#aaa" : "#888" }]}
+                    style={[
+                      styles.meta,
+                      { color: isDark ? "#aaa" : "#888" },
+                      rtlStyles,
+                    ]}
                   >
-                    Posted by {item.createdBy} •{" "}
-                    {new Date(item.createdAt).toLocaleDateString()}
+                    {t("requests.postedBy", {
+                      user: item.createdBy,
+                      date: new Date(item.createdAt).toLocaleDateString(
+                        i18n.language
+                      ),
+                    })}
                   </Text>
                   <TouchableOpacity onPress={() => toggleExpand(item.id)}>
                     <Ionicons
@@ -566,14 +669,22 @@ export default function RequestsScreen() {
                 {((item.replies ?? []).length > 0 ||
                   expandedRequests.has(item.id)) && (
                   <View style={styles.repliesSection}>
-                    <View style={styles.repliesHeader}>
+                    <View
+                      style={[
+                        styles.repliesHeader,
+                        isArabic && { alignItems: "flex-end" },
+                      ]}
+                    >
                       <Text
                         style={[
                           styles.repliesTitle,
                           { color: isDark ? "#fff" : "#333" },
+                          rtlStyles,
                         ]}
                       >
-                        Replies ({(item.replies ?? []).length})
+                        {t("requests.repliesCount", {
+                          count: (item.replies ?? []).length,
+                        })}
                       </Text>
                     </View>
 
@@ -587,7 +698,12 @@ export default function RequestsScreen() {
                           },
                         ]}
                       >
-                        <View style={styles.replyHeader}>
+                        <View
+                          style={[
+                            styles.replyHeader,
+                            isArabic && styles.rtlReplyHeader,
+                          ]}
+                        >
                           <Text
                             style={[
                               styles.replyAuthor,
@@ -602,13 +718,16 @@ export default function RequestsScreen() {
                               { color: isDark ? "#666" : "#999" },
                             ]}
                           >
-                            {new Date(r.createdAt).toLocaleDateString()}
+                            {new Date(r.createdAt).toLocaleDateString(
+                              i18n.language
+                            )}
                           </Text>
                         </View>
                         <Text
                           style={[
                             styles.replyText,
                             { color: isDark ? "#ddd" : "#555" },
+                            rtlStyles,
                           ]}
                         >
                           {r.text}
@@ -618,7 +737,12 @@ export default function RequestsScreen() {
 
                     {/* Add Reply */}
                     {canReply && expandedRequests.has(item.id) && (
-                      <View style={styles.replyInputRow}>
+                      <View
+                        style={[
+                          styles.replyInputRow,
+                          isArabic && styles.rtlReplyInput,
+                        ]}
+                      >
                         <TextInput
                           style={[
                             styles.replyInput,
@@ -627,8 +751,9 @@ export default function RequestsScreen() {
                               backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7",
                               borderColor: isDark ? "#444" : "#ccc",
                             },
+                            rtlStyles,
                           ]}
-                          placeholder="Write a reply..."
+                          placeholder={t("requests.writeReply")}
                           placeholderTextColor="#888"
                           value={replyText[item.id] || ""}
                           onChangeText={(t) =>
@@ -636,6 +761,7 @@ export default function RequestsScreen() {
                           }
                           multiline
                           maxLength={500}
+                          textAlign={isArabic ? "right" : "left"}
                         />
                         <TouchableOpacity
                           onPress={() => handleAddReply(item.id)}
@@ -675,14 +801,20 @@ export default function RequestsScreen() {
                   { backgroundColor: isDark ? "#1e1e1e" : "#fff" },
                 ]}
               >
-                <View style={styles.modalHeader}>
+                <View
+                  style={[
+                    styles.modalHeader,
+                    isArabic && styles.rtlModalHeader,
+                  ]}
+                >
                   <Text
                     style={[
                       styles.modalTitle,
                       { color: isDark ? "#fff" : "#333" },
+                      rtlStyles,
                     ]}
                   >
-                    Create New Request
+                    {t("requests.createNewRequest")}
                   </Text>
                   <TouchableOpacity
                     onPress={() => setModalVisible(false)}
@@ -701,12 +833,13 @@ export default function RequestsScreen() {
                     style={[
                       styles.inputLabel,
                       { color: isDark ? "#fff" : "#333" },
+                      rtlStyles,
                     ]}
                   >
-                    Title *
+                    {t("common.title")} *
                   </Text>
                   <TextInput
-                    placeholder="Enter request title"
+                    placeholder={t("requests.enterTitle")}
                     placeholderTextColor="#888"
                     style={[
                       styles.input,
@@ -714,14 +847,21 @@ export default function RequestsScreen() {
                         color: isDark ? "#fff" : "#000",
                         backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7",
                       },
+                      rtlStyles,
                     ]}
                     value={newRequest.title}
                     onChangeText={(t) =>
                       setNewRequest((p) => ({ ...p, title: t }))
                     }
                     maxLength={100}
+                    textAlign={isArabic ? "right" : "left"}
                   />
-                  <Text style={styles.charCount}>
+                  <Text
+                    style={[
+                      styles.charCount,
+                      isArabic && { textAlign: "left" },
+                    ]}
+                  >
                     {newRequest.title.length}/100
                   </Text>
                 </View>
@@ -731,12 +871,13 @@ export default function RequestsScreen() {
                     style={[
                       styles.inputLabel,
                       { color: isDark ? "#fff" : "#333" },
+                      rtlStyles,
                     ]}
                   >
-                    Description *
+                    {t("common.description")} *
                   </Text>
                   <TextInput
-                    placeholder="Describe your request in detail"
+                    placeholder={t("requests.describeRequest")}
                     placeholderTextColor="#888"
                     style={[
                       styles.input,
@@ -745,6 +886,7 @@ export default function RequestsScreen() {
                         color: isDark ? "#fff" : "#000",
                         backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7",
                       },
+                      rtlStyles,
                     ]}
                     multiline
                     numberOfLines={5}
@@ -753,13 +895,25 @@ export default function RequestsScreen() {
                       setNewRequest((p) => ({ ...p, description: t }))
                     }
                     maxLength={1000}
+                    textAlign={isArabic ? "right" : "left"}
+                    textAlignVertical="top"
                   />
-                  <Text style={styles.charCount}>
+                  <Text
+                    style={[
+                      styles.charCount,
+                      isArabic && { textAlign: "left" },
+                    ]}
+                  >
                     {newRequest.description.length}/1000
                   </Text>
                 </View>
 
-                <View style={styles.modalActions}>
+                <View
+                  style={[
+                    styles.modalActions,
+                    isArabic && styles.rtlModalActions,
+                  ]}
+                >
                   <TouchableOpacity
                     style={[
                       styles.modalBtn,
@@ -774,7 +928,7 @@ export default function RequestsScreen() {
                         color: isDark ? "#fff" : "#000",
                       }}
                     >
-                      Cancel
+                      {t("common.cancel")}
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -798,7 +952,7 @@ export default function RequestsScreen() {
                     }
                   >
                     <Text style={{ color: "#fff", fontWeight: "600" }}>
-                      Create Request
+                      {t("requests.createRequest")}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -832,6 +986,41 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   createButtonText: { color: "#fff", fontWeight: "600", fontSize: 16 },
+
+  // RTL Styles
+  rtlContainer: {
+    flexDirection: "row-reverse",
+  },
+  rtlButton: {
+    flexDirection: "row-reverse",
+  },
+  rtlSearchContainer: {
+    flexDirection: "row-reverse",
+  },
+  rtlCardHeader: {
+    flexDirection: "row-reverse",
+  },
+  rtlTitleContainer: {
+    flexDirection: "row-reverse",
+  },
+  rtlActions: {
+    flexDirection: "row-reverse",
+  },
+  rtlMetaContainer: {
+    flexDirection: "row-reverse",
+  },
+  rtlReplyHeader: {
+    flexDirection: "row-reverse",
+  },
+  rtlReplyInput: {
+    flexDirection: "row-reverse",
+  },
+  rtlModalHeader: {
+    flexDirection: "row-reverse",
+  },
+  rtlModalActions: {
+    flexDirection: "row-reverse",
+  },
 
   // Filter and Search
   filterContainer: {

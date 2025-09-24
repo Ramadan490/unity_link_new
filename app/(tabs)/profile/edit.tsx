@@ -1,7 +1,7 @@
-// app/(tabs)/profile/edit.tsx
 import { useAuth } from "@/shared/context/AuthContext";
 import { useTheme } from "@/shared/context/ThemeContext";
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Alert,
   StyleSheet,
@@ -13,8 +13,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function EditProfileScreen() {
-  const { user, updateUser } = useAuth(); // ✅ now using updateUser
-  const { theme } = useTheme();
+  const { user, updateUser } = useAuth();
+  const { theme, isRTL } = useTheme();
+  const { t } = useTranslation();
 
   // Local state for editing
   const [name, setName] = useState(user?.name || "");
@@ -22,14 +23,14 @@ export default function EditProfileScreen() {
 
   const handleSave = () => {
     if (!name.trim() || !email.trim()) {
-      Alert.alert("Error", "Name and email cannot be empty.");
+      Alert.alert(t("error"), t("editProfile.emptyFields"));
       return;
     }
 
     // ✅ Update global user + storage
     updateUser({ name, email });
 
-    Alert.alert("Success", "Profile updated successfully!");
+    Alert.alert(t("success"), t("editProfile.updateSuccess"));
   };
 
   return (
@@ -39,28 +40,40 @@ export default function EditProfileScreen() {
     >
       <View style={styles.form}>
         {/* Name field */}
-        <Text style={[styles.label, { color: theme.colors.text }]}>Name</Text>
+        <Text style={[styles.label, { color: theme.colors.text }]}>
+          {t("editProfile.name")}
+        </Text>
         <TextInput
           style={[
             styles.input,
-            { borderColor: theme.colors.border, color: theme.colors.text },
+            { 
+              borderColor: theme.colors.border, 
+              color: theme.colors.text,
+              textAlign: isRTL ? "right" : "left"
+            },
           ]}
           value={name}
           onChangeText={setName}
-          placeholder="Enter your name"
+          placeholder={t("editProfile.namePlaceholder")}
           placeholderTextColor={theme.colors.textSecondary}
         />
 
         {/* Email field */}
-        <Text style={[styles.label, { color: theme.colors.text }]}>Email</Text>
+        <Text style={[styles.label, { color: theme.colors.text }]}>
+          {t("editProfile.email")}
+        </Text>
         <TextInput
           style={[
             styles.input,
-            { borderColor: theme.colors.border, color: theme.colors.text },
+            { 
+              borderColor: theme.colors.border, 
+              color: theme.colors.text,
+              textAlign: isRTL ? "right" : "left"
+            },
           ]}
           value={email}
           onChangeText={setEmail}
-          placeholder="Enter your email"
+          placeholder={t("editProfile.emailPlaceholder")}
           placeholderTextColor={theme.colors.textSecondary}
           keyboardType="email-address"
         />
@@ -70,7 +83,7 @@ export default function EditProfileScreen() {
           style={[styles.saveButton, { backgroundColor: theme.colors.primary }]}
           onPress={handleSave}
         >
-          <Text style={styles.saveButtonText}>Save</Text>
+          <Text style={styles.saveButtonText}>{t("save")}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

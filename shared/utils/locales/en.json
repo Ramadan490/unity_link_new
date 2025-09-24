@@ -1,19 +1,30 @@
 {
   "profile": "Profile",
-  "memberSince": "Member since",
-  "editInfo": "Edit Information",
-  "cancel": "Cancel",
+  "memberSince": "Member Since",
+  "editInfo": "Edit Info",
+  "delete": "Delete",
+  "ok": "OK",
   "save": "Save",
+  "success": "Success",
+  "error": "Error",
   "switchToArabic": "Switch to Arabic",
   "switchToEnglish": "Switch to English",
   "privacySecurity": "Privacy & Security",
-  "notifications": "Notifications",
   "helpSupport": "Help & Support",
   "termsConditions": "Terms & Conditions",
-  "logout": "Log Out",
+  "logout": "Logout",
   "login": "Login",
   "appearance": "Appearance",
   "areYouSure": "Are you sure you want to logout?",
+
+  "editProfile": {
+    "name": "Name",
+    "email": "Email",
+    "namePlaceholder": "Enter your name",
+    "emailPlaceholder": "Enter your email",
+    "emptyFields": "Name and email cannot be empty.",
+    "updateSuccess": "Profile updated successfully!"
+  },
 
   "tabs": {
     "home": "Home",
@@ -31,76 +42,79 @@
     "boardMember": "Board Member",
     "communityMember": "Community Member",
     "superAdminDesc": "Full system access and user management",
-    "boardMemberDesc": "Community management and moderation",
-    "communityMemberDesc": "Basic community access and features",
-    "currentUser": "Current user"
+    "boardMemberDesc": "Community management and oversight",
+    "communityMemberDesc": "Basic access and community features",
+    "currentUser": "Current User"
   },
 
   "buttons": {
-    "close": "Close"
+    "close": "Close",
+    "delete": "Delete",
+    "create": "Create",
+    "no": "No",
+    "yes": "Yes",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "tryAgain": "Try Again",
+    "clearAll": "Clear All",
+    "clearFilters": "Clear Filters",
+    "save": "Save",
+    "send": "Send",
+    "createRequest": "Create Request",
+    "createEvent": "Create Event",
+    "createAnnouncement": "Create Announcement",
+    "createMemorial": "Create Memorial"
   },
 
-  "requests": {
-    "title": "Requests",
-    "searchPlaceholder": "Search requests...",
-    "create": "Create Request",
-    "createNew": "Create New Request",
-    "noRequests": "No requests found",
-    "noMatching": "No matching requests",
-    "beFirst": "Be the first to create a request.",
-    "loading": "Loading requests...",
+  "events": {
+    "title": "Events",
+    "count": "{{count}} Event",
+    "count_plural": "{{count}} Events",
+    "create": "Create",
+    "createNew": "Create New Event",
+    "createFirst": "Create Event",
+    "noEvents": "No events available",
+    "emptyManage": "Start by creating your first event",
+    "emptyView": "Check back later for community events",
+    "deleteConfirm": "Delete Event",
+    "deleteConfirmMsg": "Are you sure you want to delete this event?",
+    "details": "Event Details",
+    "attending": "Attending",
+    "rsvp": "RSVP",
+    "attendingDetail": "You attended this event",
+    "rsvpDetail": "Confirm my attendance",
+    "cancelAttendance": "Cancel Attendance",
+    "cancelAttendanceMsg": "Are you sure you want to cancel your attendance?",
+    "confirmAttendance": "Confirm Attendance",
+    "confirmAttendanceMsg": "Are you sure you want to confirm attendance for this event?",
     "errors": {
-      "missingInfo": "Missing Info",
-      "fillFields": "Please fill out all required fields.",
-      "titleTooLong": "Title Too Long",
-      "titleLimit": "Title must be less than 100 characters.",
-      "descTooLong": "Description Too Long",
-      "descLimit": "Description must be less than 1000 characters.",
-      "replyTooLong": "Reply Too Long",
-      "replyLimit": "Reply must be less than 500 characters.",
-      "limitReached": "Limit Reached",
-      "tenReplies": "This request already has 10 replies.",
-      "failedLoad": "Failed to load requests",
-      "failedDelete": "Unable to delete request."
-    },
-    "status": {
-      "open": "Open",
-      "inProgress": "In Progress",
-      "closed": "Closed",
-      "all": "All"
+      "missingInfo": "Missing Information",
+      "fillFields": "Please fill in all required fields."
     },
     "form": {
       "title": "Title *",
-      "titlePlaceholder": "Enter request title",
-      "description": "Description *",
-      "descriptionPlaceholder": "Describe your request in detail"
+      "titlePlaceholder": "Enter event title",
+      "date": "Date *",
+      "datePlaceholder": "Enter event date",
+      "location": "Location *",
+      "locationPlaceholder": "Enter event location",
+      "description": "Description",
+      "descriptionPlaceholder": "Enter event description (optional)"
     },
     "buttons": {
-      "cancel": "Cancel",
-      "create": "Create Request",
-      "save": "Save",
-      "tryAgain": "Try Again",
-      "clearFilters": "Clear Filters",
-      "send": "Send"
-    },
-    "meta": {
-      "postedBy": "Posted by {{user}} • {{date}}"
-    },
-    "replies": {
-      "title": "Replies ({{count}})",
-      "write": "Write a reply..."
+      "create": "Create Event"
     }
   },
 
   "announcements": {
     "title": "Announcements",
-    "count": "{{count}} announcement",
-    "count_plural": "{{count}} announcements",
+    "count": "{{count}} Announcement",
+    "count_plural": "{{count}} Announcements",
     "create": "Create",
     "createNew": "Create New Announcement",
     "createFirst": "Create Announcement",
-    "noAnnouncements": "No announcements",
-    "emptyManage": "Get started by creating your first announcement",
+    "noAnnouncements": "No announcements available",
+    "emptyManage": "Start by creating your first announcement",
     "emptyView": "Check back later for community updates",
     "deleteConfirm": "Delete Announcement",
     "deleteConfirmMsg": "Are you sure you want to delete this announcement?",
@@ -118,33 +132,40 @@
     },
     "buttons": {
       "cancel": "Cancel",
-      "close": "Close",
-      "delete": "Delete",
       "save": "Save",
       "create": "Create Announcement"
     }
   },
 
-  "events": {
-  "cancelAttendance": "Cancel Attendance",
-  "cancelAttendanceMsg": "Are you sure you want to cancel your attendance?",
-  "confirmAttendance": "Confirm Attendance",
-  "confirmAttendanceMsg": "Are you sure you want to RSVP to this event?",
-  "errors": {
-    "missingInfo": "Missing Info",
-    "fillFields": "Please fill out all required fields."
-  },
-    "buttons": {
-  "close": "Close",
-  "delete": "Delete",
-  "create": "Create",
-  "no": "No",
-  "yes": "Yes"
-    }
-  },
-
   "home": {
-    "welcome": "Here's what's happening in your community",
+    "organizationName": "Sudanese American Center",
+    "hero": {
+      "title": "Discover Sudan",
+      "subtitle": "Rich cultural heritage and historical landmarks"
+    },
+    "welcome": {
+      "title": "Welcome to Our Community",
+      "description": "The Sudanese American Center in Arizona is a cultural, social, and charitable organization that promotes and celebrates Sudanese heritage and cultural identity. We are proud to be one of the first such organizations in Arizona."
+    },
+    "quickAccess": {
+      "title": "Quick Access"
+    },
+    "quickLinks": {
+      "announcements": "Latest community news",
+      "events": "Upcoming activities",
+      "memorials": "Honoring our history",
+      "profile": "Manage your information",
+      "community": "Community",
+      "communityDesc": "Connect with others",
+      "requests": "Submit or view requests",
+      "manageUsers": "User management tools"
+    },
+    "featured": {
+      "title": "Featured Content",
+      "content": "Cultural festival this week - don't miss it!",
+      "learnMore": "Learn More"
+    },
+    "welcomeText": "Here’s what’s happening in your community",
     "announcements": "Announcements",
     "events": "Events",
     "memorials": "Memorials",
@@ -156,42 +177,52 @@
     "boardTools": "Board Tools",
     "manageRequests": "Manage Requests",
     "manageUsers": "Manage Users",
-    "seeAll": "See all"
+    "seeAll": "See All"
   },
 
   "manageUsers": {
     "title": "Manage Users",
-    "subtitle": "Promote or demote members of your community",
-    "searchPlaceholder": "Search users...",
-    "loading": "Loading users...",
-    "error": "Failed to load users",
-    "retry": "Retry",
-    "empty": "No users found",
-    "emptySearch": "No users match your search",
-    "permissionDenied": "🚫 You do not have permission to view this page.",
-    "confirmRoleChange": "Confirm Role Change",
-    "confirmRoleChangeMsg": "Are you sure you want to change {{name}}'s role to {{role}}?",
-    "roles": {
-      "superAdmin": "Super Admin",
-      "boardMember": "Board Member",
-      "communityMember": "Community Member"
+    "subtitle": "{{count}} community member",
+    "subtitle_plural": "{{count}} community members",
+    "searchPlaceholder": "Search users by name or email...",
+    "filters": {
+      "all": "All",
+      "admins": "Admins",
+      "board": "Board",
+      "members": "Members"
     },
-    "buttons": {
-      "makeBoard": "Make Board",
-      "makeMember": "Make Member"
-    }
+    "accessRestricted": "Access Restricted",
+    "superAdminRequired": "Super Admin privileges required to manage users",
+    "loading": "Loading users...",
+    "loadFailed": "Failed to load users",
+    "checkConnection": "Please check your connection",
+    "usersFound": "{{count}} user found",
+    "usersFound_plural": "{{count}} users found",
+    "searchFor": "for \"{{query}}\"",
+    "clearAll": "Clear All",
+    "clearFilters": "Clear Filters",
+    "noUsersFound": "No users found",
+    "noUsersAvailable": "No users available",
+    "adjustSearchTerms": "Try adjusting your search terms",
+    "noFilteredUsers": "No {{role}} found",
+    "noUsersInCommunity": "No users in the community yet",
+    "changeRole": "Change Role",
+    "confirmRoleChange": "Change role of {{userName}} from {{currentRole}} to {{newRole}}?",
+    "roleUpdateFailed": "Failed to update user role. Please try again.",
+    "promote": "Promote",
+    "demote": "Demote"
   },
 
   "memorials": {
-    "title": "In Memoriam",
-    "count": "{{count}} memorial",
-    "count_plural": "{{count}} memorials",
+    "title": "In Memory",
+    "count": "{{count}} Memorial",
+    "count_plural": "{{count}} Memorials",
     "create": "Create",
     "createNew": "Create Memorial",
     "createFirst": "Create Memorial",
     "noMemorials": "No memorials yet",
     "emptyManage": "Honor community members by creating a memorial",
-    "emptyView": "Remembering those who have contributed to our community",
+    "emptyView": "We remember those who contributed to our community",
     "deleteConfirm": "Delete Memorial",
     "deleteConfirmMsg": "Are you sure you want to delete this memorial?",
     "details": "Memorial Details",
@@ -199,17 +230,140 @@
       "name": "Name *",
       "namePlaceholder": "Enter full name",
       "dates": "Dates *",
-      "datesPlaceholder": "e.g. 1950 - 2023",
+      "datesPlaceholder": "e.g., 1950 - 2023",
       "description": "Description *",
       "descriptionPlaceholder": "Share their story and contributions",
-      "image": "Image URL (Optional)",
-      "imagePlaceholder": "Paste image URL"
+      "image": "Image URL (optional)",
+      "imagePlaceholder": "Paste image link"
     },
     "buttons": {
       "cancel": "Cancel",
       "save": "Save",
       "create": "Create Memorial"
     },
-    "tribute": "Leave a Tribute"
+    "tribute": "Leave a tribute"
+  },
+
+  "requests": {
+    "title": "Requests",
+    "subtitle": "{{filtered}} of {{total}} Request",
+    "subtitle_plural": "{{filtered}} of {{total}} Requests",
+    "create": "Create",
+    "searchPlaceholder": "Search requests...",
+    "filters": {
+      "all": "All",
+      "open": "Open",
+      "inProgress": "In Progress",
+      "closed": "Closed"
+    },
+    "status": {
+      "open": "Open",
+      "inProgress": "In Progress",
+      "closed": "Closed"
+    },
+    "loading": "Loading requests...",
+    "loadFailed": "Failed to load requests",
+    "missingInfo": "Missing Information",
+    "fillAllFields": "Please fill in all required fields.",
+    "titleTooLong": "Title is too long",
+    "titleMaxLength": "Title must be under 100 characters.",
+    "descriptionTooLong": "Description is too long",
+    "descriptionMaxLength": "Description must be under 1000 characters.",
+    "replyTooLong": "Reply is too long",
+    "replyMaxLength": "Reply must be under 500 characters.",
+    "limitReached": "Limit Reached",
+    "maxReplies": "This request already has 10 replies.",
+    "currentUser": "Current User",
+    "user": "User",
+    "requestSubmitted": "Your request has been submitted successfully!",
+    "createFailed": "Failed to create request. Please try again.",
+    "deleteFailed": "Failed to delete request.",
+    "confirmDelete": "Confirm Delete",
+    "deleteConfirmation": "Are you sure you want to delete \"{{title}}\"?",
+    "noMatchingRequests": "No matching requests",
+    "noFilteredRequests": "No {{status}} requests",
+    "noRequestsFound": "No requests found",
+    "tryDifferentSearch": "Try a different search term",
+    "noRequestsForStatus": "No {{status}} requests",
+    "beFirstToCreate": "Be the first to create a request.",
+    "noRequestsPosted": "No requests posted yet.",
+    "clearFilters": "Clear Filters",
+    "createNewRequest": "Create New Request",
+    "titleLabel": "Title",
+    "titlePlaceholder": "Enter request title",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Describe your request in detail",
+    "createRequest": "Create Request",
+    "postedBy": "Posted by {{user}} • {{date}}",
+    "repliesCount": "Replies ({{count}})",
+    "writeReply": "Write a reply..."
+  },
+
+  "appearanceSettings": {
+    "title": "Appearance Settings",
+    "subtitle": "Customize how the app looks and feels",
+    "theme": "Theme",
+    "fontSize": "Font Size",
+    "Aa": "Aa",
+    "accessibility": "Accessibility",
+    "reduceMotion": "Reduce Motion",
+    "reduceMotionDesc": "Limit animations and transitions",
+    "boldText": "Bold Text",
+    "boldTextDesc": "Use heavier font weights",
+    "highContrast": "High Contrast",
+    "highContrastDesc": "Increase color contrast",
+    "preview": "Preview",
+    "previewDesc": "This is how your text will look with the current settings.",
+    "system": "System",
+    "small": "Small",
+    "medium": "Medium",
+    "large": "Large",
+    "xlarge": "X-Large",
+    "bold": "Bold",
+    "reset": "Reset to Default Settings",
+    "changesApply": "Changes apply immediately"
+  },
+
+  "notifications": {
+    "title": "Notifications",
+    "unreadCount": "{{count}} Unread Notification",
+    "unreadCount_plural": "{{count}} Unread Notifications",
+    "allCaughtUp": "You're all caught up!",
+    "markAllRead": "Mark All as Read",
+    "clearAllTitle": "Clear All Notifications",
+    "clearAllMessage": "Are you sure you want to clear all notifications?",
+    "clearAll": "Clear All",
+    "filter": {
+      "all": "All",
+      "unread": "Unread"
+    },
+    "priority": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High"
+    },
+    "noUnread": "No unread notifications",
+    "noNotifications": "No notifications yet",
+    "willAppearHere": "Notifications will appear here",
+    "notificationItem": "Notification: {{title}}"
+  },
+
+  "common": {
+    "ok": "OK",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "success": "Success",
+    "error": "Error",
+    "tryAgain": "Try Again",
+    "clear": "Clear",
+    "clearFilters": "Clear Filters",
+    "create": "Create",
+    "missingInfo": "Missing Information",
+    "title": "Title",
+    "description": "Description",
+    "user": "User",
+    "currentUser": "Current User",
+    "confirmDelete": "Confirm Delete",
+    "limitReached": "Limit Reached"
   }
 }

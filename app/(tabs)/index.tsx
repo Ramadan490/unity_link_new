@@ -3,9 +3,11 @@ import { useTheme } from "@/shared/context/ThemeContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { ReactNode, useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Animated,
   Dimensions,
+  I18nManager,
   ImageBackground,
   Platform,
   RefreshControl,
@@ -45,70 +47,62 @@ type AllowedRoutes = TabRoutes | ExtraRoutes;
 
 // ✅ Quick link type
 type QuickLink = {
-  title: string;
+  id: string;
   icon: keyof typeof Ionicons.glyphMap;
   route: AllowedRoutes;
   color: string;
-  description: string;
   isTab: boolean;
 };
 
-// ✅ Centralized quick links
-const quickLinks: QuickLink[] = [
+// ✅ Quick links configuration (without translations)
+const quickLinksConfig: QuickLink[] = [
   {
-    title: "Announcements",
+    id: "announcements",
     icon: "megaphone",
     route: "/announcements",
     color: "#D21034",
-    description: "Latest community news",
     isTab: true,
   },
   {
-    title: "Events",
+    id: "events",
     icon: "calendar",
     route: "/events",
     color: "#007A36",
-    description: "Upcoming activities",
     isTab: true,
   },
   {
-    title: "Memorials",
+    id: "memorials",
     icon: "flower",
     route: "/memorials",
     color: "#FFD700",
-    description: "Honoring our history",
     isTab: true,
   },
   {
-    title: "Profile",
+    id: "profile",
     icon: "person-circle",
     route: "/profile",
     color: "#6A0DAD",
-    description: "Manage your info",
     isTab: true,
   },
   {
-    title: "Community",
+    id: "community",
     icon: "people",
     route: "/community",
     color: "#0A84FF",
-    description: "Connect with others",
     isTab: false,
   },
   {
-    title: "Requests",
+    id: "requests",
     icon: "document-text",
     route: "/requests",
     color: "#FF9500",
-    description: "Submit or view requests",
     isTab: true,
   },
   {
-    title: "Manage Users",
+    id: "manageUsers",
     icon: "people",
     route: "/manageUsers",
     color: "#FF3B30",
-    description: "User management tools",
     isTab: true,
   },
 ];
@@ -124,35 +118,18 @@ const GradientOverlay = ({
   children?: ReactNode;
 }) => {
   return (
-    <View
-      style={[style, { backgroundColor: "transparent", overflow: "hidden" }]}
-    >
+    <View style={[style, { backgroundColor: "transparent", overflow: "hidden" }]}>
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: colors[0], opacity: 0.4 }]} />
       <View
         style={[
           StyleSheet.absoluteFill,
-          { backgroundColor: colors[0], opacity: 0.4 },
+          { backgroundColor: colors[1], opacity: 0.2, top: "30%", height: "40%" },
         ]}
       />
       <View
         style={[
           StyleSheet.absoluteFill,
-          {
-            backgroundColor: colors[1],
-            opacity: 0.2,
-            top: "30%",
-            height: "40%",
-          },
-        ]}
-      />
-      <View
-        style={[
-          StyleSheet.absoluteFill,
-          {
-            backgroundColor: colors[2],
-            opacity: 0.3,
-            top: "60%",
-            height: "40%",
-          },
+          { backgroundColor: colors[2], opacity: 0.3, top: "60%", height: "40%" },
         ]}
       />
       {children}
@@ -161,6 +138,7 @@ const GradientOverlay = ({
 };
 
 export default function HomeScreen() {
+  const { t, i18n } = useTranslation(); 
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [index, setIndex] = useState(0);
@@ -168,14 +146,54 @@ export default function HomeScreen() {
   const fadeAnim = useState(new Animated.Value(0))[0];
   const { theme, isDark } = useTheme();
 
+  // ✅ Check if current language is RTL (Arabic)
+  const isRTL = i18n.language === 'ar';
+  
+  // ✅ Force RTL/LTR layout based on language
+  I18nManager.forceRTL(isRTL);
+
+  // ✅ Get translation keys for each quick link
+  const getQuickLinkTitle = (id: string) => {
+    const titleMap: { [key: string]: string } = {
+      announcements: t("announcements.title"),
+      events: t("events.title"),
+      memorials: t("memorials.title"),
+      profile: t("tabs.profile"),
+      community: t("home.quickLinks.community"),
+      requests: t("requests.title"),
+      manageUsers: t("tabs.manageUsers"),
+    };
+    return titleMap[id] || id;
+  };
+
+  const getQuickLinkDescription = (id: string) => {
+    const descMap: { [key: string]: string } = {
+      announcements: t("home.quickLinks.announcements"),
+      events: t("home.quickLinks.events"),
+      memorials: t("home.quickLinks.memorials"),
+      profile: t("home.quickLinks.profile"),
+      community: t("home.quickLinks.communityDesc"),
+      requests: t("home.quickLinks.requests"),
+      manageUsers: t("home.quickLinks.manageUsers"),
+    };
+    return descMap[id] || "";
+  };
+
+  // ✅ Create quick links with current translations
+  const quickLinks = quickLinksConfig.map(link => ({
+    ...link,
+    title: getQuickLinkTitle(link.id),
+    description: getQuickLinkDescription(link.id),
+  }));
+
   // Smooth fade animation for hero image
   useEffect(() => {
-  Animated.timing(fadeAnim, {
-    toValue: 1,
-    duration: 800,
-    useNativeDriver: true,
-  }).start();
-}, [index]);
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 800,
+      useNativeDriver: true,
+    }).start();
+  }, [index]);
 
   // Rotate hero image every 5s
   useEffect(() => {
@@ -195,8 +213,8 @@ export default function HomeScreen() {
     <ScrollView
       contentContainerStyle={[
         styles.container,
-        {
-          backgroundColor: theme.colors.background,
+        { 
+          backgroundColor: theme.colors.background, 
           paddingTop: insets.top + 10,
         },
       ]}
@@ -210,9 +228,16 @@ export default function HomeScreen() {
       }
     >
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={[styles.logo, { color: theme.colors.text }]}>
-          The Sudanese American Center
+      <View style={[
+        styles.header,
+        isRTL && styles.headerRTL // RTL style for header
+      ]}>
+        <Text style={[
+          styles.logo, 
+          { color: theme.colors.text },
+          isRTL && styles.textRTL // RTL text alignment
+        ]}>
+          {t("home.organizationName")}
         </Text>
       </View>
 
@@ -223,13 +248,18 @@ export default function HomeScreen() {
           style={styles.hero}
           imageStyle={{ borderRadius: 20 }}
         >
-          <GradientOverlay
-            colors={["#000", "#333", "#000"]}
-            style={styles.gradient}
-          >
-            <Text style={styles.heroTitle}>Discover Sudan</Text>
-            <Text style={styles.heroSubtitle}>
-              Rich Cultural Heritage & Historic Landmarks
+          <GradientOverlay colors={["#000", "#333", "#000"]} style={styles.gradient}>
+            <Text style={[
+              styles.heroTitle,
+              isRTL && styles.textRTL // RTL text alignment
+            ]}>
+              {t("home.hero.title")}
+            </Text>
+            <Text style={[
+              styles.heroSubtitle,
+              isRTL && styles.textRTL // RTL text alignment
+            ]}>
+              {t("home.hero.subtitle")}
             </Text>
           </GradientOverlay>
         </ImageBackground>
@@ -237,52 +267,82 @@ export default function HomeScreen() {
 
       {/* Welcome Section */}
       <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-          Welcome to Our Community
+        <Text style={[
+          styles.sectionTitle, 
+          { color: theme.colors.text },
+          isRTL && styles.textRTL // RTL text alignment
+        ]}>
+          {t("home.welcome.title")}
         </Text>
-        <Text
-          style={[styles.sectionText, { color: theme.colors.textSecondary }]}
-        >
-          SAC in Arizona is a cultural, social, and charitable organization for
-          the pride of the Sudanese Americans, promoting and celebrating the
-          Sudanese heritage and cultural identity. We are proud to be one of the
-          first such organizations in Arizona.
+        <Text style={[
+          styles.sectionText, 
+          { color: theme.colors.textSecondary },
+          isRTL && styles.textRTL // RTL text alignment
+        ]}>
+          {t("home.welcome.description")}
         </Text>
       </View>
 
       {/* Quick Access Grid */}
-      <View style={styles.grid}>
-        {quickLinks.map((link) => (
-          <Card
-            key={link.title}
-            title={link.title}
-            icon={link.icon}
-            color={link.color}
-            description={link.description}
-            onPress={
-              () =>
+      <View style={styles.section}>
+        <Text style={[
+          styles.sectionTitle, 
+          { color: theme.colors.text },
+          isRTL && styles.textRTL // RTL text alignment
+        ]}>
+          {t("home.quickAccess.title")}
+        </Text>
+        <View style={[
+          styles.grid,
+          isRTL && styles.gridRTL // RTL grid layout
+        ]}>
+          {quickLinks.map((link) => (
+            <Card
+              key={link.id}
+              title={link.title}
+              icon={link.icon}
+              color={link.color}
+              description={link.description}
+              onPress={() =>
                 link.isTab
-                  ? router.replace(link.route as TabRoutes) // ✅ tab route
-                  : router.push(link.route as ExtraRoutes) // ✅ non-tab route
-            }
-          />
-        ))}
+                  ? router.replace(link.route as TabRoutes)
+                  : router.push(link.route as ExtraRoutes)
+              }
+              isRTL={isRTL}
+            />
+          ))}
+        </View>
       </View>
 
       {/* Featured Section */}
       <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-          Featured Content
+        <Text style={[
+          styles.sectionTitle, 
+          { color: theme.colors.text },
+          isRTL && styles.textRTL // RTL text alignment
+        ]}>
+          {t("home.featured.title")}
         </Text>
-        <View
-          style={[styles.featuredCard, { backgroundColor: theme.colors.card }]}
-        >
+        <View style={[
+          styles.featuredCard, 
+          { backgroundColor: theme.colors.card },
+          isRTL && styles.featuredCardRTL // RTL layout for featured card
+        ]}>
           <Ionicons name="star" size={20} color="#FFD700" />
-          <Text style={[styles.featuredText, { color: theme.colors.text }]}>
-            Cultural Festival this weekend - Don&apos;t miss out!
+          <Text style={[
+            styles.featuredText, 
+            { color: theme.colors.text },
+            isRTL && styles.textRTL // RTL text alignment
+          ]}>
+            {t("home.featured.content")}
           </Text>
           <TouchableOpacity>
-            <Text style={styles.featuredLink}>Learn more</Text>
+            <Text style={[
+              styles.featuredLink,
+              isRTL && styles.textRTL // RTL text alignment
+            ]}>
+              {t("home.featured.learnMore")}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -290,26 +350,32 @@ export default function HomeScreen() {
   );
 }
 
-// 🔹 Card Component
+// 🔹 Card Component with RTL support
 function Card({
   title,
   icon,
   color,
   description,
   onPress,
+  isRTL = false,
 }: {
   title: string;
   icon: keyof typeof Ionicons.glyphMap;
   color: string;
   description: string;
   onPress: () => void;
+  isRTL?: boolean;
 }) {
   const { theme, isDark } = useTheme();
+  
   return (
     <TouchableOpacity
       style={[
         styles.card,
-        { backgroundColor: theme.colors.card, borderLeftColor: color },
+        { backgroundColor: theme.colors.card },
+        isRTL ? 
+          { borderRightColor: color, borderRightWidth: 4 } : // RTL: border on right
+          { borderLeftColor: color, borderLeftWidth: 4 }    // LTR: border on left
       ]}
       onPress={onPress}
       activeOpacity={0.7}
@@ -322,16 +388,19 @@ function Card({
       >
         <Ionicons name={icon} size={24} color={color} />
       </View>
-      <Text style={[styles.cardTitle, { color: theme.colors.text }]}>
+      <Text style={[
+        styles.cardTitle, 
+        { color: theme.colors.text },
+        isRTL && styles.textRTL // RTL text alignment
+      ]}>
         {title}
       </Text>
       {description && (
-        <Text
-          style={[
-            styles.cardDescription,
-            { color: theme.colors.textSecondary },
-          ]}
-        >
+        <Text style={[
+          styles.cardDescription, 
+          { color: theme.colors.textSecondary },
+          isRTL && styles.textRTL // RTL text alignment
+        ]}>
           {description}
         </Text>
       )}
@@ -339,16 +408,26 @@ function Card({
   );
 }
 
-// Styles
+// Styles with RTL support
 const styles = StyleSheet.create({
-  container: { paddingHorizontal: 16, paddingBottom: 40 },
+  container: { 
+    paddingHorizontal: 16, 
+    paddingBottom: 40,
+  },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 20,
   },
-  logo: { fontSize: 24, fontWeight: "800" },
+  headerRTL: {
+    flexDirection: "row-reverse", // RTL: reverse the direction
+  },
+  logo: { 
+    fontSize: 24, 
+    fontWeight: "800",
+    textAlign: "left", // Default LTR
+  },
   hero: {
     width: width - 32,
     height: 240,
@@ -366,7 +445,11 @@ const styles = StyleSheet.create({
       android: { elevation: 6 },
     }),
   },
-  gradient: { flex: 1, justifyContent: "flex-end", padding: 20 },
+  gradient: { 
+    flex: 1, 
+    justifyContent: "flex-end", 
+    padding: 20 
+  },
   heroTitle: {
     color: "#fff",
     fontSize: 28,
@@ -374,6 +457,7 @@ const styles = StyleSheet.create({
     textShadowColor: "rgba(0,0,0,0.7)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
+    textAlign: "left", // Default LTR
   },
   heroSubtitle: {
     color: "#eee",
@@ -383,22 +467,36 @@ const styles = StyleSheet.create({
     textShadowColor: "rgba(0,0,0,0.7)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
+    textAlign: "left", // Default LTR
   },
-  section: { marginBottom: 24 },
-  sectionTitle: { fontSize: 22, fontWeight: "700", marginBottom: 12 },
-  sectionText: { fontSize: 15, lineHeight: 22 },
+  section: { 
+    marginBottom: 24 
+  },
+  sectionTitle: { 
+    fontSize: 22, 
+    fontWeight: "700", 
+    marginBottom: 12,
+    textAlign: "left", // Default LTR
+  },
+  sectionText: { 
+    fontSize: 15, 
+    lineHeight: 22,
+    textAlign: "left", // Default LTR
+  },
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
-    gap: 16,
-    marginBottom: 16,
+    marginHorizontal: -8,
+  },
+  gridRTL: {
+    flexDirection: "row-reverse", // RTL: reverse the grid direction
   },
   card: {
     width: CARD_WIDTH,
     borderRadius: 16,
     padding: 16,
-    borderLeftWidth: 4,
+    margin: 8,
     ...Platform.select({
       ios: {
         shadowColor: "#000",
@@ -417,12 +515,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 12,
   },
-  cardTitle: { fontSize: 16, fontWeight: "700", marginBottom: 4 },
-  cardDescription: { fontSize: 13, marginTop: 4 },
+  cardTitle: { 
+    fontSize: 16, 
+    fontWeight: "700", 
+    marginBottom: 4,
+    minHeight: 20,
+    textAlign: "left", // Default LTR
+  },
+  cardDescription: { 
+    fontSize: 13, 
+    marginTop: 4,
+    minHeight: 16,
+    textAlign: "left", // Default LTR
+  },
   featuredCard: {
     borderRadius: 12,
     padding: 16,
-    flexDirection: "row",
+    flexDirection: "row", // LTR: left to right
     alignItems: "center",
     ...Platform.select({
       ios: {
@@ -434,11 +543,24 @@ const styles = StyleSheet.create({
       android: { elevation: 2 },
     }),
   },
-  featuredText: { flex: 1, marginLeft: 12, fontSize: 14 },
+  featuredCardRTL: {
+    flexDirection: "row-reverse", // RTL: right to left
+  },
+  featuredText: { 
+    flex: 1, 
+    marginLeft: 12, // LTR margin
+    fontSize: 14,
+    textAlign: "left", // Default LTR
+  },
   featuredLink: {
     color: "#D21034",
     fontWeight: "600",
     fontSize: 14,
-    marginLeft: 8,
+    marginLeft: 8, // LTR margin
+    textAlign: "left", // Default LTR
+  },
+  // RTL text alignment utility
+  textRTL: {
+    textAlign: "right", // RTL text alignment
   },
 });

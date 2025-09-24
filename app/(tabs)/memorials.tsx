@@ -1,7 +1,9 @@
 // app/(tabs)/memorials.tsx
+import { useTheme } from "@/shared/context/ThemeContext";
 import { useRole } from "@/shared/hooks/useRole";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Alert,
   FlatList,
@@ -31,35 +33,31 @@ const initialMemorials: Memorial[] = [
     id: "1",
     name: "John Smith",
     dates: "1950 - 2023",
-    description:
-      "Beloved father, husband, and community leader who served on the board for 10 years. His dedication to preserving Sudanese culture inspired many.",
-    image:
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face",
+    description: "Beloved father, husband, and community leader who served on the board for 10 years. His dedication to preserving Sudanese culture inspired many.",
+    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face",
     tributeCount: 24,
   },
   {
     id: "2",
     name: "Mary Johnson",
     dates: "1945 - 2022",
-    description:
-      "Dedicated volunteer who organized community events and always had a smile for everyone. She helped establish our annual cultural festival.",
-    image:
-      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop&crop=face",
+    description: "Dedicated volunteer who organized community events and always had a smile for everyone. She helped establish our annual cultural festival.",
+    image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop&crop=face",
     tributeCount: 18,
   },
   {
     id: "3",
     name: "Robert Davis",
     dates: "1938 - 2021",
-    description:
-      "Founding member of our community who helped establish many of the traditions we cherish today. His wisdom guided us for decades.",
-    image:
-      "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop&crop=face",
+    description: "Founding member of our community who helped establish many of the traditions we cherish today. His wisdom guided us for decades.",
+    image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop&crop=face",
     tributeCount: 32,
   },
 ];
 
 export default function MemorialsScreen() {
+  const { t } = useTranslation();
+  const { isRTL } = useTheme();
   const [memorials, setMemorials] = useState<Memorial[]>(initialMemorials);
   const [modalVisible, setModalVisible] = useState(false);
   const [newMemorial, setNewMemorial] = useState({
@@ -68,9 +66,7 @@ export default function MemorialsScreen() {
     description: "",
     image: "",
   });
-  const [selectedMemorial, setSelectedMemorial] = useState<Memorial | null>(
-    null,
-  );
+  const [selectedMemorial, setSelectedMemorial] = useState<Memorial | null>(null);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
 
   const scheme = useColorScheme() || "light";
@@ -82,7 +78,7 @@ export default function MemorialsScreen() {
 
   const addMemorial = () => {
     if (!newMemorial.name || !newMemorial.dates || !newMemorial.description) {
-      Alert.alert("Missing Info", "Please fill out all required fields.");
+      Alert.alert(t("memorials.missingInfo"), t("memorials.fillAllFields"));
       return;
     }
 
@@ -98,15 +94,14 @@ export default function MemorialsScreen() {
 
   const deleteMemorial = (id: string) => {
     Alert.alert(
-      "Delete Memorial",
-      "Are you sure you want to delete this memorial? This action cannot be undone.",
+      t("memorials.deleteConfirm"),
+      t("memorials.deleteConfirmMsg"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("cancel"), style: "cancel" },
         {
-          text: "Delete",
+          text: t("delete"),
           style: "destructive",
-          onPress: () =>
-            setMemorials((prev) => prev.filter((m) => m.id !== id)),
+          onPress: () => setMemorials((prev) => prev.filter((m) => m.id !== id)),
         },
       ],
     );
@@ -133,19 +128,12 @@ export default function MemorialsScreen() {
         ]}
       >
         {/* Header row */}
-        <View style={styles.cardHeader}>
-          <View style={styles.titleContainer}>
-            <Text
-              style={[styles.memorialName, { color: isDark ? "#fff" : "#333" }]}
-            >
+        <View style={[styles.cardHeader, isRTL && { flexDirection: "row-reverse" }]}>
+          <View style={[styles.titleContainer, isRTL && { alignItems: "flex-end", marginRight: 0, marginLeft: 12 }]}>
+            <Text style={[styles.memorialName, { color: isDark ? "#fff" : "#333" }]}>
               {item.name}
             </Text>
-            <Text
-              style={[
-                styles.memorialDates,
-                { color: isDark ? "#0A84FF" : "#007AFF" },
-              ]}
-            >
+            <Text style={[styles.memorialDates, { color: isDark ? "#0A84FF" : "#007AFF" }]}>
               {item.dates}
             </Text>
           </View>
@@ -153,7 +141,7 @@ export default function MemorialsScreen() {
           {canManageMemorials && (
             <TouchableOpacity
               onPress={() => deleteMemorial(item.id)}
-              accessibilityLabel={`Delete ${item.name}`}
+              accessibilityLabel={t("memorials.deleteConfirm")}
               style={styles.deleteBtn}
             >
               <Ionicons name="trash-outline" size={20} color="#ff3b30" />
@@ -166,7 +154,10 @@ export default function MemorialsScreen() {
           <Text
             style={[
               styles.memorialDescription,
-              { color: isDark ? "#bbb" : "#666" },
+              { 
+                color: isDark ? "#bbb" : "#666",
+                textAlign: isRTL ? "right" : "left"
+              },
             ]}
             numberOfLines={2}
           >
@@ -176,7 +167,7 @@ export default function MemorialsScreen() {
 
         {/* Details */}
         <View style={styles.detailsContainer}>
-          <View style={styles.detailRow}>
+          <View style={[styles.detailRow, isRTL && { flexDirection: "row-reverse" }]}>
             <Ionicons
               name="heart-outline"
               size={16}
@@ -185,15 +176,19 @@ export default function MemorialsScreen() {
             <Text
               style={[
                 styles.memorialDetails,
-                { color: isDark ? "#bbb" : "#555" },
+                { 
+                  color: isDark ? "#bbb" : "#555",
+                  marginLeft: isRTL ? 0 : 8,
+                  marginRight: isRTL ? 8 : 0
+                },
               ]}
             >
-              {item.tributeCount || 0} tributes
+              {t("memorials.tribute")}
             </Text>
           </View>
 
           {item.image && (
-            <View style={styles.detailRow}>
+            <View style={[styles.detailRow, isRTL && { flexDirection: "row-reverse" }]}>
               <Ionicons
                 name="image-outline"
                 size={16}
@@ -202,10 +197,14 @@ export default function MemorialsScreen() {
               <Text
                 style={[
                   styles.memorialDetails,
-                  { color: isDark ? "#bbb" : "#555" },
+                  { 
+                    color: isDark ? "#bbb" : "#555",
+                    marginLeft: isRTL ? 0 : 8,
+                    marginRight: isRTL ? 8 : 0
+                  },
                 ]}
               >
-                Photo available
+                {t("photo")}
               </Text>
             </View>
           )}
@@ -218,6 +217,7 @@ export default function MemorialsScreen() {
             {
               backgroundColor: isDark ? "#2C2C2E" : "#F2F2F7",
               borderColor: isDark ? "#3A3A3C" : "#E5E5EA",
+              flexDirection: isRTL ? "row-reverse" : "row",
             },
           ]}
           onPress={() => openMemorialDetails(item)}
@@ -230,10 +230,14 @@ export default function MemorialsScreen() {
           <Text
             style={[
               styles.viewButtonText,
-              { color: isDark ? "#0A84FF" : "#007AFF" },
+              { 
+                color: isDark ? "#0A84FF" : "#007AFF",
+                marginLeft: isRTL ? 0 : 6,
+                marginRight: isRTL ? 6 : 0
+              },
             ]}
           >
-            View Memorial
+            {t("memorials.details")}
           </Text>
         </TouchableOpacity>
       </View>
@@ -249,19 +253,14 @@ export default function MemorialsScreen() {
     >
       {/* Header with Create Button */}
       <View style={[styles.header, { paddingTop: insets.top + 20 }]}>
-        <View style={styles.headerRow}>
-          <View>
-            <Text
-              style={[styles.title, { color: isDark ? "#fff" : "#2f4053" }]}
-            >
-              In Memoriam
+        <View style={[styles.headerRow, isRTL && { flexDirection: "row-reverse" }]}>
+          <View style={isRTL && { alignItems: "flex-end" }}>
+            <Text style={[styles.title, { color: isDark ? "#fff" : "#2f4053" }]}>
+              {t("tabs.memorials")}
             </Text>
             {memorials.length > 0 && (
-              <Text
-                style={[styles.subtitle, { color: isDark ? "#aaa" : "#666" }]}
-              >
-                Honoring {memorials.length} community member
-                {memorials.length !== 1 ? "s" : ""}
+              <Text style={[styles.subtitle, { color: isDark ? "#aaa" : "#666" }]}>
+                {t("memorials.count", { count: memorials.length })}
               </Text>
             )}
           </View>
@@ -270,13 +269,18 @@ export default function MemorialsScreen() {
             <TouchableOpacity
               style={[
                 styles.createButton,
-                { backgroundColor: isDark ? "#0A84FF" : "#007AFF" },
+                { 
+                  backgroundColor: isDark ? "#0A84FF" : "#007AFF",
+                  flexDirection: isRTL ? "row-reverse" : "row",
+                },
               ]}
               onPress={() => setModalVisible(true)}
-              accessibilityLabel="Add new memorial"
+              accessibilityLabel={t("buttons.createMemorial")}
             >
               <Ionicons name="add" size={20} color="#fff" />
-              <Text style={styles.createButtonText}>Create</Text>
+              <Text style={[styles.createButtonText, isRTL && { marginRight: 6, marginLeft: 0 }]}>
+                {t("buttons.create")}
+              </Text>
             </TouchableOpacity>
           )}
         </View>
@@ -289,27 +293,28 @@ export default function MemorialsScreen() {
             size={64}
             color={isDark ? "#444" : "#ccc"}
           />
-          <Text
-            style={[styles.emptyTitle, { color: isDark ? "#fff" : "#333" }]}
-          >
-            No memorials yet
+          <Text style={[styles.emptyTitle, { color: isDark ? "#fff" : "#333" }]}>
+            {t("memorials.noMemorials")}
           </Text>
-          <Text style={[styles.emptyText, { color: isDark ? "#aaa" : "#666" }]}>
+          <Text style={[styles.emptyText, { color: isDark ? "#aaa" : "#666", textAlign: "center" }]}>
             {canManageMemorials
-              ? "Honor community members by creating a memorial to celebrate their life and contributions."
-              : "Remembering those who have contributed to our community. Memorials will appear here once created."}
+              ? t("memorials.emptyManage")
+              : t("memorials.emptyView")}
           </Text>
           {canManageMemorials && (
             <TouchableOpacity
               style={[
                 styles.createFirstMemorialBtn,
-                { backgroundColor: isDark ? "#0A84FF" : "#007AFF" },
+                { 
+                  backgroundColor: isDark ? "#0A84FF" : "#007AFF",
+                  flexDirection: isRTL ? "row-reverse" : "row",
+                },
               ]}
               onPress={() => setModalVisible(true)}
             >
               <Ionicons name="add" size={20} color="#fff" />
-              <Text style={styles.createFirstMemorialText}>
-                Create Memorial
+              <Text style={[styles.createFirstMemorialText, isRTL && { marginRight: 8, marginLeft: 0 }]}>
+                {t("memorials.createFirst")}
               </Text>
             </TouchableOpacity>
           )}
@@ -334,14 +339,9 @@ export default function MemorialsScreen() {
               { backgroundColor: isDark ? "#1e1e1e" : "#fff" },
             ]}
           >
-            <View style={styles.modalHeader}>
-              <Text
-                style={[
-                  styles.detailModalTitle,
-                  { color: isDark ? "#fff" : "#333" },
-                ]}
-              >
-                Memorial
+            <View style={[styles.modalHeader, isRTL && { flexDirection: "row-reverse" }]}>
+              <Text style={[styles.detailModalTitle, { color: isDark ? "#fff" : "#333" }]}>
+                {t("memorials.details")}
               </Text>
               <TouchableOpacity
                 onPress={() => setDetailModalVisible(false)}
@@ -367,59 +367,44 @@ export default function MemorialsScreen() {
                   </View>
                 )}
 
-                <Text
-                  style={[
-                    styles.detailName,
-                    { color: isDark ? "#fff" : "#333" },
-                  ]}
-                >
+                <Text style={[styles.detailName, { color: isDark ? "#fff" : "#333" }]}>
                   {selectedMemorial.name}
                 </Text>
 
-                <Text
-                  style={[
-                    styles.detailDates,
-                    { color: isDark ? "#0A84FF" : "#007AFF" },
-                  ]}
-                >
+                <Text style={[styles.detailDates, { color: isDark ? "#0A84FF" : "#007AFF" }]}>
                   {selectedMemorial.dates}
                 </Text>
 
                 {selectedMemorial.description && (
-                  <Text
-                    style={[
-                      styles.detailDescription,
-                      { color: isDark ? "#bbb" : "#666" },
-                    ]}
-                  >
+                  <Text style={[styles.detailDescription, { color: isDark ? "#bbb" : "#666", textAlign: "center" }]}>
                     {selectedMemorial.description}
                   </Text>
                 )}
 
-                <View style={styles.detailItem}>
+                <View style={[styles.detailItem, isRTL && { flexDirection: "row-reverse" }]}>
                   <Ionicons
                     name="heart-outline"
                     size={20}
                     color={isDark ? "#0A84FF" : "#007AFF"}
                   />
-                  <Text
-                    style={[
-                      styles.detailText,
-                      { color: isDark ? "#fff" : "#333" },
-                    ]}
-                  >
-                    {selectedMemorial.tributeCount || 0} tributes
+                  <Text style={[styles.detailText, { color: isDark ? "#fff" : "#333" }]}>
+                    {t("memorials.tribute")}
                   </Text>
                 </View>
 
                 <TouchableOpacity
                   style={[
                     styles.tributeButton,
-                    { backgroundColor: isDark ? "#0A84FF" : "#007AFF" },
+                    { 
+                      backgroundColor: isDark ? "#0A84FF" : "#007AFF",
+                      flexDirection: isRTL ? "row-reverse" : "row",
+                    },
                   ]}
                 >
                   <Ionicons name="heart-outline" size={20} color="#FFF" />
-                  <Text style={styles.tributeButtonText}>Leave a Tribute</Text>
+                  <Text style={[styles.tributeButtonText, isRTL && { marginRight: 8, marginLeft: 0 }]}>
+                    {t("memorials.tribute")}
+                  </Text>
                 </TouchableOpacity>
               </ScrollView>
             )}
@@ -436,14 +421,9 @@ export default function MemorialsScreen() {
               { backgroundColor: isDark ? "#1e1e1e" : "#fff" },
             ]}
           >
-            <View style={styles.modalHeader}>
-              <Text
-                style={[
-                  styles.detailModalTitle,
-                  { color: isDark ? "#fff" : "#333" },
-                ]}
-              >
-                Create Memorial
+            <View style={[styles.modalHeader, isRTL && { flexDirection: "row-reverse" }]}>
+              <Text style={[styles.detailModalTitle, { color: isDark ? "#fff" : "#333" }]}>
+                {t("memorials.createNew")}
               </Text>
               <TouchableOpacity
                 onPress={() => setModalVisible(false)}
@@ -458,10 +438,8 @@ export default function MemorialsScreen() {
             </View>
 
             <ScrollView style={styles.createContent}>
-              <Text
-                style={[styles.inputLabel, { color: isDark ? "#fff" : "#333" }]}
-              >
-                Full Name *
+              <Text style={[styles.inputLabel, { color: isDark ? "#fff" : "#333", textAlign: isRTL ? "right" : "left" }]}>
+                {t("memorials.form.name")} *
               </Text>
               <View
                 style={[
@@ -470,8 +448,11 @@ export default function MemorialsScreen() {
                 ]}
               >
                 <TextInput
-                  style={[styles.input, { color: isDark ? "#fff" : "#000" }]}
-                  placeholder="Enter full name"
+                  style={[styles.input, { 
+                    color: isDark ? "#fff" : "#000",
+                    textAlign: isRTL ? "right" : "left"
+                  }]}
+                  placeholder={t("memorials.form.namePlaceholder")}
                   placeholderTextColor={isDark ? "#888" : "#999"}
                   value={newMemorial.name}
                   onChangeText={(text: string) =>
@@ -480,10 +461,8 @@ export default function MemorialsScreen() {
                 />
               </View>
 
-              <Text
-                style={[styles.inputLabel, { color: isDark ? "#fff" : "#333" }]}
-              >
-                Dates *
+              <Text style={[styles.inputLabel, { color: isDark ? "#fff" : "#333", textAlign: isRTL ? "right" : "left" }]}>
+                {t("memorials.form.dates")} *
               </Text>
               <View
                 style={[
@@ -492,8 +471,11 @@ export default function MemorialsScreen() {
                 ]}
               >
                 <TextInput
-                  style={[styles.input, { color: isDark ? "#fff" : "#000" }]}
-                  placeholder="e.g., 1950 - 2023"
+                  style={[styles.input, { 
+                    color: isDark ? "#fff" : "#000",
+                    textAlign: isRTL ? "right" : "left"
+                  }]}
+                  placeholder={t("memorials.form.datesPlaceholder")}
                   placeholderTextColor={isDark ? "#888" : "#999"}
                   value={newMemorial.dates}
                   onChangeText={(text: string) =>
@@ -502,10 +484,8 @@ export default function MemorialsScreen() {
                 />
               </View>
 
-              <Text
-                style={[styles.inputLabel, { color: isDark ? "#fff" : "#333" }]}
-              >
-                Biography *
+              <Text style={[styles.inputLabel, { color: isDark ? "#fff" : "#333", textAlign: isRTL ? "right" : "left" }]}>
+                {t("memorials.form.description")} *
               </Text>
               <View
                 style={[
@@ -523,9 +503,10 @@ export default function MemorialsScreen() {
                       color: isDark ? "#fff" : "#000",
                       textAlignVertical: "top",
                       paddingTop: 12,
+                      textAlign: isRTL ? "right" : "left"
                     },
                   ]}
-                  placeholder="Share their story, contributions, and legacy..."
+                  placeholder={t("memorials.form.descriptionPlaceholder")}
                   placeholderTextColor={isDark ? "#888" : "#999"}
                   value={newMemorial.description}
                   onChangeText={(text: string) =>
@@ -536,10 +517,8 @@ export default function MemorialsScreen() {
                 />
               </View>
 
-              <Text
-                style={[styles.inputLabel, { color: isDark ? "#fff" : "#333" }]}
-              >
-                Photo URL (Optional)
+              <Text style={[styles.inputLabel, { color: isDark ? "#fff" : "#333", textAlign: isRTL ? "right" : "left" }]}>
+                {t("memorials.form.image")}
               </Text>
               <View
                 style={[
@@ -548,8 +527,11 @@ export default function MemorialsScreen() {
                 ]}
               >
                 <TextInput
-                  style={[styles.input, { color: isDark ? "#fff" : "#000" }]}
-                  placeholder="Paste image URL"
+                  style={[styles.input, { 
+                    color: isDark ? "#fff" : "#000",
+                    textAlign: isRTL ? "right" : "left"
+                  }]}
+                  placeholder={t("memorials.form.imagePlaceholder")}
                   placeholderTextColor={isDark ? "#888" : "#999"}
                   value={newMemorial.image}
                   onChangeText={(text: string) =>
@@ -566,7 +548,7 @@ export default function MemorialsScreen() {
                 onPress={addMemorial}
               >
                 <Text style={styles.createSubmitButtonText}>
-                  Create Memorial
+                  {t("memorials.buttons.create")}
                 </Text>
               </TouchableOpacity>
             </ScrollView>

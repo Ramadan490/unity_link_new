@@ -1,31 +1,30 @@
 // context/AuthContext.tsx
 import {
   loadUserFromStorage,
-  saveUserToStorage, // ✅ added
+  saveUserToStorage,
   loginUser,
   logoutUser,
   registerUser,
 } from "@/features/users/services/userService";
-import { User } from "@/types/user";
+import { User, UserRole } from "@/types/user";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
-// Only valid roles
-export type RoleKey = "super_admin" | "board_member" | "community_member";
-
+// 🔹 AuthContext type
 export type AuthContextType = {
   user: User | null;
-  role: RoleKey | null;
+  role: UserRole | null;
   loading: boolean;
   authLoading: boolean;
   error: string | null;
   login: (credential: string, password: string) => Promise<void>;
   register: (credential: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  setRole: (role: RoleKey) => void;
+  setRole: (role: UserRole) => void;
   clearError: () => void;
   updateUser: (updates: Partial<User>) => void;
 };
 
+// 🔹 Context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -33,7 +32,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [authLoading, setAuthLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [role, setRoleState] = useState<RoleKey | null>(null);
+  const [role, setRoleState] = useState<UserRole | null>(null);
 
   const clearError = () => setError(null);
 
@@ -44,7 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const storedUser = await loadUserFromStorage();
         if (storedUser) {
           setUser(storedUser);
-          setRoleState(storedUser.role as RoleKey);
+          setRoleState(storedUser.role as UserRole);
         } else {
           setRoleState(null);
         }
@@ -65,8 +64,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const loggedIn = await loginUser(credential, password);
       setUser(loggedIn);
-      setRoleState(loggedIn.role as RoleKey);
-      await saveUserToStorage(loggedIn); // ✅ persist
+      setRoleState(loggedIn.role as UserRole);
+      await saveUserToStorage(loggedIn);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Login failed";
       setError(errorMessage);
@@ -82,8 +81,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const newUser = await registerUser(credential, password);
       setUser(newUser);
-      setRoleState(newUser.role as RoleKey);
-      await saveUserToStorage(newUser); // ✅ persist
+      setRoleState(newUser.role as UserRole);
+      await saveUserToStorage(newUser);
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Registration failed";
@@ -101,7 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       setRoleState(null);
       setError(null);
-      await saveUserToStorage(null); // ✅ clear storage
+      await saveUserToStorage(null);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Logout failed";
       setError(errorMessage);
@@ -111,12 +110,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const setRole = (newRole: RoleKey) => {
+  const setRole = (newRole: UserRole) => {
     setRoleState(newRole);
     if (user) {
       const updated = { ...user, role: newRole };
       setUser(updated);
-      saveUserToStorage(updated); // ✅ persist
+      saveUserToStorage(updated);
     }
   };
 
@@ -124,7 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user) return;
     const updated = { ...user, ...updates };
     setUser(updated);
-    saveUserToStorage(updated); // ✅ persist
+    saveUserToStorage(updated);
   };
 
   return (
@@ -148,6 +147,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+// 🔹 Hook
 export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
   if (!context) {
@@ -155,3 +155,6 @@ export function useAuth(): AuthContextType {
   }
   return context;
 }
+
+// 🔹 Export AuthContext for other hooks (like useRole)
+export { AuthContext };

@@ -1,8 +1,9 @@
 // app/(tabs)/events.tsx
+import { useTheme } from "@/shared/context/ThemeContext";
 import { useRole } from "@/shared/hooks/useRole";
 import { Ionicons } from "@expo/vector-icons";
-import { t } from "i18next";
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Alert,
   FlatList,
@@ -58,6 +59,8 @@ const initialEvents: Event[] = [
 ];
 
 export default function EventsScreen() {
+  const { t } = useTranslation();
+  const { isRTL } = useTheme();
   const [events, setEvents] = useState<Event[]>(initialEvents);
   const [modalVisible, setModalVisible] = useState(false);
   const [newEvent, setNewEvent] = useState({
