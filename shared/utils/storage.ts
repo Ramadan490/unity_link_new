@@ -1,114 +1,120 @@
-import * as SecureStore from "expo-secure-store";
-
-const STORAGE_KEYS = {
-  AUTH_TOKEN: "auth_token",
-  USER_DATA: "user_data",
-  APP_SETTINGS: "app_settings",
-} as const;
-
-export interface UserData {
-  id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  role: "super_admin" | "board_member" | "community_member";
-  avatar?: string;
-  createdAt?: string;
-  phone?: string;
-  communityId?: string;
-}
-
-export interface AppSettings {
-  theme: "light" | "dark" | "auto";
-  notifications: boolean;
-  language: string;
-  lastSync?: string;
-  biometricAuth?: boolean;
-}
-
-const DEFAULT_SETTINGS: AppSettings = {
-  theme: "auto",
-  notifications: true,
-  language: "en",
-  biometricAuth: false,
-};
-
-function safeJSONParse<T>(data: string | null): T | null {
-  try {
-    return data ? (JSON.parse(data) as T) : null;
-  } catch {
-    return null;
-  }
-}
-
-export class StorageError extends Error {
-  constructor(
-    message: string,
-    public operation: string,
-  ) {
-    super(message);
-    this.name = "StorageError";
-  }
-}
+// shared/utils/storage.ts
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export const Storage = {
-  async setToken(token: string) {
-    if (!token) throw new StorageError("Token cannot be empty", "setToken");
-    await SecureStore.setItemAsync(STORAGE_KEYS.AUTH_TOKEN, token);
-  },
-  async getToken() {
-    return (await SecureStore.getItemAsync(STORAGE_KEYS.AUTH_TOKEN)) || null;
-  },
-  async removeToken() {
-    await SecureStore.deleteItemAsync(STORAGE_KEYS.AUTH_TOKEN);
-  },
-
-  async setUserData(data: UserData) {
-    await SecureStore.setItemAsync(
-      STORAGE_KEYS.USER_DATA,
-      JSON.stringify(data),
-    );
-  },
-  async getUserData(): Promise<UserData | null> {
-    const parsed = safeJSONParse<UserData>(
-      await SecureStore.getItemAsync(STORAGE_KEYS.USER_DATA),
-    );
-    return parsed && parsed.id && parsed.email ? parsed : null;
-  },
-  async removeUserData() {
-    await SecureStore.deleteItemAsync(STORAGE_KEYS.USER_DATA);
+  // User data
+  setUserData: async (userData: any): Promise<void> => {
+    try {
+      await AsyncStorage.setItem("user_data", JSON.stringify(userData));
+    } catch (error) {
+      console.error("Failed to save user data:", error);
+      throw error;
+    }
   },
 
-  async setAppSettings(settings: Partial<AppSettings>) {
-    const current = await this.getAppSettings();
-    const merged = { ...current, ...settings };
-    await SecureStore.setItemAsync(
-      STORAGE_KEYS.APP_SETTINGS,
-      JSON.stringify(merged),
-    );
-  },
-  async getAppSettings(): Promise<AppSettings> {
-    const parsed = safeJSONParse<AppSettings>(
-      await SecureStore.getItemAsync(STORAGE_KEYS.APP_SETTINGS),
-    );
-    return parsed ? { ...DEFAULT_SETTINGS, ...parsed } : DEFAULT_SETTINGS;
-  },
-  async removeAppSettings() {
-    await SecureStore.deleteItemAsync(STORAGE_KEYS.APP_SETTINGS);
+  getUserData: async (): Promise<any> => {
+    try {
+      const data = await AsyncStorage.getItem("user_data");
+      return data ? JSON.parse(data) : null;
+    } catch (error) {
+      console.error("Failed to load user data:", error);
+      throw error;
+    }
   },
 
-  async clearAll() {
-    await Promise.all([
-      this.removeToken(),
-      this.removeUserData(),
-      this.removeAppSettings(),
-    ]);
+  removeUserData: async (): Promise<void> => {
+    try {
+      await AsyncStorage.removeItem("user_data");
+    } catch (error) {
+      console.error("Failed to remove user data:", error);
+      throw error;
+    }
   },
-  async isAuthenticated() {
-    const [token, userData] = await Promise.all([
-      this.getToken(),
-      this.getUserData(),
-    ]);
-    return !!(token && userData);
+
+  // Auth token
+  setAuthToken: async (token: string): Promise<void> => {
+    try {
+      await AsyncStorage.setItem("auth_token", token);
+    } catch (error) {
+      console.error("Failed to save auth token:", error);
+      throw error;
+    }
+  },
+
+  getAuthToken: async (): Promise<string | null> => {
+    try {
+      return await AsyncStorage.getItem("auth_token");
+    } catch (error) {
+      console.error("Failed to load auth token:", error);
+      throw error;
+    }
+  },
+
+  removeAuthToken: async (): Promise<void> => {
+    try {
+      await AsyncStorage.removeItem("auth_token");
+    } catch (error) {
+      console.error("Failed to remove auth token:", error);
+      throw error;
+    }
+  },
+
+  // Theme preference
+  setThemePreference: async (
+    theme: "light" | "dark" | "auto"
+  ): Promise<void> => {
+    try {
+      await AsyncStorage.setItem("theme_preference", theme);
+    } catch (error) {
+      console.error("Failed to save theme preference:", error);
+      throw error;
+    }
+  },
+
+  getThemePreference: async (): Promise<"light" | "dark" | "auto" | null> => {
+    try {
+      return (await AsyncStorage.getItem("theme_preference")) as
+        | "light"
+        | "dark"
+        | "auto"
+        | null;
+    } catch (error) {
+      console.error("Failed to load theme preference:", error);
+      throw error;
+    }
+  },
+
+  // Language preference
+  setLanguagePreference: async (language: string): Promise<void> => {
+    try {
+      await AsyncStorage.setItem("language_preference", language);
+    } catch (error) {
+      console.error("Failed to save language preference:", error);
+      throw error;
+    }
+  },
+
+  getLanguagePreference: async (): Promise<string | null> => {
+    try {
+      return await AsyncStorage.getItem("language_preference");
+    } catch (error) {
+      console.error("Failed to load language preference:", error);
+      throw error;
+    }
+  },
+
+  // Clear all storage (for logout)
+  clearAll: async (): Promise<void> => {
+    try {
+      await AsyncStorage.multiRemove([
+        "user_data",
+        "auth_token",
+        "theme_preference",
+        "language_preference",
+      ]);
+    } catch (error) {
+      console.error("Failed to clear storage:", error);
+      throw error;
+    }
   },
 };

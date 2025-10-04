@@ -1,79 +1,44 @@
-// shared/hooks/useRoleManagement.ts
-import { User, UserRole } from "@/shared/types/user"; // ✅ import your shared type
+// useRoleManagement.ts - FIXED
+import { User, UserRole, UserRoles } from "@/shared/types/user";
+import { apiFetch } from "@/shared/utils/api";
 import { useEffect, useState } from "react";
-
-// Simple mock implementation
-const mockUsers: User[] = [
-  {
-    id: "1",
-    name: "Admin User",
-    email: "admin@community.com",
-    role: "super_admin",
-  },
-  {
-    id: "2",
-    name: "Board Member 1",
-    email: "board1@community.com",
-    role: "board_member",
-  },
-  {
-    id: "3",
-    name: "Board Member 2",
-    email: "board2@community.com",
-    role: "board_member",
-  },
-  {
-    id: "4",
-    name: "Community Member 1",
-    email: "member1@community.com",
-    role: "community_member",
-  },
-  {
-    id: "5",
-    name: "Community Member 2",
-    email: "member2@community.com",
-    role: "community_member",
-  },
-];
-
-const mockApi = {
-  getUsers: (): Promise<User[]> => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve([...mockUsers]);
-      }, 500);
-    });
-  },
-
-  updateUserRole: (id: string, newRole: UserRole): Promise<User> => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        const userIndex = mockUsers.findIndex((user) => user.id === id);
-        if (userIndex !== -1) {
-          mockUsers[userIndex] = { ...mockUsers[userIndex], role: newRole };
-          resolve(mockUsers[userIndex]);
-        } else {
-          reject(new Error("User not found"));
-        }
-      }, 300);
-    });
-  },
-};
 
 export const useRoleManagement = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const normalizeRole = (role: string): UserRole => {
+    switch (role) {
+      case "super_admin":
+        return UserRoles.SUPER_ADMIN;
+      case "board_member":
+        return UserRoles.BOARD_MEMBER;
+      case "community_member":
+        return UserRoles.COMMUNITY_MEMBER;
+      default:
+        return UserRoles.COMMUNITY_MEMBER;
+    }
+  };
+
+  // Fetch users - FIXED: removed /api prefix
   const fetchUsers = async () => {
     try {
       setLoading(true);
       setError(null);
-      const usersData = await mockApi.getUsers();
-      console.log("Fetched users:", usersData);
-      setUsers(usersData);
+
+      console.log("🔄 Fetching users...");
+      const usersData = await apiFetch<User[]>("/users"); // ← Changed from "/api/users" to "/users"
+      console.log("✅ API Users:", usersData);
+
+      const normalized = usersData.map((u) => ({
+        ...u,
+        role: normalizeRole(u.role),
+      }));
+
+      setUsers(normalized);
     } catch (err) {
-      console.error("Failed to fetch users:", err);
+      console.error("❌ Failed to fetch users:", err);
       setError(err instanceof Error ? err.message : "Failed to load users");
       setUsers([]);
     } finally {
@@ -81,23 +46,28 @@ export const useRoleManagement = () => {
     }
   };
 
+  // Update role - FIXED: removed /api prefix
   const updateUserRoleHandler = async (id: string, newRole: UserRole) => {
     try {
       setError(null);
-      console.log("Updating user role:", { id, newRole });
+      console.log("Updating role:", { id, newRole });
 
-      const updated = await mockApi.updateUserRole(id, newRole);
-      console.log("Update response:", updated);
+      const updated = await apiFetch<User>(`/users/${id}`, {
+        // ← Changed from "/api/users/${id}" to "/users/${id}"
+        method: "PUT",
+        body: JSON.stringify({ role: newRole }),
+      });
 
+      console.log("✅ Role update response:", updated);
+
+      const updatedUser = { ...updated, role: normalizeRole(updated.role) };
       setUsers((prev) =>
-        prev.map((user) =>
-          user.id === id ? { ...user, role: updated.role } : user,
-        ),
+        prev.map((user) => (user.id === id ? updatedUser : user))
       );
 
-      return updated;
+      return updatedUser;
     } catch (err: any) {
-      console.error("Failed to update user role:", err);
+      console.error("❌ Failed to update user role:", err);
       setError(err.message || "Failed to update user role");
       throw err;
     }

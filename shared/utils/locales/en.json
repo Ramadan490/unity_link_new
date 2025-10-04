@@ -26,6 +26,39 @@
     "updateSuccess": "Profile updated successfully!"
   },
 
+  "appearanceSettings": {
+    "title": "Appearance Settings",
+    "subtitle": "Customize how the app looks and feels",
+    "language": "Language",
+    "theme": "Theme",
+    "themeOptions": {
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
+    "fontSize": "Font Size",
+    "fontSizeOptions": {
+      "small": "Small",
+      "medium": "Medium",
+      "large": "Large",
+      "xlarge": "X-Large"
+    },
+    "aa": "Aa",
+    "accessibility": "Accessibility",
+    "reduceMotion": "Reduce Motion",
+    "reduceMotionDescription": "Limit animations and transitions",
+    "boldText": "Bold Text",
+    "boldTextDescription": "Use heavier font weights",
+    "highContrast": "High Contrast",
+    "highContrastDescription": "Increase color contrast",
+    "preview": "Preview",
+    "previewText": "This is how your text will look with the current settings.",
+    "system": "System",
+    "bold": "Bold",
+    "reset": "Reset to Default Settings",
+    "changesApply": "Changes apply immediately"
+  },
+
   "tabs": {
     "home": "Home",
     "events": "Events",
@@ -299,29 +332,58 @@
     "writeReply": "Write a reply..."
   },
 
-  "appearanceSettings": {
-    "title": "Appearance Settings",
-    "subtitle": "Customize how the app looks and feels",
-    "theme": "Theme",
-    "fontSize": "Font Size",
-    "Aa": "Aa",
-    "accessibility": "Accessibility",
-    "reduceMotion": "Reduce Motion",
-    "reduceMotionDesc": "Limit animations and transitions",
-    "boldText": "Bold Text",
-    "boldTextDesc": "Use heavier font weights",
-    "highContrast": "High Contrast",
-    "highContrastDesc": "Increase color contrast",
-    "preview": "Preview",
-    "previewDesc": "This is how your text will look with the current settings.",
-    "system": "System",
-    "small": "Small",
-    "medium": "Medium",
-    "large": "Large",
-    "xlarge": "X-Large",
-    "bold": "Bold",
-    "reset": "Reset to Default Settings",
-    "changesApply": "Changes apply immediately"
+  "security": {
+    "title": "Privacy & Security",
+    "subtitle": "Manage your account security and privacy preferences",
+    "authentication": "Authentication",
+    "privacySettings": "Privacy Settings",
+    "securityActions": "Security Actions",
+    "biometricLogin": "Biometric Login",
+    "biometricDescription": "Use fingerprint or face recognition to log in",
+    "twoFactorAuth": "Two-Factor Authentication",
+    "twoFactorDescription": "Add an extra layer of security to your account",
+    "appLock": "App Lock",
+    "appLockDescription": "Require PIN to open the app",
+    "dataSharing": "Data Sharing",
+    "dataSharingDescription": "Allow anonymous usage data to improve the app",
+    "locationServices": "Location Services",
+    "locationDescription": "Allow access to your location for community features",
+    "activityTracking": "Activity Tracking",
+    "activityDescription": "Track your activity within the community",
+    "changePassword": "Change Password",
+    "changePasswordDescription": "Update your account password",
+    "logoutAll": "Log Out All Devices",
+    "logoutDescription": "Sign out from all connected devices",
+    "deleteAccount": "Delete Account",
+    "deleteDescription": "Permanently delete your account and data",
+    "securityStatus": "Security Status",
+    "excellent": "Excellent",
+    "good": "Good",
+    "excellentStatus": "Your account is well protected with multiple security layers.",
+    "goodStatus": "Consider enabling additional security features for better protection.",
+    "lastActivity": "Last Activity",
+    "iphoneDevice": "iPhone 13 Pro • Today at 2:30 PM",
+    "webBrowser": "Web Browser • Yesterday at 9:15 AM"
+  },
+
+  "alerts": {
+    "changePasswordTitle": "Change Password",
+    "changePasswordMessage": "You will be redirected to the password change screen.",
+    "cancel": "Cancel",
+    "continue": "Continue",
+    "enable2FATitle": "Enable Two-Factor Authentication",
+    "enable2FAMessage": "This will add an extra layer of security to your account. You'll need to verify your identity using an authentication app.",
+    "notNow": "Not Now",
+    "enable": "Enable",
+    "success": "Success",
+    "enable2FASuccess": "Two-factor authentication has been enabled.",
+    "disable2FATitle": "Disable Two-Factor Authentication",
+    "disable2FAMessage": "Are you sure you want to disable this security feature?",
+    "disable": "Disable",
+    "logoutTitle": "Log Out All Devices",
+    "logoutMessage": "This will sign you out from all devices.",
+    "deleteAccountTitle": "Delete Account",
+    "deleteAccountMessage": "This action cannot be undone."
   },
 
   "notifications": {
@@ -365,5 +427,92 @@
     "currentUser": "Current User",
     "confirmDelete": "Confirm Delete",
     "limitReached": "Limit Reached"
+  },
+
+  "help": {
+    "title": "Help & Support",
+    "subtitle": "Find answers to common questions or contact support for assistance",
+    "searchPlaceholder": "Search help articles...",
+    "quickActions": "Quick Actions",
+    "contactSupport": "Contact Support",
+    "contactSupportDesc": "Get help from our support team",
+    "communityGuidelines": "Community Guidelines",
+    "communityGuidelinesDesc": "Read our community rules and guidelines",
+    "privacyPolicy": "Privacy Policy",
+    "privacyPolicyDesc": "Learn how we protect your data",
+    "appVersion": "App Version {{version}}",
+    "noResults": "No results found",
+    "noFAQs": "No FAQs available",
+    "tryDifferentSearch": "Try a different search term or category",
+    "supportRequest": "App Support Request",
+    "emailClientError": "Cannot open email client. Please set up an email account on your device.",
+    "emailOpenError": "Error opening email client. Please try again.",
+    "linkOpenError": "Cannot open this link. Please try again later.",
+    "categories": {
+      "all": "All",
+      "general": "General",
+      "account": "Account",
+      "features": "Features",
+      "troubleshooting": "Troubleshooting"
+    },
+    "faqs": {
+      "howUpdateProfile": "How do I update my profile?",
+      "howUpdateProfileAnswer": "Go to the Profile tab and tap on 'Edit Profile' to update your personal information, profile picture, and other details. Changes are saved automatically.",
+      "whoPostAnnouncements": "Who can post announcements?",
+      "whoPostAnnouncementsAnswer": "Board members and Super Admins can create and post announcements. Regular community members can view announcements but cannot create them.",
+      "howContactSupport": "How do I contact support?",
+      "howContactSupportAnswer": "You can contact our support team by using the 'Contact Support' button below to send us an email. We typically respond within 24 hours.",
+      "howResetPassword": "How do I reset my password?",
+      "howResetPasswordAnswer": "If you've forgotten your password, go to the login screen and tap 'Forgot Password'. You'll receive an email with instructions to reset your password.",
+      "whatDoIfAppCrashes": "What should I do if the app crashes?",
+      "whatDoIfAppCrashesAnswer": "Try restarting the app first. If the issue persists, make sure you have the latest version installed. You can also contact support with details about when the crash occurs.",
+      "howReportInappropriate": "How do I report inappropriate content?",
+      "howReportInappropriateAnswer": "Use the report feature available on posts and comments, or contact support directly with details about the content you wish to report."
+    }
+  },
+
+  "terms": {
+    "title": "Terms & Conditions",
+    "subtitle": "Please read these carefully before using the app",
+    "welcome": "Welcome to our Community App. These Terms & Conditions govern your use of our application and services.",
+    "lastUpdatedLabel": "Last updated",
+    "versionLabel": "App version",
+    "lastUpdated": "December 15, 2023",
+    "agreement": "I have read and agree to the Terms & Conditions",
+    "continue": "Continue",
+    "privacyPolicy": "Privacy Policy",
+    "contactSupport": "Contact Support",
+    "introduction": {
+      "title": "1. Introduction",
+      "content": "By accessing or using this application, you agree to be bound by these Terms & Conditions. If you do not agree with any part of these terms, please do not use our application."
+    },
+    "accounts": {
+      "title": "2. User Accounts",
+      "content": "When you create an account with us, you must provide accurate and complete information. You are responsible for maintaining the confidentiality of your account and password."
+    },
+    "guidelines": {
+      "title": "3. Community Guidelines",
+      "content": "You agree to use our community features responsibly. Harassment, hate speech, spam, or any form of inappropriate content will not be tolerated and may result in account termination."
+    },
+    "property": {
+      "title": "4. Intellectual Property",
+      "content": "The application and its original content, features, and functionality are owned by Community App and are protected by international copyright, trademark, and other intellectual property laws."
+    },
+    "termination": {
+      "title": "5. Termination",
+      "content": "We may terminate or suspend your account immediately, without prior notice or liability, for any reason whatsoever, including without limitation if you breach the Terms."
+    },
+    "liability": {
+      "title": "6. Limitation of Liability",
+      "content": "In no event shall Community App, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential or punitive damages."
+    },
+    "changes": {
+      "title": "7. Changes to Terms",
+      "content": "We reserve the right, at our sole discretion, to modify or replace these Terms at any time. If a revision is material we will provide at least 30 days' notice prior to any new terms taking effect."
+    },
+    "contact": {
+      "title": "8. Contact Information",
+      "content": "If you have any questions about these Terms, please contact us at support@example.com."
+    }
   }
 }

@@ -24,7 +24,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = (width - 48) / 2;
 
-// Sudan images
+
 const images = [
   require("../../assets/images/sudan/sudan2.jpg"),
   require("../../assets/images/sudan/sudan3.jpg"),

@@ -1,5 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
+
 import {
   Alert,
   Animated,
@@ -21,6 +23,7 @@ export default function SecurityScreen() {
   const [locationSharing, setLocationSharing] = useState(true);
   const [activityTracking, setActivityTracking] = useState(false);
   const [appLock, setAppLock] = useState(false);
+  const { t, i18n } = useTranslation();
 
   const scheme = useColorScheme();
   const isDark = scheme === "dark";
@@ -47,53 +50,44 @@ export default function SecurityScreen() {
     error: isDark ? "#FF453A" : "#FF3B30",
   };
 
+  const isRTL = i18n.language === "ar";
+
   const handleChangePassword = () => {
     Alert.alert(
-      "Change Password",
-      "You will be redirected to the password change screen.",
+      t("alerts.changePasswordTitle"),
+      t("alerts.changePasswordMessage"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("alerts.cancel"), style: "cancel" },
         {
-          text: "Continue",
+          text: t("alerts.continue"),
           onPress: () => console.log("Navigate to change password"),
         },
-      ],
+      ]
     );
   };
 
   const handleEnable2FA = () => {
-    Alert.alert(
-      "Enable Two-Factor Authentication",
-      "This will add an extra layer of security to your account. You'll need to verify your identity using an authentication app.",
-      [
-        { text: "Not Now", style: "cancel" },
-        {
-          text: "Enable",
-          onPress: () => {
-            setTwoFA(true);
-            Alert.alert(
-              "Success",
-              "Two-factor authentication has been enabled.",
-            );
-          },
+    Alert.alert(t("alerts.enable2FATitle"), t("alerts.enable2FAMessage"), [
+      { text: t("alerts.notNow"), style: "cancel" },
+      {
+        text: t("alerts.enable"),
+        onPress: () => {
+          setTwoFA(true);
+          Alert.alert(t("alerts.success"), t("alerts.enable2FASuccess"));
         },
-      ],
-    );
+      },
+    ]);
   };
 
   const handleDisable2FA = () => {
-    Alert.alert(
-      "Disable Two-Factor Authentication",
-      "Are you sure you want to disable this security feature?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Disable",
-          style: "destructive",
-          onPress: () => setTwoFA(false),
-        },
-      ],
-    );
+    Alert.alert(t("alerts.disable2FATitle"), t("alerts.disable2FAMessage"), [
+      { text: t("alerts.cancel"), style: "cancel" },
+      {
+        text: t("alerts.disable"),
+        style: "destructive",
+        onPress: () => setTwoFA(false),
+      },
+    ]);
   };
 
   const SecurityItem = ({
@@ -105,6 +99,7 @@ export default function SecurityScreen() {
     type = "toggle",
     onPress,
     color = themeColors.primary,
+    isDeleteAccount = false, // New prop to identify delete account button
   }: {
     icon: string;
     label: string;
@@ -114,44 +109,84 @@ export default function SecurityScreen() {
     type?: "toggle" | "button";
     onPress?: () => void;
     color?: string;
-  }) => (
-    <View style={[styles.item, { borderBottomColor: themeColors.border }]}>
-      <View style={styles.itemContent}>
-        <View style={[styles.iconContainer, { backgroundColor: color + "20" }]}>
-          <Ionicons name={icon as any} size={20} color={color} />
-        </View>
-        <View style={styles.textContainer}>
-          <Text style={[styles.label, { color: themeColors.text }]}>
-            {label}
-          </Text>
-          {description && (
-            <Text
-              style={[styles.description, { color: themeColors.secondaryText }]}
-            >
-              {description}
-            </Text>
-          )}
+    isDeleteAccount?: boolean; // New prop
+  }) => {
+    // For delete account button, always use LTR layout regardless of language
+    const itemIsRTL = isDeleteAccount ? false : isRTL;
+
+    return (
+      <View style={[styles.item, { borderBottomColor: themeColors.border }]}>
+        <View
+          style={[
+            styles.itemContent,
+            itemIsRTL && { flexDirection: "row-reverse" },
+          ]}
+        >
+          {/* Icon Container - position based on RTL/LTR */}
+          <View
+            style={[
+              styles.iconContainer,
+              { backgroundColor: color + "20" },
+              itemIsRTL
+                ? { marginRight: 0, marginLeft: 16 }
+                : { marginRight: 16 },
+            ]}
+          >
+            <Ionicons name={icon as any} size={22} color={color} />
+          </View>
+
+          {/* Text Content */}
+          <View
+            style={[
+              styles.textContainer,
+              itemIsRTL && { alignItems: "flex-end" },
+            ]}
+          >
+            <View style={styles.labelContainer}>
+              <Text
+                style={[
+                  styles.label,
+                  { color: themeColors.text },
+                  itemIsRTL && styles.rtlText,
+                ]}
+              >
+                {label}
+              </Text>
+              {type === "toggle" ? (
+                <Switch
+                  value={value}
+                  onValueChange={onValueChange}
+                  trackColor={{ false: themeColors.border, true: color + "80" }}
+                  thumbColor={value ? color : isDark ? "#ccc" : "#f4f3f4"}
+                  style={styles.switch}
+                />
+              ) : (
+                <TouchableOpacity onPress={onPress} style={styles.arrowButton}>
+                  <Ionicons
+                    name={itemIsRTL ? "chevron-back" : "chevron-forward"}
+                    size={20}
+                    color={themeColors.secondaryText}
+                  />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {description && (
+              <Text
+                style={[
+                  styles.description,
+                  { color: themeColors.secondaryText },
+                  itemIsRTL && styles.rtlText,
+                ]}
+              >
+                {description}
+              </Text>
+            )}
+          </View>
         </View>
       </View>
-
-      {type === "toggle" ? (
-        <Switch
-          value={value}
-          onValueChange={onValueChange}
-          trackColor={{ false: themeColors.border, true: color + "80" }}
-          thumbColor={value ? color : isDark ? "#ccc" : "#f4f3f4"}
-        />
-      ) : (
-        <TouchableOpacity onPress={onPress}>
-          <Ionicons
-            name="chevron-forward"
-            size={20}
-            color={themeColors.secondaryText}
-          />
-        </TouchableOpacity>
-      )}
-    </View>
-  );
+    );
+  };
 
   return (
     <SafeAreaView
@@ -165,32 +200,53 @@ export default function SecurityScreen() {
         >
           {/* Header */}
           <View style={styles.header}>
-            <Ionicons
-              name="shield-checkmark-outline"
-              size={32}
-              color={themeColors.primary}
-            />
-            <Text style={[styles.headerTitle, { color: themeColors.text }]}>
-              Privacy & Security
+            <View
+              style={[
+                styles.headerIconContainer,
+                { backgroundColor: themeColors.primary + "20" },
+              ]}
+            >
+              <Ionicons
+                name="shield-checkmark-outline"
+                size={36}
+                color={themeColors.primary}
+              />
+            </View>
+            <Text
+              style={[
+                styles.headerTitle,
+                { color: themeColors.text },
+                isRTL && styles.rtlText,
+              ]}
+            >
+              {t("security.title")}
             </Text>
             <Text
-              style={[styles.subheader, { color: themeColors.secondaryText }]}
+              style={[
+                styles.subheader,
+                { color: themeColors.secondaryText },
+                isRTL && styles.rtlText,
+              ]}
             >
-              Manage your account security and privacy preferences
+              {t("security.subtitle")}
             </Text>
           </View>
 
           {/* Authentication Section */}
           <Text
-            style={[styles.sectionTitle, { color: themeColors.secondaryText }]}
+            style={[
+              styles.sectionTitle,
+              { color: themeColors.secondaryText },
+              isRTL && styles.rtlText,
+            ]}
           >
-            AUTHENTICATION
+            {t("security.authentication")}
           </Text>
           <View style={[styles.card, { backgroundColor: themeColors.card }]}>
             <SecurityItem
               icon="finger-print-outline"
-              label="Biometric Login"
-              description="Use fingerprint or face recognition to log in"
+              label={t("security.biometricLogin")}
+              description={t("security.biometricDescription")}
               value={biometric}
               onValueChange={setBiometric}
               color={themeColors.primary}
@@ -198,8 +254,8 @@ export default function SecurityScreen() {
 
             <SecurityItem
               icon="shield-checkmark-outline"
-              label="Two-Factor Authentication"
-              description="Add an extra layer of security to your account"
+              label={t("security.twoFactorAuth")}
+              description={t("security.twoFactorDescription")}
               value={twoFA}
               onValueChange={twoFA ? handleDisable2FA : handleEnable2FA}
               color={twoFA ? themeColors.success : themeColors.primary}
@@ -207,8 +263,8 @@ export default function SecurityScreen() {
 
             <SecurityItem
               icon="lock-closed-outline"
-              label="App Lock"
-              description="Require PIN to open the app"
+              label={t("security.appLock")}
+              description={t("security.appLockDescription")}
               value={appLock}
               onValueChange={setAppLock}
               color={themeColors.warning}
@@ -217,15 +273,19 @@ export default function SecurityScreen() {
 
           {/* Privacy Section */}
           <Text
-            style={[styles.sectionTitle, { color: themeColors.secondaryText }]}
+            style={[
+              styles.sectionTitle,
+              { color: themeColors.secondaryText },
+              isRTL && styles.rtlText,
+            ]}
           >
-            PRIVACY SETTINGS
+            {t("security.privacySettings")}
           </Text>
           <View style={[styles.card, { backgroundColor: themeColors.card }]}>
             <SecurityItem
               icon="person-outline"
-              label="Data Sharing"
-              description="Allow anonymous usage data to improve the app"
+              label={t("security.dataSharing")}
+              description={t("security.dataSharingDescription")}
               value={dataSharing}
               onValueChange={setDataSharing}
               color={themeColors.primary}
@@ -233,8 +293,8 @@ export default function SecurityScreen() {
 
             <SecurityItem
               icon="location-outline"
-              label="Location Services"
-              description="Allow access to your location for community features"
+              label={t("security.locationServices")}
+              description={t("security.locationDescription")}
               value={locationSharing}
               onValueChange={setLocationSharing}
               color={themeColors.primary}
@@ -242,8 +302,8 @@ export default function SecurityScreen() {
 
             <SecurityItem
               icon="analytics-outline"
-              label="Activity Tracking"
-              description="Track your activity within the community"
+              label={t("security.activityTracking")}
+              description={t("security.activityDescription")}
               value={activityTracking}
               onValueChange={setActivityTracking}
               color={themeColors.primary}
@@ -252,15 +312,19 @@ export default function SecurityScreen() {
 
           {/* Security Actions */}
           <Text
-            style={[styles.sectionTitle, { color: themeColors.secondaryText }]}
+            style={[
+              styles.sectionTitle,
+              { color: themeColors.secondaryText },
+              isRTL && styles.rtlText,
+            ]}
           >
-            SECURITY ACTIONS
+            {t("security.securityActions")}
           </Text>
           <View style={[styles.card, { backgroundColor: themeColors.card }]}>
             <SecurityItem
               icon="key-outline"
-              label="Change Password"
-              description="Update your account password"
+              label={t("security.changePassword")}
+              description={t("security.changePasswordDescription")}
               type="button"
               onPress={handleChangePassword}
               color={themeColors.primary}
@@ -268,52 +332,87 @@ export default function SecurityScreen() {
 
             <SecurityItem
               icon="log-out-outline"
-              label="Log Out All Devices"
-              description="Sign out from all connected devices"
+              label={t("security.logoutAll")}
+              description={t("security.logoutDescription")}
               type="button"
               onPress={() =>
-                Alert.alert(
-                  "Log Out All Devices",
-                  "This will sign you out from all devices.",
-                )
+                Alert.alert(t("alerts.logoutTitle"), t("alerts.logoutMessage"))
               }
               color={themeColors.warning}
             />
 
+            {/* Delete Account Button - Always LTR */}
             <SecurityItem
               icon="trash-outline"
-              label="Delete Account"
-              description="Permanently delete your account and data"
+              label={t("security.deleteAccount")}
+              description={t("security.deleteDescription")}
               type="button"
               onPress={() =>
-                Alert.alert("Delete Account", "This action cannot be undone.")
+                Alert.alert(
+                  t("alerts.deleteAccountTitle"),
+                  t("alerts.deleteAccountMessage")
+                )
               }
               color={themeColors.error}
+              isDeleteAccount={true} // This will force LTR layout
             />
           </View>
 
           {/* Security Status */}
           <View
-            style={[styles.statusCard, { backgroundColor: themeColors.card }]}
+            style={[
+              styles.statusCard,
+              { backgroundColor: themeColors.card },
+              isRTL && { flexDirection: "row-reverse" },
+            ]}
           >
-            <Ionicons
-              name="shield-checkmark"
-              size={24}
-              color={themeColors.success}
-            />
-            <View style={styles.statusContent}>
-              <Text style={[styles.statusTitle, { color: themeColors.text }]}>
-                Security Status: {twoFA && biometric ? "Excellent" : "Good"}
+            <View
+              style={[
+                styles.statusIconContainer,
+                { backgroundColor: themeColors.success + "20" },
+                isRTL
+                  ? { marginLeft: 16, marginRight: 0 }
+                  : { marginRight: 16 },
+              ]}
+            >
+              <Ionicons
+                name="shield-checkmark"
+                size={28}
+                color={themeColors.success}
+              />
+            </View>
+            <View
+              style={[
+                styles.statusContent,
+                isRTL && {
+                  marginLeft: 0,
+                  marginRight: 12,
+                  alignItems: "flex-end",
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.statusTitle,
+                  { color: themeColors.text },
+                  isRTL && styles.rtlText,
+                ]}
+              >
+                {t("security.securityStatus")}:{" "}
+                {twoFA && biometric
+                  ? t("security.excellent")
+                  : t("security.good")}
               </Text>
               <Text
                 style={[
                   styles.statusText,
                   { color: themeColors.secondaryText },
+                  isRTL && styles.rtlText,
                 ]}
               >
                 {twoFA && biometric
-                  ? "Your account is well protected with multiple security layers."
-                  : "Consider enabling additional security features for better protection."}
+                  ? t("security.excellentStatus")
+                  : t("security.goodStatus")}
               </Text>
             </View>
           </View>
@@ -322,37 +421,67 @@ export default function SecurityScreen() {
           <View
             style={[styles.activityCard, { backgroundColor: themeColors.card }]}
           >
-            <Text style={[styles.activityTitle, { color: themeColors.text }]}>
-              Last Activity
-            </Text>
-            <View style={styles.activityItem}>
+            <View
+              style={[
+                styles.activityHeader,
+                isRTL && { flexDirection: "row-reverse" },
+              ]}
+            >
               <Ionicons
-                name="phone-portrait-outline"
-                size={16}
-                color={themeColors.secondaryText}
+                name="time-outline"
+                size={20}
+                color={themeColors.primary}
               />
               <Text
                 style={[
-                  styles.activityText,
-                  { color: themeColors.secondaryText },
+                  styles.activityTitle,
+                  { color: themeColors.text },
+                  isRTL && styles.rtlText,
                 ]}
               >
-                iPhone 13 Pro • Today at 2:30 PM
+                {t("security.lastActivity")}
               </Text>
             </View>
-            <View style={styles.activityItem}>
+            <View
+              style={[
+                styles.activityItem,
+                isRTL && { flexDirection: "row-reverse" },
+              ]}
+            >
               <Ionicons
-                name="desktop-outline"
-                size={16}
+                name="phone-portrait-outline"
+                size={18}
                 color={themeColors.secondaryText}
               />
               <Text
                 style={[
                   styles.activityText,
                   { color: themeColors.secondaryText },
+                  isRTL && styles.rtlText,
                 ]}
               >
-                Web Browser • Yesterday at 9:15 AM
+                {t("security.iphoneDevice")}
+              </Text>
+            </View>
+            <View
+              style={[
+                styles.activityItem,
+                isRTL && { flexDirection: "row-reverse" },
+              ]}
+            >
+              <Ionicons
+                name="desktop-outline"
+                size={18}
+                color={themeColors.secondaryText}
+              />
+              <Text
+                style={[
+                  styles.activityText,
+                  { color: themeColors.secondaryText },
+                  isRTL && styles.rtlText,
+                ]}
+              >
+                {t("security.webBrowser")}
               </Text>
             </View>
           </View>
@@ -368,11 +497,19 @@ const styles = StyleSheet.create({
   header: {
     alignItems: "center",
     marginBottom: 30,
+    paddingHorizontal: 10,
+  },
+  headerIconContainer: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
   },
   headerTitle: {
     fontSize: 28,
     fontWeight: "800",
-    marginTop: 16,
     marginBottom: 8,
     textAlign: "center",
   },
@@ -384,7 +521,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 12,
     fontWeight: "600",
-    marginBottom: 8,
+    marginBottom: 12,
     marginTop: 8,
     textTransform: "uppercase",
     letterSpacing: 1,
@@ -400,36 +537,45 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   item: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 16,
+    padding: 20,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   itemContent: {
     flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
+    alignItems: "flex-start",
   },
   iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 12,
   },
   textContainer: {
     flex: 1,
   },
+  labelContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 4,
+  },
   label: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: "600",
-    marginBottom: 2,
+    flex: 1,
+    marginRight: 12,
   },
   description: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: 2,
+  },
+  switch: {
+    transform: [{ scale: 0.9 }],
+  },
+  arrowButton: {
+    padding: 4,
   },
   statusCard: {
     flexDirection: "row",
@@ -443,14 +589,20 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
+  statusIconContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   statusContent: {
     flex: 1,
-    marginLeft: 12,
   },
   statusTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: "700",
-    marginBottom: 4,
+    marginBottom: 6,
   },
   statusText: {
     fontSize: 14,
@@ -465,18 +617,28 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
+  activityHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+  },
   activityTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: "700",
-    marginBottom: 12,
+    marginLeft: 8,
   },
   activityItem: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 12,
+    paddingLeft: 4,
   },
   activityText: {
-    fontSize: 14,
-    marginLeft: 8,
+    fontSize: 15,
+    marginLeft: 12,
+  },
+  rtlText: {
+    textAlign: "right",
+    writingDirection: "rtl",
   },
 });

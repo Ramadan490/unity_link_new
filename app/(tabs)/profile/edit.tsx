@@ -1,6 +1,7 @@
+import { updateUser as updateUserService } from "@/features/users/services/userService"; // ✅ import service
 import { useAuth } from "@/shared/context/AuthContext";
 import { useTheme } from "@/shared/context/ThemeContext";
-import React, { useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Alert,
@@ -13,24 +14,36 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function EditProfileScreen() {
-  const { user, updateUser } = useAuth();
+  const { user, updateUser } = useAuth(); // context updater
   const { theme, isRTL } = useTheme();
   const { t } = useTranslation();
 
-  // Local state for editing
   const [name, setName] = useState(user?.name || "");
   const [email, setEmail] = useState(user?.email || "");
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!name.trim() || !email.trim()) {
       Alert.alert(t("error"), t("editProfile.emptyFields"));
       return;
     }
 
-    // ✅ Update global user + storage
-    updateUser({ name, email });
+    try {
+      if (!user?.id) throw new Error("User ID not found");
 
-    Alert.alert(t("success"), t("editProfile.updateSuccess"));
+      // ✅ First update on backend
+      const updated = await updateUserService(user.id, { name, email });
+
+      // ✅ Then update in local context
+      updateUser(updated);
+
+      Alert.alert(t("success"), t("editProfile.updateSuccess"));
+    } catch (err) {
+      console.error("Update failed:", err);
+      Alert.alert(
+        t("error"),
+        t("editProfile.updateError") || "Failed to update profile"
+      );
+    }
   };
 
   return (
@@ -39,17 +52,17 @@ export default function EditProfileScreen() {
       edges={["top", "bottom"]}
     >
       <View style={styles.form}>
-        {/* Name field */}
+        {/* Name */}
         <Text style={[styles.label, { color: theme.colors.text }]}>
           {t("editProfile.name")}
         </Text>
         <TextInput
           style={[
             styles.input,
-            { 
-              borderColor: theme.colors.border, 
+            {
+              borderColor: theme.colors.border,
               color: theme.colors.text,
-              textAlign: isRTL ? "right" : "left"
+              textAlign: isRTL ? "right" : "left",
             },
           ]}
           value={name}
@@ -58,17 +71,17 @@ export default function EditProfileScreen() {
           placeholderTextColor={theme.colors.textSecondary}
         />
 
-        {/* Email field */}
+        {/* Email */}
         <Text style={[styles.label, { color: theme.colors.text }]}>
           {t("editProfile.email")}
         </Text>
         <TextInput
           style={[
             styles.input,
-            { 
-              borderColor: theme.colors.border, 
+            {
+              borderColor: theme.colors.border,
               color: theme.colors.text,
-              textAlign: isRTL ? "right" : "left"
+              textAlign: isRTL ? "right" : "left",
             },
           ]}
           value={email}
@@ -78,7 +91,7 @@ export default function EditProfileScreen() {
           keyboardType="email-address"
         />
 
-        {/* Save button */}
+        {/* Save */}
         <TouchableOpacity
           style={[styles.saveButton, { backgroundColor: theme.colors.primary }]}
           onPress={handleSave}

@@ -1,5 +1,4 @@
 // components/ui/Loading.tsx
-import React from "react";
 import {
   ActivityIndicator,
   StyleSheet,

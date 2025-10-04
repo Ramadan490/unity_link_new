@@ -1,8 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Animated,
   Easing,
+  I18nManager,
   Linking,
   ScrollView,
   StyleSheet,
@@ -14,13 +16,15 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function TermsScreen() {
+  const { t, i18n } = useTranslation();
   const [accepted, setAccepted] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Set<number>>(
-    new Set([0]),
+    new Set([0])
   );
   const scheme = useColorScheme();
   const isDark = scheme === "dark";
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const isRTL = i18n.language === "ar" || I18nManager.isRTL;
 
   React.useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -68,49 +72,70 @@ export default function TermsScreen() {
 
   const termsSections = [
     {
-      title: "1. Introduction",
-      content:
-        "By accessing or using this application, you agree to be bound by these Terms & Conditions. If you do not agree with any part of these terms, please do not use our application.",
+      title: t("help.terms.introduction.title"),
+      content: t("help.terms.introduction.content"),
     },
     {
-      title: "2. User Accounts",
-      content:
-        "When you create an account with us, you must provide accurate and complete information. You are responsible for maintaining the confidentiality of your account and password.",
+      title: t("help.terms.accounts.title"),
+      content: t("help.terms.accounts.content"),
     },
     {
-      title: "3. Community Guidelines",
-      content:
-        "You agree to use our community features responsibly. Harassment, hate speech, spam, or any form of inappropriate content will not be tolerated and may result in account termination.",
+      title: t("help.terms.guidelines.title"),
+      content: t("help.terms.guidelines.content"),
     },
     {
-      title: "4. Intellectual Property",
-      content:
-        "The application and its original content, features, and functionality are owned by Community App and are protected by international copyright, trademark, and other intellectual property laws.",
+      title: t("help.terms.property.title"),
+      content: t("help.terms.property.content"),
     },
     {
-      title: "5. Termination",
-      content:
-        "We may terminate or suspend your account immediately, without prior notice or liability, for any reason whatsoever, including without limitation if you breach the Terms.",
+      title: t("help.terms.termination.title"),
+      content: t("help.terms.termination.content"),
     },
     {
-      title: "6. Limitation of Liability",
-      content:
-        "In no event shall Community App, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential or punitive damages.",
+      title: t("help.terms.liability.title"),
+      content: t("help.terms.liability.content"),
     },
     {
-      title: "7. Changes to Terms",
-      content:
-        "We reserve the right, at our sole discretion, to modify or replace these Terms at any time. If a revision is material we will provide at least 30 days' notice prior to any new terms taking effect.",
+      title: t("help.terms.changes.title"),
+      content: t("help.terms.changes.content"),
     },
     {
-      title: "8. Contact Information",
-      content:
-        "If you have any questions about these Terms, please contact us at support@example.com.",
+      title: t("help.terms.contact.title"),
+      content: t("help.terms.contact.content"),
     },
   ];
 
-  const lastUpdated = "December 15, 2023";
+  const lastUpdated = t("help.terms.lastUpdated");
   const appVersion = "v2.1.0";
+
+  // RTL-aware styles
+  const dynamicStyles = {
+    container: {
+      flexDirection: isRTL ? "row-reverse" : ("row" as "row" | "row-reverse"),
+    },
+    text: {
+      textAlign: isRTL ? "right" : ("left" as "left" | "right"),
+      writingDirection: isRTL ? "rtl" : ("ltr" as "ltr" | "rtl"),
+    },
+    header: {
+      alignItems: "center" as const,
+    },
+    metaItem: {
+      flexDirection: isRTL ? "row-reverse" : ("row" as "row" | "row-reverse"),
+    },
+    sectionHeader: {
+      flexDirection: isRTL ? "row-reverse" : ("row" as "row" | "row-reverse"),
+    },
+    linkItem: {
+      flexDirection: isRTL ? "row-reverse" : ("row" as "row" | "row-reverse"),
+    },
+    checkboxContainer: {
+      flexDirection: isRTL ? "row-reverse" : ("row" as "row" | "row-reverse"),
+    },
+    button: {
+      flexDirection: isRTL ? "row-reverse" : ("row" as "row" | "row-reverse"),
+    },
+  };
 
   return (
     <SafeAreaView
@@ -119,19 +144,29 @@ export default function TermsScreen() {
     >
       <Animated.View style={{ opacity: fadeAnim, flex: 1 }}>
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, dynamicStyles.header]}>
           <Ionicons
             name="document-text-outline"
             size={32}
             color={themeColors.primary}
           />
-          <Text style={[styles.headerTitle, { color: themeColors.text }]}>
-            Terms & Conditions
+          <Text
+            style={[
+              styles.headerTitle,
+              { color: themeColors.text },
+              dynamicStyles.text,
+            ]}
+          >
+            {t("help.terms.title")}
           </Text>
           <Text
-            style={[styles.subheader, { color: themeColors.secondaryText }]}
+            style={[
+              styles.subheader,
+              { color: themeColors.secondaryText },
+              dynamicStyles.text,
+            ]}
           >
-            Please read these carefully before using the app
+            {t("help.terms.subtitle")}
           </Text>
         </View>
 
@@ -139,28 +174,36 @@ export default function TermsScreen() {
         <View
           style={[styles.metaContainer, { backgroundColor: themeColors.card }]}
         >
-          <View style={styles.metaItem}>
+          <View style={[styles.metaItem, dynamicStyles.metaItem]}>
             <Ionicons
               name="time-outline"
               size={16}
               color={themeColors.secondaryText}
             />
             <Text
-              style={[styles.metaText, { color: themeColors.secondaryText }]}
+              style={[
+                styles.metaText,
+                { color: themeColors.secondaryText },
+                dynamicStyles.text,
+              ]}
             >
-              Last updated: {lastUpdated}
+              {t("help.terms.lastUpdatedLabel")}: {lastUpdated}
             </Text>
           </View>
-          <View style={styles.metaItem}>
+          <View style={[styles.metaItem, dynamicStyles.metaItem]}>
             <Ionicons
               name="phone-portrait-outline"
               size={16}
               color={themeColors.secondaryText}
             />
             <Text
-              style={[styles.metaText, { color: themeColors.secondaryText }]}
+              style={[
+                styles.metaText,
+                { color: themeColors.secondaryText },
+                dynamicStyles.text,
+              ]}
             >
-              App version: {appVersion}
+              {t("help.terms.versionLabel")}: {appVersion}
             </Text>
           </View>
         </View>
@@ -171,9 +214,14 @@ export default function TermsScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <Text style={[styles.introText, { color: themeColors.text }]}>
-            Welcome to our Community App. These Terms & Conditions govern your
-            use of our application and services.
+          <Text
+            style={[
+              styles.introText,
+              { color: themeColors.text },
+              dynamicStyles.text,
+            ]}
+          >
+            {t("help.terms.welcome")}
           </Text>
 
           {termsSections.map((section, index) => (
@@ -182,12 +230,16 @@ export default function TermsScreen() {
               style={[styles.section, { backgroundColor: themeColors.card }]}
             >
               <TouchableOpacity
-                style={styles.sectionHeader}
+                style={[styles.sectionHeader, dynamicStyles.sectionHeader]}
                 onPress={() => toggleSection(index)}
                 activeOpacity={0.7}
               >
                 <Text
-                  style={[styles.sectionTitle, { color: themeColors.text }]}
+                  style={[
+                    styles.sectionTitle,
+                    { color: themeColors.text },
+                    dynamicStyles.text,
+                  ]}
                 >
                   {section.title}
                 </Text>
@@ -205,6 +257,7 @@ export default function TermsScreen() {
                   style={[
                     styles.sectionContent,
                     { color: themeColors.secondaryText },
+                    dynamicStyles.text,
                   ]}
                 >
                   {section.content}
@@ -221,7 +274,7 @@ export default function TermsScreen() {
             ]}
           >
             <TouchableOpacity
-              style={styles.linkItem}
+              style={[styles.linkItem, dynamicStyles.linkItem]}
               onPress={openPrivacyPolicy}
             >
               <Ionicons
@@ -229,8 +282,14 @@ export default function TermsScreen() {
                 size={20}
                 color={themeColors.primary}
               />
-              <Text style={[styles.linkText, { color: themeColors.primary }]}>
-                Privacy Policy
+              <Text
+                style={[
+                  styles.linkText,
+                  { color: themeColors.primary },
+                  dynamicStyles.text,
+                ]}
+              >
+                {t("help.terms.privacyPolicy")}
               </Text>
               <Ionicons
                 name="open-outline"
@@ -243,14 +302,23 @@ export default function TermsScreen() {
               style={[styles.divider, { backgroundColor: themeColors.border }]}
             />
 
-            <TouchableOpacity style={styles.linkItem} onPress={openContact}>
+            <TouchableOpacity
+              style={[styles.linkItem, dynamicStyles.linkItem]}
+              onPress={openContact}
+            >
               <Ionicons
                 name="mail-outline"
                 size={20}
                 color={themeColors.primary}
               />
-              <Text style={[styles.linkText, { color: themeColors.primary }]}>
-                Contact Support
+              <Text
+                style={[
+                  styles.linkText,
+                  { color: themeColors.primary },
+                  dynamicStyles.text,
+                ]}
+              >
+                {t("help.terms.contactSupport")}
               </Text>
               <Ionicons
                 name="open-outline"
@@ -266,7 +334,7 @@ export default function TermsScreen() {
           style={[styles.footer, { backgroundColor: themeColors.background }]}
         >
           <TouchableOpacity
-            style={styles.checkboxContainer}
+            style={[styles.checkboxContainer, dynamicStyles.checkboxContainer]}
             onPress={() => setAccepted(!accepted)}
             activeOpacity={0.7}
           >
@@ -282,14 +350,21 @@ export default function TermsScreen() {
             >
               {accepted && <Ionicons name="checkmark" size={16} color="#fff" />}
             </View>
-            <Text style={[styles.checkboxLabel, { color: themeColors.text }]}>
-              I have read and agree to the Terms & Conditions
+            <Text
+              style={[
+                styles.checkboxLabel,
+                { color: themeColors.text },
+                dynamicStyles.text,
+              ]}
+            >
+              {t("help.terms.agreement")}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[
               styles.button,
+              dynamicStyles.button,
               {
                 backgroundColor: accepted
                   ? themeColors.primary
@@ -300,8 +375,12 @@ export default function TermsScreen() {
             disabled={!accepted}
             activeOpacity={0.8}
           >
-            <Text style={styles.buttonText}>Continue</Text>
-            <Ionicons name="arrow-forward" size={20} color="#fff" />
+            <Text style={styles.buttonText}>{t("help.terms.continue")}</Text>
+            <Ionicons
+              name={isRTL ? "arrow-back" : "arrow-forward"}
+              size={20}
+              color="#fff"
+            />
           </TouchableOpacity>
         </View>
       </Animated.View>
@@ -342,7 +421,6 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   metaItem: {
-    flexDirection: "row",
     alignItems: "center",
     gap: 6,
   },
@@ -360,7 +438,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
     marginBottom: 20,
-    textAlign: "center",
   },
   section: {
     borderRadius: 12,
@@ -373,7 +450,6 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   sectionHeader: {
-    flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
@@ -398,7 +474,6 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   linkItem: {
-    flexDirection: "row",
     alignItems: "center",
     paddingVertical: 12,
     gap: 12,
@@ -419,7 +494,6 @@ const styles = StyleSheet.create({
     borderTopColor: "#e0e0e0",
   },
   checkboxContainer: {
-    flexDirection: "row",
     alignItems: "center",
     marginBottom: 20,
   },
@@ -441,7 +515,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   button: {
-    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     padding: 16,

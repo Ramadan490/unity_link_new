@@ -2,6 +2,7 @@
   "expo": {
     "name": "unity_link_new",
     "slug": "unity_link_new",
-    "version": "1.0.0"
+    "version": "1.0.0",
+    "plugins": ["expo-web-browser"]
   }
 }

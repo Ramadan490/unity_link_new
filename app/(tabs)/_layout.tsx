@@ -1,9 +1,9 @@
 import { useAuth } from "@/shared/context/AuthContext";
 import { useTheme } from "@/shared/context/ThemeContext";
-import { RoleKey } from "@/shared/types/user";
+import { UserRole } from "@/shared/types/user"; // ✅ replace RoleKey
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Animated,
@@ -19,28 +19,28 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // Allowed tabs per role
-const roleTabs: Record<RoleKey, string[]> = {
+const roleTabs: Record<UserRole, string[]> = {
   super_admin: ["requests", "manageUsers"],
   board_member: ["requests"],
   community_member: ["requests"],
 };
 
 // Human-readable role labels
-const roleLabels: Record<RoleKey, string> = {
+const roleLabels: Record<UserRole, string> = {
   super_admin: "Super Admin",
   board_member: "Board Member",
   community_member: "Community Member",
 };
 
 // Role descriptions
-const roleDescriptions: Record<RoleKey, string> = {
+const roleDescriptions: Record<UserRole, string> = {
   super_admin: "Full system access and user management",
   board_member: "Community management and moderation",
   community_member: "Basic community access and features",
 };
 
 // Role colors
-const roleColors: Record<RoleKey, string> = {
+const roleColors: Record<UserRole, string> = {
   super_admin: "#FF3B30",
   board_member: "#FF9500",
   community_member: "#34C759",
@@ -123,11 +123,7 @@ export default function TabLayout() {
         })}
       >
         {activeTabs.map((tab) => (
-          <Tabs.Screen
-            key={tab}
-            name={tab}
-            options={{}}
-          />
+          <Tabs.Screen key={tab} name={tab} options={{}} />
         ))}
       </Tabs>
 
@@ -187,16 +183,16 @@ export default function TabLayout() {
                 style={[
                   styles.roleButton,
                   {
-                    borderLeftColor: roleColors[r as RoleKey],
+                    borderLeftColor: roleColors[r as UserRole],
                     borderLeftWidth: 4,
                     backgroundColor:
                       role === r
-                        ? `${roleColors[r as RoleKey]}25`
+                        ? `${roleColors[r as UserRole]}25`
                         : "transparent",
                   },
                 ]}
                 onPress={() => {
-                  setRole(r as RoleKey);
+                  setRole(r as UserRole);
                   setModalVisible(false);
                 }}
               >

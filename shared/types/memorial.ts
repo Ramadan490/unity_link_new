@@ -1,10 +1,13 @@
-export type Memorial = {
+export interface Memorial {
   id: string;
   name: string;
-  description?: string; // ✅ for text tribute
-  image?: string; // ✅ profile picture or tribute image
-  createdAt: string; // ✅ so formatDate works
-  createdBy: string;
+  description?: string;
+  createdAt: string;
   date?: string;
-  time?: string;
-};
+  image?: string;
+
+  // Relations
+  createdBy?: string; // display name of the user (Profile.name)
+  createdById: string; // foreign key -> Profile.id
+  communityId: string; // foreign key -> Community.id
+}

@@ -1,62 +1,50 @@
-// utils/api.ts
-import { mockApiFetch } from "./mockApi";
+// shared/utils/api.ts - FIXED IMPORTS
+const API_BASE_URL =
+  process.env.EXPO_PUBLIC_API_URL || "http://192.168.12.125:3000/api";
 
-// Use environment variable or default to mock data
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+// ✅ FIXED: Import from the correct file path
+import { Storage } from "./storage"; // This imports your custom Storage utility
 
-// Timeout function
-const fetchWithTimeout = (
-  url: string,
-  options: RequestInit = {},
-  timeout = 10000,
-): Promise<Response> => {
-  return Promise.race([
-    fetch(url, options),
-    new Promise<Response>((_, reject) =>
-      setTimeout(
-        () => reject(new TypeError("Network request timed out")),
-        timeout,
-      ),
-    ),
-  ]);
-};
-
-export async function apiFetch<T>(
+export const apiFetch = async <T>(
   endpoint: string,
-  options?: RequestInit,
-): Promise<T> {
-  // Use mock data if no valid API URL is configured
-  if (!API_BASE_URL || API_BASE_URL.includes("your-api.com")) {
-    console.log("📦 Using mock data for:", endpoint);
-    return mockApiFetch<T>(endpoint);
+  options: RequestInit = {}
+): Promise<T> => {
+  const url = endpoint.startsWith("http")
+    ? endpoint
+    : `${API_BASE_URL}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
+
+  console.log(`🌐 API CALL: ${options.method || "GET"} ${url}`);
+
+  // ✅ FIXED: Now using your custom Storage.getAuthToken()
+  const token = await Storage.getAuthToken();
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
   }
 
-  try {
-    const url = `${API_BASE_URL}${endpoint}`;
-    console.log("🌐 API Request:", url);
+  const finalHeaders = {
+    ...headers,
+    ...((options.headers as Record<string, string>) || {}),
+  };
 
-    const res = await fetchWithTimeout(
-      url,
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          ...options?.headers,
-        },
-        ...options,
-      },
-      8000,
-    ); // 8 second timeout
+  const res = await fetch(url, {
+    ...options,
+    headers: finalHeaders,
+  });
 
-    if (!res.ok) {
-      throw new Error(`API error: ${res.status} ${res.statusText}`);
+  console.log(`📡 RESPONSE: ${res.status} for ${url}`);
+
+  if (!res.ok) {
+    if (res.status === 401) {
+      // ✅ FIXED: Now using your custom Storage.removeAuthToken()
+      await Storage.removeAuthToken();
     }
-
-    const data = await res.json();
-    console.log("✅ API Response:", endpoint, data);
-    return data as T;
-  } catch (error) {
-    console.warn("❌ API fetch failed, using mock data for:", endpoint, error);
-    return mockApiFetch<T>(endpoint);
+    throw new Error(`API error: ${res.status} ${res.statusText}`);
   }
-}
+
+  return res.json();
+};

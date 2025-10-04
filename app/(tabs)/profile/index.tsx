@@ -1,7 +1,9 @@
+import { getUserById } from "@/features/users/services/userService";
 import { useAuth } from "@/shared/context/AuthContext";
+import { User } from "@/shared/types/user";
 import { Ionicons } from "@expo/vector-icons";
 import { Href, useRouter } from "expo-router";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Alert,
@@ -18,15 +20,28 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ProfileScreen() {
-  const { user, logout } = useAuth();
+  const { user, logout } = useAuth(); // 👈 logged-in user from context
+  const [profile, setProfile] = useState<User | null>(null); // 👈 backend profile
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const scheme = useColorScheme();
   const isDark = scheme === "dark";
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
 
+  // ✅ Fetch latest profile on mount
+  useEffect(() => {
+    if (user?.id) {
+      getUserById(user.id)
+        .then((data) => setProfile(data))
+        .catch((err) => {
+          console.error("Failed to fetch profile:", err);
+          setProfile(user); // fallback to AuthContext user
+        });
+    }
+  }, [user]);
+
   // Fade animation
-  React.useEffect(() => {
+  useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 500,
@@ -151,6 +166,19 @@ export default function ProfileScreen() {
     );
   }
 
+  // Case: profile still loading
+  if (!profile) {
+    return (
+      <SafeAreaView
+        style={[styles.container, { backgroundColor: themeColors.background }]}
+      >
+        <View style={styles.centered}>
+          <Text style={{ color: themeColors.text }}>{t("loading")}...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: themeColors.background }]}
@@ -173,7 +201,7 @@ export default function ProfileScreen() {
               <Image
                 source={{
                   uri:
-                    user.avatar ||
+                    profile.avatar ||
                     "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
                 }}
                 style={styles.avatar}
@@ -184,27 +212,27 @@ export default function ProfileScreen() {
             </View>
 
             <Text style={[styles.userName, { color: themeColors.text }]}>
-              {user.name}
+              {profile.name}
             </Text>
             <Text
               style={[styles.userEmail, { color: themeColors.secondaryText }]}
             >
-              {user.email}
+              {profile.email}
             </Text>
 
             {/* ✅ Role translated */}
             <View
               style={[
                 styles.roleBadge,
-                { backgroundColor: getRoleColor(user.role) + "20" },
+                { backgroundColor: getRoleColor(profile.role) + "20" },
               ]}
             >
               <Text
-                style={[styles.userRole, { color: getRoleColor(user.role) }]}
+                style={[styles.userRole, { color: getRoleColor(profile.role) }]}
               >
-                {user.role === "super_admin"
+                {profile.role === "super_admin"
                   ? t("roles.superAdmin")
-                  : user.role === "board_member"
+                  : profile.role === "board_member"
                     ? t("roles.boardMember")
                     : t("roles.communityMember")}
               </Text>

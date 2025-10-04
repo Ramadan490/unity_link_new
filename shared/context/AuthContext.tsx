@@ -1,12 +1,15 @@
-// context/AuthContext.tsx
+// shared/context/AuthContext.tsx
 import {
-  loadUserFromStorage,
-  saveUserToStorage,
   loginUser,
   logoutUser,
   registerUser,
 } from "@/features/users/services/userService";
-import { User, UserRole } from "@/types/user";
+import { User, UserRole } from "@/shared/types/user";
+import { Storage } from "@/shared/utils/storage";
+import {
+  mapUserDataToUser,
+  mapUserToUserData,
+} from "@/shared/utils/userMapper";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
 // 🔹 AuthContext type
@@ -16,8 +19,8 @@ export type AuthContextType = {
   loading: boolean;
   authLoading: boolean;
   error: string | null;
-  login: (credential: string, password: string) => Promise<void>;
-  register: (credential: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string, name?: string) => Promise<void>;
   logout: () => Promise<void>;
   setRole: (role: UserRole) => void;
   clearError: () => void;
@@ -40,16 +43,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const init = async () => {
       try {
-        const storedUser = await loadUserFromStorage();
-        if (storedUser) {
-          setUser(storedUser);
-          setRoleState(storedUser.role as UserRole);
+        const stored = await Storage.getUserData();
+        if (stored) {
+          const restoredUser = mapUserDataToUser(stored);
+          setUser(restoredUser);
+          setRoleState(restoredUser.role);
         } else {
           setRoleState(null);
         }
       } catch (err) {
         setError(
-          err instanceof Error ? err.message : "Failed to load user session",
+          err instanceof Error ? err.message : "Failed to load user session"
         );
       } finally {
         setLoading(false);
@@ -58,14 +62,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     init();
   }, []);
 
-  const login = async (credential: string, password: string) => {
+  const login = async (email: string, password: string) => {
     setAuthLoading(true);
     setError(null);
     try {
-      const loggedIn = await loginUser(credential, password);
+      const loggedIn = await loginUser(email, password);
       setUser(loggedIn);
-      setRoleState(loggedIn.role as UserRole);
-      await saveUserToStorage(loggedIn);
+      setRoleState(loggedIn.role);
+      await Storage.setUserData(mapUserToUserData(loggedIn));
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Login failed";
       setError(errorMessage);
@@ -75,14 +79,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const register = async (credential: string, password: string) => {
+  const register = async (email: string, password: string, name?: string) => {
     setAuthLoading(true);
     setError(null);
     try {
-      const newUser = await registerUser(credential, password);
+      const newUser = await registerUser(email, password, name);
       setUser(newUser);
-      setRoleState(newUser.role as UserRole);
-      await saveUserToStorage(newUser);
+      setRoleState(newUser.role);
+      await Storage.setUserData(mapUserToUserData(newUser));
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Registration failed";
@@ -100,7 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       setRoleState(null);
       setError(null);
-      await saveUserToStorage(null);
+      await Storage.clearAll();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Logout failed";
       setError(errorMessage);
@@ -115,7 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (user) {
       const updated = { ...user, role: newRole };
       setUser(updated);
-      saveUserToStorage(updated);
+      Storage.setUserData(mapUserToUserData(updated));
     }
   };
 
@@ -123,7 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user) return;
     const updated = { ...user, ...updates };
     setUser(updated);
-    saveUserToStorage(updated);
+    Storage.setUserData(mapUserToUserData(updated));
   };
 
   return (
@@ -155,6 +159,4 @@ export function useAuth(): AuthContextType {
   }
   return context;
 }
-
-// 🔹 Export AuthContext for other hooks (like useRole)
 export { AuthContext };

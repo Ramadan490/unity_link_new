@@ -1,10 +1,13 @@
+// shared/types/announcement.ts
 export type Announcement = {
   id: string;
   title: string;
-  content: string; // was body
-  author: string; // was authorRole
-  date: string; // was createdAt
-  category?: string;
-  question?: string;
-  answer?: string;
+  content: string;
+  author?: string;
+  priority?: "high" | "normal";
+  communityId: string;
+  createdAt: string;
+  updatedAt: string;
+  date?: string;
+  category?: string; // ✅ added so TS doesn’t complain
 };

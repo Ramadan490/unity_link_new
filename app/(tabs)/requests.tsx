@@ -1,46 +1,54 @@
+// app/(tabs)/requests.tsx
 import {
+  createRequest,
   deleteRequest,
   getRequests,
 } from "@/features/requests/services/requestService";
+import { ThemedText, ThemedView } from "@/shared/components/ui";
 import { useTheme } from "@/shared/context/ThemeContext";
-import { Reply, Request } from "@/types/request";
+import { useAuthGuard } from "@/shared/hooks/useAuthGuard";
+import { useRole } from "@/shared/hooks/useRole";
+import { Request } from "@/types/request";
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  ActivityIndicator,
   Alert,
   Animated,
-  Easing,
-  FlatList,
-  Keyboard,
-  KeyboardAvoidingView,
+  Dimensions,
   Modal,
   Platform,
   RefreshControl,
   ScrollView,
   StyleSheet,
-  Text,
   TextInput,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   View,
-  useColorScheme,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Loading from "../../shared/components/ui/Loading";
-import { useAuthGuard } from "../../shared/hooks/useAuthGuard";
-import { useRole } from "../../shared/hooks/useRole";
 
-// Request status type
+const { width } = Dimensions.get("window");
+
 type RequestStatus = "open" | "in_progress" | "closed";
-
-// Filter options
 type FilterOption = "all" | RequestStatus;
+
+// ✅ ADD THIS: Define a proper Reply type with content property
+type Reply = {
+  id: string;
+  content: string; // This was missing
+  userId: string;
+  requestId: string;
+  createdAt: string;
+  createdBy?: string | { id: string; name: string };
+};
 
 export default function RequestsScreen() {
   useAuthGuard();
   const { t, i18n } = useTranslation();
-  const { isRTL } = useTheme();
+  const { theme, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
+  const { isSuperAdmin, isBoardMember, user } = useRole();
 
   const [requests, setRequests] = useState<Request[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,30 +56,40 @@ export default function RequestsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterOption>("all");
   const [searchQuery, setSearchQuery] = useState("");
-
-  const [modalVisible, setModalVisible] = useState(false);
+  const [createModalVisible, setCreateModalVisible] = useState(false);
   const [newRequest, setNewRequest] = useState({
     title: "",
     description: "",
     status: "open" as const,
   });
-
-  const [replyText, setReplyText] = useState<Record<string, string>>({});
   const [expandedRequests, setExpandedRequests] = useState<Set<string>>(
     new Set()
   );
 
-  const { isSuperAdmin, isBoardMember, user } = useRole();
-  const scheme = useColorScheme() || "light";
-  const isDark = scheme === "dark";
-  const insets = useSafeAreaInsets();
+  // Animations
+  const fadeAnim = useState(new Animated.Value(0))[0];
+  const slideAnim = useState(new Animated.Value(50))[0];
 
   const canCreateRequests = !!user;
   const canDeleteRequests = isSuperAdmin || isBoardMember;
   const canReply = !!user;
+  const isRTL = i18n.language === "ar";
 
-  // Check if current language is Arabic
-  const isArabic = i18n.language === "ar";
+  // ✅ Safe user ID fallback
+  const currentUserId = user?.id || "default-user-id-temp";
+
+  // ✅ FIXED: Safe reply type handling
+  const getReplyContent = (reply: any): string => {
+    return reply.content || reply.text || reply.message || reply.body || "";
+  };
+
+  // ✅ FIXED: Safe reply author handling
+  const getReplyAuthor = (reply: any): string => {
+    if (typeof reply.createdBy === "object") {
+      return (reply.createdBy as any)?.name || t("common.user");
+    }
+    return reply.createdBy || reply.userId || t("common.user");
+  };
 
   // Filter and search requests
   const filteredRequests = useMemo(() => {
@@ -83,123 +101,102 @@ export default function RequestsScreen() {
         request.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         request.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (request.replies ?? []).some((reply) =>
-          reply.text.toLowerCase().includes(searchQuery.toLowerCase())
+          // ✅ FIXED: Use safe content access
+          getReplyContent(reply)
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase())
         );
-
       return matchesFilter && matchesSearch;
     });
   }, [requests, activeFilter, searchQuery]);
 
-  // Animation values
-  const fadeAnim = useState(new Animated.Value(0))[0];
-
-  /** Fetch requests */
   const loadRequests = useCallback(async () => {
     try {
       setError(null);
       const data = await getRequests();
+      setRequests(data);
 
-      const normalized = data.map((r: any) => ({
-        ...r,
-        replies: r.replies ?? [],
-      }));
-
-      setRequests(normalized);
-
-      // Fade in animation
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 300,
-        easing: Easing.ease,
-        useNativeDriver: true,
-      }).start();
+      // Animate in content
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+      ]).start();
     } catch (err) {
-      console.error("⚠️ Failed to fetch requests:", err);
-      setError(t("requests.failedToLoad"));
+      console.error("Failed to fetch requests:", err);
+      setError(t("requests.errors.loadFailed"));
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [fadeAnim, t]);
+  }, [fadeAnim, slideAnim, t]);
 
   useEffect(() => {
     loadRequests();
   }, [loadRequests]);
 
-  /** Toggle request expansion */
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    loadRequests();
+  }, [loadRequests]);
+
   const toggleExpand = (requestId: string) => {
     const newExpanded = new Set(expandedRequests);
-    if (newExpanded.has(requestId)) {
-      newExpanded.delete(requestId);
-    } else {
-      newExpanded.add(requestId);
-    }
+    newExpanded.has(requestId)
+      ? newExpanded.delete(requestId)
+      : newExpanded.add(requestId);
     setExpandedRequests(newExpanded);
   };
 
-  /** Create a request */
-  const handleCreateRequest = () => {
+  const handleCreateRequest = async () => {
     if (!newRequest.title.trim() || !newRequest.description.trim()) {
-      Alert.alert(t("common.missingInfo"), t("requests.fillAllFields"));
-      return;
-    }
-
-    if (newRequest.title.length > 100) {
-      Alert.alert(t("common.titleTooLong"), t("requests.titleMaxLength"));
-      return;
-    }
-
-    if (newRequest.description.length > 1000) {
-      Alert.alert(
-        t("common.descriptionTooLong"),
-        t("requests.descriptionMaxLength")
-      );
+      Alert.alert(t("error"), t("requests.errors.fillAllFields"));
       return;
     }
 
     try {
-      const createdRequest: Request = {
-        id: Date.now().toString(),
+      const created = await createRequest({
         title: newRequest.title.trim(),
         description: newRequest.description.trim(),
         status: "open",
-        createdBy: user?.name || user?.email || t("common.currentUser"),
-        createdAt: new Date().toISOString(),
-        replies: [],
-      };
+        createdById: currentUserId,
+        communityId: "default-community-id",
+      });
 
-      setRequests((prev) => [createdRequest, ...prev]);
+      setRequests((prev) => [created, ...prev]);
       setNewRequest({ title: "", description: "", status: "open" });
-      setModalVisible(false);
-
-      // Show success feedback
-      Alert.alert(t("common.success"), t("requests.requestSubmitted"), [
-        { text: t("common.ok"), onPress: () => {} },
-      ]);
+      setCreateModalVisible(false);
+      Alert.alert(t("success"), t("requests.createSuccess"));
     } catch (err) {
-      console.error("⚠️ Failed to create request:", err);
-      Alert.alert(t("common.error"), t("requests.createError"));
+      console.error("Failed to create request:", err);
+      Alert.alert(t("error"), t("requests.errors.createFailed"));
     }
   };
 
-  /** Delete request */
-  const handleDelete = (id: string, title: string) => {
+  const handleDeleteRequest = (id: string, title: string) => {
     if (!canDeleteRequests) return;
     Alert.alert(
-      t("common.confirmDelete"),
-      t("requests.deleteConfirmation", { title }),
+      t("requests.deleteConfirm"),
+      t("requests.deleteConfirmMsg", { title }),
       [
-        { text: t("common.cancel"), style: "cancel" },
+        { text: t("cancel"), style: "cancel" },
         {
-          text: t("common.delete"),
+          text: t("buttons.delete"),
           style: "destructive",
           onPress: async () => {
             try {
               await deleteRequest(id);
               setRequests((prev) => prev.filter((r) => r.id !== id));
             } catch (err) {
-              console.error("⚠️ Failed to delete request:", err);
-              Alert.alert(t("common.error"), t("requests.deleteError"));
+              console.error("Failed to delete request:", err);
+              Alert.alert(t("error"), t("requests.errors.deleteFailed"));
             }
           },
         },
@@ -207,881 +204,570 @@ export default function RequestsScreen() {
     );
   };
 
-  /** Add reply */
-  const handleAddReply = (requestId: string) => {
-    const text = replyText[requestId]?.trim();
-    if (!text) return;
-
-    if (text.length > 500) {
-      Alert.alert(t("common.replyTooLong"), t("requests.replyMaxLength"));
-      return;
-    }
-
-    setRequests((prev) =>
-      prev.map((req) => {
-        if (req.id === requestId) {
-          if ((req.replies ?? []).length >= 10) {
-            Alert.alert(
-              t("common.limitReached"),
-              t("requests.maxRepliesReached")
-            );
-            return req;
-          }
-          const newReply: Reply = {
-            id: Date.now().toString(),
-            text,
-            createdBy: user?.name || user?.email || t("common.user"),
-            createdAt: new Date().toISOString(),
-          };
-          return { ...req, replies: [...(req.replies ?? []), newReply] };
-        }
-        return req;
-      })
-    );
-
-    setReplyText((prev) => ({ ...prev, [requestId]: "" }));
-  };
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    loadRequests();
-  };
-
-  // Status badge colors
-  const getStatusColor = (status: RequestStatus) => {
+  const getStatusColor = (status: RequestStatus): string => {
     const colors = {
-      open: isDark ? "#0A84FF" : "#007AFF",
-      in_progress: isDark ? "#FF9500" : "#FF9500",
-      closed: isDark ? "#34C759" : "#34C759",
+      open: "#FF6B35",
+      in_progress: "#FFA726",
+      closed: "#4CAF50",
     };
     return colors[status];
   };
 
-  // Status badge background colors
-  const getStatusBgColor = (status: RequestStatus) => {
-    const colors = {
-      open: isDark ? "rgba(10, 132, 255, 0.2)" : "rgba(0, 122, 255, 0.1)",
-      in_progress: isDark ? "rgba(255, 149, 0, 0.2)" : "rgba(255, 149, 0, 0.1)",
-      closed: isDark ? "rgba(52, 199, 89, 0.2)" : "rgba(52, 199, 89, 0.1)",
+  const getStatusIcon = (
+    status: RequestStatus
+  ): keyof typeof Ionicons.glyphMap => {
+    const icons: Record<RequestStatus, keyof typeof Ionicons.glyphMap> = {
+      open: "alert-circle",
+      in_progress: "time",
+      closed: "checkmark-circle",
     };
-    return colors[status];
+    return icons[status];
   };
 
-  // Get status text translation
-  const getStatusText = (status: RequestStatus) => {
-    switch (status) {
-      case "open":
-        return t("requests.status.open");
-      case "in_progress":
-        return t("requests.status.inProgress");
-      case "closed":
-        return t("requests.status.closed");
-      default:
-        return status;
-    }
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString(i18n.language, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
-  // RTL styles
-  const rtlStyles = isArabic
-    ? {
-        textAlign: "right" as const,
-        writingDirection: "rtl" as const,
-        flexDirection: "row-reverse" as const,
-      }
-    : {};
+  const renderItem = ({ item, index }: { item: Request; index: number }) => {
+    const isExpanded = expandedRequests.has(item.id);
+    const statusColor = getStatusColor(item.status);
+    const statusIcon = getStatusIcon(item.status);
 
-  if (loading) return <Loading message={t("requests.loading")} />;
-
-  return (
-    <View
-      style={[
-        styles.container,
-        { backgroundColor: isDark ? "#121212" : "#fff" },
-      ]}
-    >
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 20 }]}>
-        <View
-          style={[styles.headerContent, isArabic && { alignItems: "flex-end" }]}
+    return (
+      <Animated.View
+        style={{
+          opacity: fadeAnim,
+          transform: [{ translateY: slideAnim }],
+        }}
+      >
+        <TouchableOpacity
+          activeOpacity={0.7}
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.colors.card,
+              borderLeftWidth: 4,
+              borderLeftColor: statusColor,
+              marginTop: index === 0 ? 0 : 12,
+            },
+          ]}
+          onPress={() => toggleExpand(item.id)}
         >
-          <Text
-            style={[
-              styles.title,
-              { color: isDark ? "#fff" : "#2f4053" },
-              rtlStyles,
-            ]}
-          >
-            {t("requests.title")}
-          </Text>
-          {requests.length > 0 && (
-            <Text
+          <View style={[styles.cardHeader, isRTL && styles.cardHeaderRTL]}>
+            <View
               style={[
-                styles.subtitle,
-                { color: isDark ? "#aaa" : "#666" },
-                rtlStyles,
+                styles.statusBadge,
+                { backgroundColor: statusColor + "20" },
+                isRTL && styles.statusBadgeRTL,
               ]}
             >
-              {t("requests.requestCount", {
-                filtered: filteredRequests.length,
-                total: requests.length,
-              })}
-            </Text>
+              <Ionicons name={statusIcon} size={16} color={statusColor} />
+              <ThemedText
+                type="defaultSemiBold"
+                style={[styles.statusText, { color: statusColor }]}
+              >
+                {t(`requests.status.${item.status}`)}
+              </ThemedText>
+            </View>
+
+            <View style={styles.actions}>
+              {canDeleteRequests && (
+                <TouchableOpacity
+                  onPress={() => handleDeleteRequest(item.id, item.title)}
+                  style={styles.deleteBtn}
+                >
+                  <Ionicons name="trash-outline" size={20} color="#ff3b30" />
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity
+                onPress={() => toggleExpand(item.id)}
+                style={styles.expandBtn}
+              >
+                <Ionicons
+                  name={isExpanded ? "chevron-up" : "chevron-down"}
+                  size={20}
+                  color={theme.colors.textSecondary}
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <ThemedText type="defaultSemiBold" style={styles.requestTitle}>
+            {item.title}
+          </ThemedText>
+
+          <ThemedText
+            type="default"
+            style={styles.requestDescription}
+            numberOfLines={isExpanded ? undefined : 3}
+          >
+            {item.description}
+          </ThemedText>
+
+          {isExpanded && item.replies && item.replies.length > 0 && (
+            <View style={styles.repliesSection}>
+              <ThemedText type="defaultSemiBold" style={styles.repliesTitle}>
+                {t("requests.replies")} ({item.replies.length})
+              </ThemedText>
+              {item.replies.map((reply, replyIndex) => (
+                <View
+                  key={replyIndex}
+                  style={[styles.replyCard, isRTL && styles.replyCardRTL]}
+                >
+                  <ThemedText type="default" style={styles.replyContent}>
+                    {/* ✅ FIXED: Use safe content access */}
+                    {getReplyContent(reply)}
+                  </ThemedText>
+                  <View
+                    style={[styles.replyFooter, isRTL && styles.replyFooterRTL]}
+                  >
+                    <ThemedText type="subtitle" style={styles.replyAuthor}>
+                      {/* ✅ FIXED: Use safe author access */}
+                      {getReplyAuthor(reply)}
+                    </ThemedText>
+                    <ThemedText type="subtitle" style={styles.replyDate}>
+                      {formatDate(reply.createdAt)}
+                    </ThemedText>
+                  </View>
+                </View>
+              ))}
+            </View>
           )}
+
+          <View style={[styles.cardFooter, isRTL && styles.cardFooterRTL]}>
+            <View
+              style={[styles.dateContainer, isRTL && styles.dateContainerRTL]}
+            >
+              <Ionicons
+                name="time-outline"
+                size={14}
+                color={theme.colors.textSecondary}
+              />
+              <ThemedText type="subtitle" style={styles.dateText}>
+                {formatDate(item.createdAt)}
+              </ThemedText>
+            </View>
+
+            <View
+              style={[styles.repliesCount, isRTL && styles.repliesCountRTL]}
+            >
+              <Ionicons
+                name="chatbubble-outline"
+                size={14}
+                color={theme.colors.textSecondary}
+              />
+              <ThemedText type="subtitle" style={styles.repliesCountText}>
+                {item.replies?.length || 0}
+              </ThemedText>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  };
+
+  const requestFilters: { key: FilterOption; label: string; count: number }[] =
+    [
+      {
+        key: "all",
+        label: t("requests.filters.all"),
+        count: requests.length,
+      },
+      {
+        key: "open",
+        label: t("requests.filters.open"),
+        count: requests.filter((r) => r.status === "open").length,
+      },
+      {
+        key: "in_progress",
+        label: t("requests.filters.inProgress"),
+        count: requests.filter((r) => r.status === "in_progress").length,
+      },
+      {
+        key: "closed",
+        label: t("requests.filters.closed"),
+        count: requests.filter((r) => r.status === "closed").length,
+      },
+    ];
+
+  if (loading) {
+    return (
+      <ThemedView style={styles.centered}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <ThemedText style={styles.loadingText}>
+          {t("requests.loading")}
+        </ThemedText>
+      </ThemedView>
+    );
+  }
+
+  if (error) {
+    return (
+      <ThemedView style={styles.centered}>
+        <Ionicons name="alert-circle-outline" size={64} color="#ff3b30" />
+        <ThemedText style={styles.errorTitle}>
+          {t("requests.errorTitle")}
+        </ThemedText>
+        <ThemedText style={styles.errorText}>{error}</ThemedText>
+        <TouchableOpacity
+          style={[
+            styles.retryButton,
+            { backgroundColor: theme.colors.primary },
+          ]}
+          onPress={loadRequests}
+        >
+          <ThemedText style={styles.retryButtonText}>
+            {t("buttons.retry")}
+          </ThemedText>
+        </TouchableOpacity>
+      </ThemedView>
+    );
+  }
+
+  return (
+    <ThemedView style={styles.container}>
+      {/* Header */}
+      <View
+        style={[
+          styles.header,
+          { paddingTop: insets.top + 20 },
+          isRTL && styles.headerRTL,
+        ]}
+      >
+        <View>
+          <ThemedText
+            type="title"
+            style={[styles.title, isRTL && styles.textRTL]}
+          >
+            {t("requests.title")}
+          </ThemedText>
+          <ThemedText
+            type="subtitle"
+            style={[styles.subtitle, isRTL && styles.textRTL]}
+          >
+            {t("requests.subtitle", { count: requests.length })}
+          </ThemedText>
         </View>
+
         {canCreateRequests && (
           <TouchableOpacity
             style={[
               styles.createButton,
-              { backgroundColor: isDark ? "#0A84FF" : "#007AFF" },
-              isArabic && styles.rtlButton,
+              { backgroundColor: theme.colors.primary },
             ]}
-            onPress={() => setModalVisible(true)}
+            onPress={() => setCreateModalVisible(true)}
           >
             <Ionicons name="add" size={20} color="#fff" />
-            <Text style={styles.createButtonText}>{t("requests.create")}</Text>
+            <ThemedText style={styles.createButtonText}>
+              {t("requests.create")}
+            </ThemedText>
           </TouchableOpacity>
         )}
       </View>
 
-      {/* Search and Filter */}
-      <View style={[styles.filterContainer, isArabic && styles.rtlContainer]}>
-        <View
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <Ionicons
+          name="search"
+          size={20}
+          color={theme.colors.textSecondary}
+          style={styles.searchIcon}
+        />
+        <TextInput
           style={[
-            styles.searchContainer,
-            { backgroundColor: isDark ? "#1e1e1e" : "#f2f2f7" },
-            isArabic && styles.rtlSearchContainer,
+            styles.searchInput,
+            {
+              color: theme.colors.text,
+              backgroundColor: theme.colors.background,
+              textAlign: isRTL ? "right" : "left",
+            },
           ]}
-        >
-          <Ionicons
-            name="search-outline"
-            size={18}
-            color={isDark ? "#aaa" : "#666"}
-          />
-          <TextInput
-            style={[
-              styles.searchInput,
-              { color: isDark ? "#fff" : "#000" },
-              rtlStyles,
-            ]}
-            placeholder={t("requests.searchPlaceholder")}
-            placeholderTextColor={isDark ? "#aaa" : "#999"}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            textAlign={isArabic ? "right" : "left"}
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery("")}>
-              <Ionicons
-                name="close-circle"
-                size={18}
-                color={isDark ? "#aaa" : "#666"}
-              />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.filterScroll}
-          contentContainerStyle={[
-            styles.filterContent,
-            isArabic && { flexDirection: "row-reverse" },
-          ]}
-        >
-          {(["all", "open", "in_progress", "closed"] as FilterOption[]).map(
-            (filter) => (
-              <TouchableOpacity
-                key={filter}
-                style={[
-                  styles.filterPill,
-                  {
-                    backgroundColor:
-                      activeFilter === filter
-                        ? getStatusColor(filter === "all" ? "open" : filter)
-                        : isDark
-                          ? "#2a2a2a"
-                          : "#f0f0f0",
-                  },
-                ]}
-                onPress={() => setActiveFilter(filter)}
-              >
-                <Text
-                  style={[
-                    styles.filterText,
-                    {
-                      color:
-                        activeFilter === filter
-                          ? "#fff"
-                          : isDark
-                            ? "#fff"
-                            : "#333",
-                    },
-                  ]}
-                >
-                  {filter === "all" ? t("common.all") : getStatusText(filter)}
-                </Text>
-                {filter !== "all" && (
-                  <View style={styles.filterCount}>
-                    <Text style={styles.filterCountText}>
-                      {requests.filter((r) => r.status === filter).length}
-                    </Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-            )
-          )}
-        </ScrollView>
+          placeholder={t("requests.searchPlaceholder")}
+          placeholderTextColor={theme.colors.textSecondary}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery("")}>
+            <Ionicons
+              name="close-circle"
+              size={20}
+              color={theme.colors.textSecondary}
+            />
+          </TouchableOpacity>
+        )}
       </View>
 
-      {/* List / Empty */}
-      {error ? (
-        <View style={styles.emptyState}>
-          <Ionicons
-            name="warning-outline"
-            size={64}
-            color={isDark ? "#444" : "#ccc"}
-          />
-          <Text
-            style={[
-              styles.emptyTitle,
-              { color: isDark ? "#fff" : "#333" },
-              rtlStyles,
-            ]}
-          >
-            {t("requests.loadError")}
-          </Text>
-          <Text
-            style={[
-              styles.emptyText,
-              { color: isDark ? "#aaa" : "#666" },
-              rtlStyles,
-            ]}
-          >
-            {error}
-          </Text>
+      {/* Status Filters */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.filtersContainer}
+      >
+        {requestFilters.map((filter) => (
           <TouchableOpacity
+            key={filter.key}
             style={[
-              styles.clearButton,
-              { backgroundColor: isDark ? "#0A84FF" : "#007AFF" },
+              styles.filterButton,
+              {
+                backgroundColor:
+                  activeFilter === filter.key
+                    ? getStatusColor(filter.key as RequestStatus)
+                    : theme.colors.surface2,
+              },
             ]}
-            onPress={loadRequests}
+            onPress={() => setActiveFilter(filter.key)}
           >
-            <Text style={{ color: "#fff", fontWeight: "600" }}>
-              {t("common.tryAgain")}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      ) : filteredRequests.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Ionicons
-            name={
-              searchQuery || activeFilter !== "all"
-                ? "search-outline"
-                : "document-text-outline"
-            }
-            size={64}
-            color={isDark ? "#444" : "#ccc"}
-          />
-          <Text
-            style={[
-              styles.emptyTitle,
-              { color: isDark ? "#fff" : "#333" },
-              rtlStyles,
-            ]}
-          >
-            {searchQuery
-              ? t("requests.noMatchingRequests")
-              : activeFilter !== "all"
-                ? t("requests.noStatusRequests", {
-                    status: getStatusText(activeFilter),
-                  })
-                : t("requests.noRequestsFound")}
-          </Text>
-          <Text
-            style={[
-              styles.emptyText,
-              { color: isDark ? "#aaa" : "#666" },
-              rtlStyles,
-            ]}
-          >
-            {searchQuery
-              ? t("requests.tryDifferentSearch")
-              : activeFilter !== "all"
-                ? t("requests.noRequestsForStatus", {
-                    status: getStatusText(activeFilter),
-                  })
-                : canCreateRequests
-                  ? t("requests.beFirstToCreate")
-                  : t("requests.noRequestsPosted")}
-          </Text>
-          {(searchQuery || activeFilter !== "all") && (
-            <TouchableOpacity
+            <ThemedText
               style={[
-                styles.clearButton,
-                { backgroundColor: isDark ? "#2a2a2a" : "#f0f0f0" },
+                styles.filterText,
+                {
+                  color:
+                    activeFilter === filter.key ? "#fff" : theme.colors.text,
+                  fontWeight: activeFilter === filter.key ? "600" : "400",
+                },
               ]}
-              onPress={() => {
-                setSearchQuery("");
-                setActiveFilter("all");
-              }}
             >
-              <Text
-                style={{ color: isDark ? "#fff" : "#333", fontWeight: "600" }}
-              >
-                {t("common.clearFilters")}
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      ) : (
-        <Animated.View style={{ opacity: fadeAnim, flex: 1 }}>
-          <FlatList
-            data={filteredRequests}
-            keyExtractor={(item) => item.id}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={onRefresh}
-                tintColor={isDark ? "#fff" : "#000"}
-              />
-            }
-            contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
-            ItemSeparatorComponent={() => <View style={{ height: 16 }} />}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => toggleExpand(item.id)}
-                style={[
-                  styles.card,
-                  { backgroundColor: isDark ? "#1e1e1e" : "#fff" },
-                ]}
-              >
-                {/* Title Row */}
-                <View
-                  style={[styles.cardHeader, isArabic && styles.rtlCardHeader]}
-                >
-                  <View
-                    style={[
-                      styles.cardTitleContainer,
-                      isArabic && styles.rtlTitleContainer,
-                    ]}
-                  >
-                    <Ionicons
-                      name="document-text-outline"
-                      size={20}
-                      color={getStatusColor(item.status)}
-                    />
-                    <Text
-                      style={[
-                        styles.info,
-                        { color: isDark ? "#fff" : "#333" },
-                        rtlStyles,
-                      ]}
-                      numberOfLines={1}
-                    >
-                      {item.title}
-                    </Text>
-                  </View>
-                  <View
-                    style={[
-                      styles.headerActions,
-                      isArabic && styles.rtlActions,
-                    ]}
-                  >
-                    <View
-                      style={[
-                        styles.statusBadge,
-                        { backgroundColor: getStatusBgColor(item.status) },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.statusText,
-                          { color: getStatusColor(item.status) },
-                        ]}
-                      >
-                        {getStatusText(item.status)}
-                      </Text>
-                    </View>
-                    {canDeleteRequests && (
-                      <TouchableOpacity
-                        onPress={() => handleDelete(item.id, item.title)}
-                        style={styles.deleteButton}
-                      >
-                        <Ionicons
-                          name="trash-outline"
-                          size={18}
-                          color="#FF3B30"
-                        />
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                </View>
+              {filter.label} ({filter.count})
+            </ThemedText>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
 
-                {/* Description */}
-                <Text
-                  style={[
-                    styles.desc,
-                    { color: isDark ? "#bbb" : "#666" },
-                    rtlStyles,
-                  ]}
-                  numberOfLines={expandedRequests.has(item.id) ? undefined : 3}
-                >
-                  {item.description}
-                </Text>
-
-                {/* Meta */}
-                <View
-                  style={[
-                    styles.metaContainer,
-                    isArabic && styles.rtlMetaContainer,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.meta,
-                      { color: isDark ? "#aaa" : "#888" },
-                      rtlStyles,
-                    ]}
-                  >
-                    {t("requests.postedBy", {
-                      user: item.createdBy,
-                      date: new Date(item.createdAt).toLocaleDateString(
-                        i18n.language
-                      ),
-                    })}
-                  </Text>
-                  <TouchableOpacity onPress={() => toggleExpand(item.id)}>
-                    <Ionicons
-                      name={
-                        expandedRequests.has(item.id)
-                          ? "chevron-up"
-                          : "chevron-down"
-                      }
-                      size={16}
-                      color={isDark ? "#aaa" : "#888"}
-                    />
-                  </TouchableOpacity>
-                </View>
-
-                {/* Replies - Only show when expanded or if there are replies */}
-                {((item.replies ?? []).length > 0 ||
-                  expandedRequests.has(item.id)) && (
-                  <View style={styles.repliesSection}>
-                    <View
-                      style={[
-                        styles.repliesHeader,
-                        isArabic && { alignItems: "flex-end" },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.repliesTitle,
-                          { color: isDark ? "#fff" : "#333" },
-                          rtlStyles,
-                        ]}
-                      >
-                        {t("requests.repliesCount", {
-                          count: (item.replies ?? []).length,
-                        })}
-                      </Text>
-                    </View>
-
-                    {(item.replies ?? []).map((r) => (
-                      <View
-                        key={r.id}
-                        style={[
-                          styles.replyCard,
-                          {
-                            backgroundColor: isDark ? "#2a2a2a" : "#f8f8f8",
-                          },
-                        ]}
-                      >
-                        <View
-                          style={[
-                            styles.replyHeader,
-                            isArabic && styles.rtlReplyHeader,
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.replyAuthor,
-                              { color: isDark ? "#0A84FF" : "#007AFF" },
-                            ]}
-                          >
-                            {r.createdBy}
-                          </Text>
-                          <Text
-                            style={[
-                              styles.replyDate,
-                              { color: isDark ? "#666" : "#999" },
-                            ]}
-                          >
-                            {new Date(r.createdAt).toLocaleDateString(
-                              i18n.language
-                            )}
-                          </Text>
-                        </View>
-                        <Text
-                          style={[
-                            styles.replyText,
-                            { color: isDark ? "#ddd" : "#555" },
-                            rtlStyles,
-                          ]}
-                        >
-                          {r.text}
-                        </Text>
-                      </View>
-                    ))}
-
-                    {/* Add Reply */}
-                    {canReply && expandedRequests.has(item.id) && (
-                      <View
-                        style={[
-                          styles.replyInputRow,
-                          isArabic && styles.rtlReplyInput,
-                        ]}
-                      >
-                        <TextInput
-                          style={[
-                            styles.replyInput,
-                            {
-                              color: isDark ? "#fff" : "#000",
-                              backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7",
-                              borderColor: isDark ? "#444" : "#ccc",
-                            },
-                            rtlStyles,
-                          ]}
-                          placeholder={t("requests.writeReply")}
-                          placeholderTextColor="#888"
-                          value={replyText[item.id] || ""}
-                          onChangeText={(t) =>
-                            setReplyText((prev) => ({ ...prev, [item.id]: t }))
-                          }
-                          multiline
-                          maxLength={500}
-                          textAlign={isArabic ? "right" : "left"}
-                        />
-                        <TouchableOpacity
-                          onPress={() => handleAddReply(item.id)}
-                          style={[
-                            styles.sendButton,
-                            { opacity: replyText[item.id]?.trim() ? 1 : 0.5 },
-                          ]}
-                          disabled={!replyText[item.id]?.trim()}
-                        >
-                          <Ionicons
-                            name="send"
-                            size={20}
-                            color={isDark ? "#0A84FF" : "#007AFF"}
-                          />
-                        </TouchableOpacity>
-                      </View>
-                    )}
-                  </View>
-                )}
-              </TouchableOpacity>
-            )}
+      {/* Requests List */}
+      <Animated.FlatList
+        data={filteredRequests}
+        keyExtractor={(item) => item.id}
+        renderItem={renderItem}
+        contentContainerStyle={[styles.listContent, { paddingBottom: 20 }]}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.colors.primary}
           />
-        </Animated.View>
-      )}
+        }
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Ionicons
+              name="document-text-outline"
+              size={64}
+              color={theme.colors.textSecondary}
+            />
+            <ThemedText style={styles.emptyTitle}>
+              {searchQuery ? t("requests.noResults") : t("requests.emptyTitle")}
+            </ThemedText>
+            <ThemedText style={styles.emptyText}>
+              {searchQuery
+                ? t("requests.noResultsText")
+                : t("requests.emptyText")}
+            </ThemedText>
+          </View>
+        }
+      />
 
       {/* Create Request Modal */}
-      <Modal transparent visible={modalVisible} animationType="slide">
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            style={styles.modalContainer}
-          >
-            <View style={styles.modalOverlay}>
-              <View
-                style={[
-                  styles.modalBox,
-                  { backgroundColor: isDark ? "#1e1e1e" : "#fff" },
-                ]}
-              >
-                <View
-                  style={[
-                    styles.modalHeader,
-                    isArabic && styles.rtlModalHeader,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.modalTitle,
-                      { color: isDark ? "#fff" : "#333" },
-                      rtlStyles,
-                    ]}
-                  >
-                    {t("requests.createNewRequest")}
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() => setModalVisible(false)}
-                    style={styles.closeButton}
-                  >
-                    <Ionicons
-                      name="close"
-                      size={24}
-                      color={isDark ? "#fff" : "#000"}
-                    />
-                  </TouchableOpacity>
-                </View>
+      <Modal
+        visible={createModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <ThemedView style={styles.modalContainer}>
+          <View style={[styles.modalHeader, isRTL && styles.modalHeaderRTL]}>
+            <ThemedText type="title" style={styles.modalTitle}>
+              {t("requests.createNew")}
+            </ThemedText>
+            <TouchableOpacity
+              onPress={() => setCreateModalVisible(false)}
+              style={styles.closeButton}
+            >
+              <Ionicons name="close" size={24} color={theme.colors.text} />
+            </TouchableOpacity>
+          </View>
 
-                <View style={styles.inputContainer}>
-                  <Text
-                    style={[
-                      styles.inputLabel,
-                      { color: isDark ? "#fff" : "#333" },
-                      rtlStyles,
-                    ]}
-                  >
-                    {t("common.title")} *
-                  </Text>
-                  <TextInput
-                    placeholder={t("requests.enterTitle")}
-                    placeholderTextColor="#888"
-                    style={[
-                      styles.input,
-                      {
-                        color: isDark ? "#fff" : "#000",
-                        backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7",
-                      },
-                      rtlStyles,
-                    ]}
-                    value={newRequest.title}
-                    onChangeText={(t) =>
-                      setNewRequest((p) => ({ ...p, title: t }))
-                    }
-                    maxLength={100}
-                    textAlign={isArabic ? "right" : "left"}
-                  />
-                  <Text
-                    style={[
-                      styles.charCount,
-                      isArabic && { textAlign: "left" },
-                    ]}
-                  >
-                    {newRequest.title.length}/100
-                  </Text>
-                </View>
+          <ScrollView style={styles.modalContent}>
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  color: theme.colors.text,
+                  backgroundColor: theme.colors.background,
+                  borderColor: theme.colors.border,
+                  textAlign: isRTL ? "right" : "left",
+                },
+              ]}
+              placeholder={t("requests.form.title")}
+              placeholderTextColor={theme.colors.textSecondary}
+              value={newRequest.title}
+              onChangeText={(text) =>
+                setNewRequest((prev) => ({ ...prev, title: text }))
+              }
+            />
 
-                <View style={styles.inputContainer}>
-                  <Text
-                    style={[
-                      styles.inputLabel,
-                      { color: isDark ? "#fff" : "#333" },
-                      rtlStyles,
-                    ]}
-                  >
-                    {t("common.description")} *
-                  </Text>
-                  <TextInput
-                    placeholder={t("requests.describeRequest")}
-                    placeholderTextColor="#888"
-                    style={[
-                      styles.input,
-                      styles.textArea,
-                      {
-                        color: isDark ? "#fff" : "#000",
-                        backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7",
-                      },
-                      rtlStyles,
-                    ]}
-                    multiline
-                    numberOfLines={5}
-                    value={newRequest.description}
-                    onChangeText={(t) =>
-                      setNewRequest((p) => ({ ...p, description: t }))
-                    }
-                    maxLength={1000}
-                    textAlign={isArabic ? "right" : "left"}
-                    textAlignVertical="top"
-                  />
-                  <Text
-                    style={[
-                      styles.charCount,
-                      isArabic && { textAlign: "left" },
-                    ]}
-                  >
-                    {newRequest.description.length}/1000
-                  </Text>
-                </View>
+            <TextInput
+              style={[
+                styles.input,
+                styles.textArea,
+                {
+                  color: theme.colors.text,
+                  backgroundColor: theme.colors.background,
+                  borderColor: theme.colors.border,
+                  textAlign: isRTL ? "right" : "left",
+                },
+              ]}
+              placeholder={t("requests.form.description")}
+              placeholderTextColor={theme.colors.textSecondary}
+              value={newRequest.description}
+              onChangeText={(text) =>
+                setNewRequest((prev) => ({ ...prev, description: text }))
+              }
+              multiline
+              numberOfLines={6}
+              textAlignVertical="top"
+            />
 
-                <View
-                  style={[
-                    styles.modalActions,
-                    isArabic && styles.rtlModalActions,
-                  ]}
-                >
-                  <TouchableOpacity
-                    style={[
-                      styles.modalBtn,
-                      { backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7" },
-                    ]}
-                    onPress={() => setModalVisible(false)}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 16,
-                        fontWeight: "600",
-                        color: isDark ? "#fff" : "#000",
-                      }}
-                    >
-                      {t("common.cancel")}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.modalBtn,
-                      {
-                        backgroundColor:
-                          newRequest.title.trim() &&
-                          newRequest.description.trim()
-                            ? isDark
-                              ? "#0A84FF"
-                              : "#007AFF"
-                            : isDark
-                              ? "#444"
-                              : "#ccc",
-                      },
-                    ]}
-                    onPress={handleCreateRequest}
-                    disabled={
-                      !newRequest.title.trim() || !newRequest.description.trim()
-                    }
-                  >
-                    <Text style={{ color: "#fff", fontWeight: "600" }}>
-                      {t("requests.createRequest")}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-          </KeyboardAvoidingView>
-        </TouchableWithoutFeedback>
+            <TouchableOpacity
+              style={[
+                styles.submitButton,
+                { backgroundColor: theme.colors.primary },
+              ]}
+              onPress={handleCreateRequest}
+            >
+              <ThemedText style={styles.submitButtonText}>
+                {t("requests.submitRequest")}
+              </ThemedText>
+            </TouchableOpacity>
+          </ScrollView>
+        </ThemedView>
       </Modal>
-    </View>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: {
+    flex: 1,
+  },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    opacity: 0.7,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  errorText: {
+    fontSize: 16,
+    textAlign: "center",
+    marginBottom: 24,
+    opacity: 0.7,
+  },
+  retryButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  retryButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 16,
+  },
   header: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingBottom: 16,
+    alignItems: "flex-start",
   },
-  headerContent: { flex: 1 },
-  title: { fontSize: 28, fontWeight: "800", marginBottom: 4 },
-  subtitle: { fontSize: 16, fontWeight: "500" },
+  headerRTL: {
+    flexDirection: "row-reverse",
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: "800",
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 16,
+    opacity: 0.7,
+  },
   createButton: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 8,
     paddingHorizontal: 16,
-    borderRadius: 8,
+    paddingVertical: 10,
+    borderRadius: 12,
     gap: 6,
   },
-  createButtonText: { color: "#fff", fontWeight: "600", fontSize: 16 },
-
-  // RTL Styles
-  rtlContainer: {
-    flexDirection: "row-reverse",
-  },
-  rtlButton: {
-    flexDirection: "row-reverse",
-  },
-  rtlSearchContainer: {
-    flexDirection: "row-reverse",
-  },
-  rtlCardHeader: {
-    flexDirection: "row-reverse",
-  },
-  rtlTitleContainer: {
-    flexDirection: "row-reverse",
-  },
-  rtlActions: {
-    flexDirection: "row-reverse",
-  },
-  rtlMetaContainer: {
-    flexDirection: "row-reverse",
-  },
-  rtlReplyHeader: {
-    flexDirection: "row-reverse",
-  },
-  rtlReplyInput: {
-    flexDirection: "row-reverse",
-  },
-  rtlModalHeader: {
-    flexDirection: "row-reverse",
-  },
-  rtlModalActions: {
-    flexDirection: "row-reverse",
-  },
-
-  // Filter and Search
-  filterContainer: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    gap: 12,
+  createButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 14,
   },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-    gap: 8,
+    marginHorizontal: 20,
+    marginBottom: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: "rgba(0,0,0,0.05)",
+  },
+  searchIcon: {
+    marginRight: 12,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
-    paddingVertical: 4,
   },
-  filterScroll: {
-    flexGrow: 0,
-  },
-  filterContent: {
+  filtersContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 16,
     gap: 8,
   },
-  filterPill: {
-    flexDirection: "row",
-    alignItems: "center",
+  filterButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    gap: 6,
+    marginRight: 8,
   },
   filterText: {
     fontSize: 14,
-    fontWeight: "600",
   },
-  filterCount: {
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    borderRadius: 10,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    minWidth: 20,
-    alignItems: "center",
+  listContent: {
+    paddingHorizontal: 20,
   },
-  filterCountText: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-
-  // Card Styles
   card: {
     padding: 20,
     borderRadius: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 8,
-    elevation: 3,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
   cardHeader: {
     flexDirection: "row",
@@ -1089,190 +775,190 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     marginBottom: 12,
   },
-  cardTitleContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-    marginRight: 12,
-    gap: 8,
+  cardHeaderRTL: {
+    flexDirection: "row-reverse",
   },
-  headerActions: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  info: { fontSize: 18, fontWeight: "700", flex: 1 },
   statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  statusText: { fontSize: 12, fontWeight: "600" },
-  deleteButton: {
-    padding: 4,
-  },
-  desc: {
-    fontSize: 14,
-    marginBottom: 12,
-    lineHeight: 20,
-  },
-  metaContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    gap: 6,
   },
-  meta: { fontSize: 12 },
-
-  // Replies
-  repliesSection: {
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(150,150,150,0.2)",
-    gap: 8,
+  statusBadgeRTL: {
+    flexDirection: "row-reverse",
   },
-  repliesHeader: {
-    marginBottom: 8,
-  },
-  repliesTitle: {
-    fontSize: 14,
+  statusText: {
+    fontSize: 12,
     fontWeight: "600",
   },
+  actions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  deleteBtn: {
+    padding: 4,
+  },
+  expandBtn: {
+    padding: 4,
+  },
+  requestTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 8,
+    lineHeight: 24,
+  },
+  requestDescription: {
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 16,
+  },
+  repliesSection: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(0,0,0,0.1)",
+  },
+  repliesTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 12,
+  },
   replyCard: {
+    backgroundColor: "rgba(0,0,0,0.03)",
     padding: 12,
     borderRadius: 8,
-    gap: 4,
+    marginBottom: 8,
   },
-  replyHeader: {
+  replyCardRTL: {
+    alignItems: "flex-end",
+  },
+  replyContent: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+  replyFooter: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+  },
+  replyFooterRTL: {
+    flexDirection: "row-reverse",
   },
   replyAuthor: {
     fontSize: 12,
     fontWeight: "600",
+    opacity: 0.7,
   },
   replyDate: {
-    fontSize: 11,
+    fontSize: 12,
+    opacity: 0.5,
   },
-  replyText: {
-    fontSize: 14,
-    lineHeight: 18,
+  cardFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(0,0,0,0.1)",
   },
-  replyInputRow: {
+  cardFooterRTL: {
+    flexDirection: "row-reverse",
+  },
+  dateContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 8,
-    gap: 8,
+    gap: 6,
   },
-  replyInput: {
-    flex: 1,
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 14,
-    minHeight: 40,
+  dateContainerRTL: {
+    flexDirection: "row-reverse",
   },
-  sendButton: {
-    padding: 8,
+  dateText: {
+    fontSize: 13,
+    opacity: 0.7,
   },
-
-  // Empty State
+  repliesCount: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  repliesCountRTL: {
+    flexDirection: "row-reverse",
+  },
+  repliesCountText: {
+    fontSize: 13,
+    opacity: 0.7,
+  },
   emptyState: {
-    flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    paddingVertical: 60,
     paddingHorizontal: 40,
-    gap: 16,
   },
   emptyTitle: {
     fontSize: 20,
     fontWeight: "700",
-    textAlign: "center",
+    marginTop: 16,
+    marginBottom: 8,
   },
   emptyText: {
     fontSize: 16,
     textAlign: "center",
-    lineHeight: 24,
+    opacity: 0.7,
+    lineHeight: 22,
   },
-  clearButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-    marginTop: 8,
-  },
-
-  // Modal
-  modalContainer: { flex: 1 },
-  modalOverlay: {
+  modalContainer: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    padding: 20,
-  },
-  modalBox: {
-    width: "100%",
-    borderRadius: 20,
-    overflow: "hidden",
-    maxHeight: "80%",
+    paddingTop: 60,
   },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(150,150,150,0.2)",
+  },
+  modalHeaderRTL: {
+    flexDirection: "row-reverse",
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: "700",
   },
   closeButton: {
     padding: 4,
   },
-  inputContainer: {
-    marginBottom: 16,
-  },
-  inputLabel: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 8,
-    paddingHorizontal: 20,
+  modalContent: {
+    flex: 1,
+    padding: 20,
   },
   input: {
+    borderWidth: 1,
     borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    padding: 16,
     fontSize: 16,
-    fontWeight: "500",
-    marginHorizontal: 20,
+    marginBottom: 16,
   },
   textArea: {
     height: 120,
     textAlignVertical: "top",
   },
-  charCount: {
-    fontSize: 12,
-    color: "#888",
-    textAlign: "right",
-    marginRight: 20,
-    marginTop: 4,
-  },
-  modalActions: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    padding: 20,
-    gap: 12,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(150,150,150,0.2)",
-  },
-  modalBtn: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+  submitButton: {
+    paddingVertical: 16,
     borderRadius: 12,
-    minWidth: 100,
     alignItems: "center",
+  },
+  submitButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  textRTL: {
+    textAlign: "right",
   },
 });

@@ -1,6 +1,7 @@
+// types/request.ts
 export type Reply = {
   id: string;
-  text: string;
+  content: string; // Changed from 'text' to 'content'
   createdBy: string;
   createdAt: string;
 };

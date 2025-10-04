@@ -1,735 +1,760 @@
 // app/(tabs)/announcements.tsx
+import {
+  createAnnouncement,
+  deleteAnnouncement as deleteAnnouncementAPI,
+  getAnnouncements,
+} from "@/features/announcements/services/announcementService";
 import { ThemedText, ThemedView } from "@/shared/components/ui";
 import { useTheme } from "@/shared/context/ThemeContext";
 import { useRole } from "@/shared/hooks/useRole";
+import { Announcement } from "@/shared/types/announcement";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import { useRouter } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  ActivityIndicator,
   Alert,
-  FlatList,
-  Keyboard,
-  KeyboardAvoidingView,
+  Animated,
+  Dimensions,
   Modal,
   Platform,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-type Announcement = {
-  id: string;
-  title: string;
-  date: string;
-  content: string;
-  author: string;
-  priority?: "high" | "normal";
-};
-
-const initialAnnouncements: Announcement[] = [
-  {
-    id: "1",
-    title: "Pool Maintenance",
-    date: "Sept 15, 2025",
-    content: "The community pool will be closed for maintenance from September 18-20. We apologize for any inconvenience.",
-    author: "Management",
-    priority: "high",
-  },
-  {
-    id: "2",
-    title: "New Security Measures",
-    date: "Sept 10, 2025",
-    content: "Starting next week, we will be implementing new security measures including additional cameras at all entry points.",
-    author: "Security Team",
-  },
-  {
-    id: "3",
-    title: "Community Garden Update",
-    date: "Sept 5, 2025",
-    content: "The community garden renovation is complete! Sign up now for your plot. First come, first served.",
-    author: "Recreation Committee",
-  },
-];
+const { width } = Dimensions.get("window");
 
 export default function AnnouncementsScreen() {
-  const { isRTL } = useTheme();
-  const { t } = useTranslation();
-  const [announcements, setAnnouncements] = useState<Announcement[]>(initialAnnouncements);
-  const [modalVisible, setModalVisible] = useState(false);
+  const { theme, isDark } = useTheme();
+  const { t, i18n } = useTranslation();
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const { isSuperAdmin, isBoardMember, user } = useRole();
+  const canManageAnnouncements = isSuperAdmin || isBoardMember;
+
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [createModalVisible, setCreateModalVisible] = useState(false);
   const [newAnnouncement, setNewAnnouncement] = useState({
     title: "",
     content: "",
-    author: "",
-    priority: "normal" as "high" | "normal",
+    priority: "normal" as "normal" | "high",
   });
-  const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
-  const [detailModalVisible, setDetailModalVisible] = useState(false);
 
-  const { theme } = useTheme();
-  const insets = useSafeAreaInsets();
+  // Animations
+  const fadeAnim = useState(new Animated.Value(0))[0];
+  const slideAnim = useState(new Animated.Value(50))[0];
 
-  const { isSuperAdmin, isBoardMember } = useRole();
-  const canManageAnnouncements = isSuperAdmin || isBoardMember;
+  // ✅ Replace this with context/profile later
+  const communityId = "ec6dea87-7303-45a6-9cbc-ecb87bdd3b89";
+  const isRTL = i18n.language === "ar";
 
-  const addAnnouncement = () => {
-    if (!newAnnouncement.title || !newAnnouncement.content || !newAnnouncement.author) {
-      Alert.alert(
-        t("announcements.errors.missingInfo"),
-        t("announcements.errors.fillFields")
-      );
+  // ✅ Safe user ID fallback - FIXED TYPE ERROR
+  const currentUserId = user?.id || "default-user-id-temp";
+
+  // ✅ Fetch announcements from backend
+  const fetchAnnouncements = useCallback(async () => {
+    try {
+      setError(null);
+      const data = await getAnnouncements(communityId);
+      setAnnouncements(data);
+
+      // Animate in content
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } catch (err) {
+      console.error("Failed to load announcements:", err);
+      setError(t("announcements.errors.loadFailed"));
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [communityId, t, fadeAnim, slideAnim]);
+
+  useEffect(() => {
+    fetchAnnouncements();
+  }, [fetchAnnouncements]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchAnnouncements();
+  }, [fetchAnnouncements]);
+
+  // ✅ Fixed priority functions with type safety
+  const getPriorityColor = (priority: string | undefined): string => {
+    return priority === "high" ? "#FF3B30" : "#34C759";
+  };
+
+  const getPriorityIcon = (
+    priority: string | undefined
+  ): keyof typeof Ionicons.glyphMap => {
+    return priority === "high" ? "alert-circle" : "megaphone";
+  };
+
+  const createAnnouncementHandler = async () => {
+    if (!newAnnouncement.title.trim() || !newAnnouncement.content.trim()) {
+      Alert.alert(t("error"), t("announcements.errors.fillAllFields"));
       return;
     }
 
-    const newItem: Announcement = {
-      id: Date.now().toString(),
-      date: new Date().toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      }),
-      ...newAnnouncement,
-    };
-    setAnnouncements((prev) => [newItem, ...prev]);
-    setNewAnnouncement({
-      title: "",
-      content: "",
-      author: "",
-      priority: "normal",
-    });
-    setModalVisible(false);
+    try {
+      // ✅ FIXED: Use safe currentUserId instead of user?.id directly
+      const created = await createAnnouncement({
+        ...newAnnouncement,
+        communityId,
+        createdById: currentUserId,
+      });
+      setAnnouncements((prev) => [created, ...prev]);
+      setNewAnnouncement({ title: "", content: "", priority: "normal" });
+      setCreateModalVisible(false);
+      Alert.alert(t("success"), t("announcements.createSuccess"));
+    } catch (err) {
+      console.error("Error creating announcement:", err);
+      Alert.alert(t("error"), t("announcements.errors.createFailed"));
+    }
   };
 
-  const deleteAnnouncement = (id: string) => {
+  const deleteAnnouncementHandler = (id: string, title: string) => {
     Alert.alert(
       t("announcements.deleteConfirm"),
-      t("announcements.deleteConfirmMsg"),
+      t("announcements.deleteConfirmMsg", { title }),
       [
         { text: t("cancel"), style: "cancel" },
         {
           text: t("buttons.delete"),
           style: "destructive",
-          onPress: () => setAnnouncements((prev) => prev.filter((a) => a.id !== id)),
+          onPress: async () => {
+            try {
+              await deleteAnnouncementAPI(id);
+              setAnnouncements((prev) => prev.filter((a) => a.id !== id));
+            } catch (err) {
+              console.error("Failed to delete announcement:", err);
+              Alert.alert(t("error"), t("announcements.errors.deleteFailed"));
+            }
+          },
         },
-      ],
+      ]
     );
   };
 
-  const openAnnouncementDetails = (announcement: Announcement) => {
-    setSelectedAnnouncement(announcement);
-    setDetailModalVisible(true);
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString(i18n.language, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
-  const renderItem = ({ item }: { item: Announcement }) => (
-    <TouchableOpacity
-      onPress={() => openAnnouncementDetails(item)}
-      activeOpacity={0.7}
-    >
-      <View
-        style={[
-          styles.card,
-          {
-            backgroundColor: theme.colors.card,
-            borderLeftWidth: 4,
-            borderLeftColor: item.priority === "high" ? "#FF3B30" : theme.colors.border,
-          },
-        ]}
+  const renderItem = ({
+    item,
+    index,
+  }: {
+    item: Announcement;
+    index: number;
+  }) => {
+    // ✅ FIXED: Safe priority access with default value
+    const priority = item.priority || "normal";
+    const priorityColor = getPriorityColor(priority);
+    const priorityIcon = getPriorityIcon(priority);
+
+    return (
+      <Animated.View
+        style={{
+          opacity: fadeAnim,
+          transform: [{ translateY: slideAnim }],
+        }}
       >
-        {/* Header row */}
-        <View style={styles.cardHeader}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.colors.card,
+              borderLeftWidth: 4,
+              borderLeftColor: priorityColor,
+              marginTop: index === 0 ? 0 : 12,
+            },
+          ]}
+        >
+          <View style={[styles.cardHeader, isRTL && styles.cardHeaderRTL]}>
+            <View
+              style={[
+                styles.priorityBadge,
+                { backgroundColor: priorityColor + "20" },
+                isRTL && styles.priorityBadgeRTL,
+              ]}
+            >
+              <Ionicons name={priorityIcon} size={16} color={priorityColor} />
+              <ThemedText
+                type="defaultSemiBold"
+                style={[styles.priorityText, { color: priorityColor }]}
+              >
+                {priority === "high"
+                  ? t("announcements.highPriority")
+                  : t("announcements.normalPriority")}
+              </ThemedText>
+            </View>
+
+            {canManageAnnouncements && (
+              <TouchableOpacity
+                onPress={() => deleteAnnouncementHandler(item.id, item.title)}
+                style={styles.deleteBtn}
+              >
+                <Ionicons name="trash-outline" size={20} color="#ff3b30" />
+              </TouchableOpacity>
+            )}
+          </View>
+
           <ThemedText type="defaultSemiBold" style={styles.announcementTitle}>
             {item.title}
           </ThemedText>
 
-          {canManageAnnouncements && (
-            <TouchableOpacity
-              onPress={() => deleteAnnouncement(item.id)}
-              accessibilityLabel={`Delete ${item.title}`}
-              style={styles.deleteBtn}
+          <ThemedText
+            type="default"
+            style={styles.announcementContent}
+            numberOfLines={4}
+          >
+            {item.content}
+          </ThemedText>
+
+          <View style={[styles.cardFooter, isRTL && styles.cardFooterRTL]}>
+            <View
+              style={[styles.dateContainer, isRTL && styles.dateContainerRTL]}
             >
-              <Ionicons name="trash-outline" size={20} color="#ff3b30" />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Content preview */}
-        <ThemedText
-          type="default"
-          style={styles.announcementContent}
-          numberOfLines={3}
-        >
-          {item.content}
-        </ThemedText>
-
-        {/* Details */}
-        <View style={styles.detailsContainer}>
-          <View style={styles.detailRow}>
-            <Ionicons
-              name="person-outline"
-              size={16}
-              color={theme.colors.primary}
-            />
-            <ThemedText type="default" style={styles.announcementDetails}>
-              {item.author}
-            </ThemedText>
-          </View>
-          <View style={styles.detailRow}>
-            <Ionicons
-              name="calendar-outline"
-              size={16}
-              color={theme.colors.primary}
-            />
-            <ThemedText type="default" style={styles.announcementDetails}>
-              {item.date}
-            </ThemedText>
-          </View>
-          {item.priority === "high" && (
-            <View style={styles.detailRow}>
-              <Ionicons name="warning-outline" size={16} color="#FF3B30" />
-              <ThemedText
-                type="default"
-                style={[styles.announcementDetails, { color: "#FF3B30" }]}
-              >
-                {t("announcements.high")}
+              <Ionicons
+                name="time-outline"
+                size={14}
+                color={theme.colors.textSecondary}
+              />
+              <ThemedText type="subtitle" style={styles.dateText}>
+                {formatDate(item.createdAt)}
               </ThemedText>
             </View>
-          )}
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
 
-  const announcementCount = announcements.length;
-  const announcementText = t("announcements.count", { count: announcementCount });
+            <TouchableOpacity style={styles.readMoreBtn}>
+              <ThemedText type="defaultSemiBold" style={styles.readMoreText}>
+                {t("announcements.readMore")}
+              </ThemedText>
+              <Ionicons
+                name={isRTL ? "chevron-back" : "chevron-forward"}
+                size={16}
+                color={theme.colors.primary}
+              />
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  };
+
+  if (loading) {
+    return (
+      <ThemedView style={styles.centered}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <ThemedText style={styles.loadingText}>
+          {t("announcements.loading")}
+        </ThemedText>
+      </ThemedView>
+    );
+  }
+
+  if (error) {
+    return (
+      <ThemedView style={styles.centered}>
+        <Ionicons name="alert-circle-outline" size={64} color="#ff3b30" />
+        <ThemedText style={styles.errorTitle}>
+          {t("announcements.errorTitle")}
+        </ThemedText>
+        <ThemedText style={styles.errorText}>{error}</ThemedText>
+        <TouchableOpacity
+          style={[
+            styles.retryButton,
+            { backgroundColor: theme.colors.primary },
+          ]}
+          onPress={fetchAnnouncements}
+        >
+          <ThemedText style={styles.retryButtonText}>
+            {t("buttons.retry")}
+          </ThemedText>
+        </TouchableOpacity>
+      </ThemedView>
+    );
+  }
 
   return (
     <ThemedView style={styles.container}>
-      {/* Header with Create Button */}
-      <View style={[styles.header, { paddingTop: insets.top + 20 }]}>
-        <View style={styles.headerRow}>
-          <View>
-            <ThemedText type="title" style={styles.title}>
-              {t("announcements.title")}
-            </ThemedText>
-            {announcements.length > 0 && (
-              <ThemedText type="default" style={styles.subtitle}>
-                {announcementText}
-              </ThemedText>
-            )}
-          </View>
-
-          {canManageAnnouncements && announcements.length > 0 && (
-            <TouchableOpacity
-              style={[
-                styles.createButton,
-                { backgroundColor: theme.colors.primary },
-              ]}
-              onPress={() => setModalVisible(true)}
-              accessibilityLabel={t("announcements.create")}
-            >
-              <Ionicons name="add" size={20} color="#fff" />
-              <ThemedText style={styles.createButtonText}>
-                {t("announcements.create")}
-              </ThemedText>
-            </TouchableOpacity>
-          )}
+      {/* Header */}
+      <View
+        style={[
+          styles.header,
+          { paddingTop: insets.top + 20 },
+          isRTL && styles.headerRTL,
+        ]}
+      >
+        <View>
+          <ThemedText
+            type="title"
+            style={[styles.title, isRTL && styles.textRTL]}
+          >
+            {t("announcements.title")}
+          </ThemedText>
+          <ThemedText
+            type="subtitle"
+            style={[styles.subtitle, isRTL && styles.textRTL]}
+          >
+            {t("announcements.subtitle", { count: announcements.length })}
+          </ThemedText>
         </View>
+
+        {canManageAnnouncements && (
+          <TouchableOpacity
+            style={[
+              styles.createButton,
+              { backgroundColor: theme.colors.primary },
+            ]}
+            onPress={() => setCreateModalVisible(true)}
+          >
+            <Ionicons name="add" size={20} color="#fff" />
+            <ThemedText style={styles.createButtonText}>
+              {t("announcements.create")}
+            </ThemedText>
+          </TouchableOpacity>
+        )}
       </View>
 
-      {announcements.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Ionicons
-            name="megaphone-outline"
-            size={64}
-            color={theme.colors.textSecondary}
+      {/* Announcements List */}
+      <Animated.FlatList
+        data={announcements}
+        keyExtractor={(item) => item.id}
+        renderItem={renderItem}
+        contentContainerStyle={[styles.listContent, { paddingBottom: 20 }]}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.colors.primary}
           />
-          <ThemedText type="title" style={styles.emptyTitle}>
-            {t("announcements.noAnnouncements")}
-          </ThemedText>
-          <ThemedText type="default" style={styles.emptyText}>
-            {canManageAnnouncements
-              ? t("announcements.emptyManage")
-              : t("announcements.emptyView")}
-          </ThemedText>
-          {canManageAnnouncements && (
-            <TouchableOpacity
-              style={[
-                styles.createFirstAnnouncementBtn,
-                { backgroundColor: theme.colors.primary },
-              ]}
-              onPress={() => setModalVisible(true)}
-            >
-              <Ionicons name="add" size={20} color="#fff" />
-              <ThemedText style={styles.createFirstAnnouncementText}>
-                {t("announcements.createFirst")}
-              </ThemedText>
-            </TouchableOpacity>
-          )}
-        </View>
-      ) : (
-        <FlatList
-          data={announcements}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          contentContainerStyle={[styles.listContent, { paddingBottom: 20 }]}
-          ItemSeparatorComponent={() => <View style={{ height: 16 }} />}
-          showsVerticalScrollIndicator={false}
-        />
-      )}
+        }
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Ionicons
+              name="megaphone-outline"
+              size={64}
+              color={theme.colors.textSecondary}
+            />
+            <ThemedText style={styles.emptyTitle}>
+              {t("announcements.emptyTitle")}
+            </ThemedText>
+            <ThemedText style={styles.emptyText}>
+              {t("announcements.emptyText")}
+            </ThemedText>
+          </View>
+        }
+      />
 
       {/* Create Announcement Modal */}
-      <Modal transparent visible={modalVisible} animationType="slide">
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            style={styles.modalContainer}
-          >
-            <View style={styles.modalOverlay}>
+      <Modal
+        visible={createModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <ThemedView style={styles.modalContainer}>
+          <View style={[styles.modalHeader, isRTL && styles.modalHeaderRTL]}>
+            <ThemedText type="title" style={styles.modalTitle}>
+              {t("announcements.createNew")}
+            </ThemedText>
+            <TouchableOpacity
+              onPress={() => setCreateModalVisible(false)}
+              style={styles.closeButton}
+            >
+              <Ionicons name="close" size={24} color={theme.colors.text} />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.modalContent}>
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  color: theme.colors.text,
+                  backgroundColor: theme.colors.background,
+                  borderColor: theme.colors.border,
+                  textAlign: isRTL ? "right" : "left",
+                },
+              ]}
+              placeholder={t("announcements.form.title")}
+              placeholderTextColor={theme.colors.textSecondary}
+              value={newAnnouncement.title}
+              onChangeText={(text) =>
+                setNewAnnouncement((prev) => ({ ...prev, title: text }))
+              }
+            />
+
+            <TextInput
+              style={[
+                styles.input,
+                styles.textArea,
+                {
+                  color: theme.colors.text,
+                  backgroundColor: theme.colors.background,
+                  borderColor: theme.colors.border,
+                  textAlign: isRTL ? "right" : "left",
+                },
+              ]}
+              placeholder={t("announcements.form.content")}
+              placeholderTextColor={theme.colors.textSecondary}
+              value={newAnnouncement.content}
+              onChangeText={(text) =>
+                setNewAnnouncement((prev) => ({ ...prev, content: text }))
+              }
+              multiline
+              numberOfLines={6}
+              textAlignVertical="top"
+            />
+
+            <View
+              style={[
+                styles.prioritySection,
+                isRTL && styles.prioritySectionRTL,
+              ]}
+            >
+              <ThemedText style={styles.priorityLabel}>
+                {t("announcements.form.priority")}
+              </ThemedText>
               <View
                 style={[
-                  styles.modalBox,
-                  { backgroundColor: theme.colors.card },
+                  styles.priorityOptions,
+                  isRTL && styles.priorityOptionsRTL,
                 ]}
               >
-                <View style={styles.modalHeader}>
-                  <ThemedText type="title" style={styles.modalTitle}>
-                    {t("announcements.createNew")}
-                  </ThemedText>
+                {(["normal", "high"] as const).map((priority) => (
                   <TouchableOpacity
-                    onPress={() => setModalVisible(false)}
-                    style={styles.closeButton}
-                  >
-                    <Ionicons
-                      name="close"
-                      size={24}
-                      color={theme.colors.text}
-                    />
-                  </TouchableOpacity>
-                </View>
-
-                <ScrollView style={styles.modalScroll}>
-                  <ThemedText type="defaultSemiBold" style={styles.inputLabel}>
-                    {t("announcements.form.title")}
-                  </ThemedText>
-                  <TextInput
-                    placeholder={t("announcements.form.titlePlaceholder")}
-                    placeholderTextColor={theme.colors.textSecondary}
+                    key={priority}
                     style={[
-                      styles.input,
-                      {
-                        color: theme.colors.text,
-                        backgroundColor: theme.colors.surface,
-                      },
-                    ]}
-                    value={newAnnouncement.title}
-                    onChangeText={(t) =>
-                      setNewAnnouncement((p) => ({ ...p, title: t }))
-                    }
-                  />
-
-                  <ThemedText type="defaultSemiBold" style={styles.inputLabel}>
-                    {t("announcements.form.author")}
-                  </ThemedText>
-                  <TextInput
-                    placeholder={t("announcements.form.authorPlaceholder")}
-                    placeholderTextColor={theme.colors.textSecondary}
-                    style={[
-                      styles.input,
-                      {
-                        color: theme.colors.text,
-                        backgroundColor: theme.colors.surface,
-                      },
-                    ]}
-                    value={newAnnouncement.author}
-                    onChangeText={(t) =>
-                      setNewAnnouncement((p) => ({ ...p, author: t }))
-                    }
-                  />
-
-                  <ThemedText type="defaultSemiBold" style={styles.inputLabel}>
-                    {t("announcements.form.content")}
-                  </ThemedText>
-                  <TextInput
-                    placeholder={t("announcements.form.contentPlaceholder")}
-                    placeholderTextColor={theme.colors.textSecondary}
-                    style={[
-                      styles.input,
-                      styles.textArea,
-                      {
-                        color: theme.colors.text,
-                        backgroundColor: theme.colors.surface,
-                        height: 120,
-                        textAlignVertical: "top",
-                      },
-                    ]}
-                    multiline
-                    numberOfLines={5}
-                    value={newAnnouncement.content}
-                    onChangeText={(t) =>
-                      setNewAnnouncement((p) => ({ ...p, content: t }))
-                    }
-                  />
-
-                  <ThemedText type="defaultSemiBold" style={styles.inputLabel}>
-                    {t("announcements.form.priority")}
-                  </ThemedText>
-                  <View style={styles.priorityContainer}>
-                    <TouchableOpacity
-                      style={[
-                        styles.priorityButton,
-                        newAnnouncement.priority === "normal" &&
-                          styles.priorityButtonSelected,
-                        { backgroundColor: theme.colors.surface },
-                      ]}
-                      onPress={() =>
-                        setNewAnnouncement((p) => ({
-                          ...p,
-                          priority: "normal",
-                        }))
-                      }
-                    >
-                      <ThemedText
-                        type="default"
-                        style={[
-                          styles.priorityButtonText,
-                          newAnnouncement.priority === "normal" &&
-                            styles.priorityButtonTextSelected,
-                        ]}
-                      >
-                        {t("announcements.normal")}
-                      </ThemedText>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[
-                        styles.priorityButton,
-                        newAnnouncement.priority === "high" &&
-                          styles.priorityButtonSelected,
-                        newAnnouncement.priority === "high" && {
-                          backgroundColor: "#FF3B30",
-                        },
-                      ]}
-                      onPress={() =>
-                        setNewAnnouncement((p) => ({ ...p, priority: "high" }))
-                      }
-                    >
-                      <ThemedText
-                        type="default"
-                        style={[
-                          styles.priorityButtonText,
-                          newAnnouncement.priority === "high"
-                            ? { color: "#fff" }
-                            : { color: theme.colors.text },
-                        ]}
-                      >
-                        {t("announcements.high")}
-                      </ThemedText>
-                    </TouchableOpacity>
-                  </View>
-                </ScrollView>
-
-                {/* Modal actions */}
-                <View style={styles.modalActions}>
-                  <TouchableOpacity
-                    style={[
-                      styles.modalBtn,
-                      styles.cancelBtn,
-                      { backgroundColor: theme.colors.surface },
-                    ]}
-                    onPress={() => setModalVisible(false)}
-                  >
-                    <ThemedText type="default" style={styles.modalBtnText}>
-                      {t("cancel")}
-                    </ThemedText>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.modalBtn,
-                      styles.saveBtn,
+                      styles.priorityOption,
                       {
                         backgroundColor:
-                          newAnnouncement.title &&
-                          newAnnouncement.content &&
-                          newAnnouncement.author
-                            ? theme.colors.primary
-                            : theme.colors.textSecondary,
+                          newAnnouncement.priority === priority
+                            ? getPriorityColor(priority) + "20"
+                            : theme.colors.background,
+                        borderColor: getPriorityColor(priority),
                       },
                     ]}
-                    onPress={addAnnouncement}
-                    disabled={
-                      !newAnnouncement.title ||
-                      !newAnnouncement.content ||
-                      !newAnnouncement.author
+                    onPress={() =>
+                      setNewAnnouncement((prev) => ({ ...prev, priority }))
                     }
                   >
-                    <ThemedText
-                      type="default"
-                      style={[styles.modalBtnText, { color: "#fff" }]}
-                    >
-                      {t("announcements.buttons.create")}
-                    </ThemedText>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-          </KeyboardAvoidingView>
-        </TouchableWithoutFeedback>
-      </Modal>
-
-      {/* Announcement Detail Modal */}
-      <Modal transparent visible={detailModalVisible} animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View
-            style={[
-              styles.detailModalBox,
-              { backgroundColor: theme.colors.card },
-            ]}
-          >
-            <View style={styles.modalHeader}>
-              <ThemedText type="title" style={styles.detailModalTitle}>
-                {t("announcements.details")}
-              </ThemedText>
-              <TouchableOpacity
-                onPress={() => setDetailModalVisible(false)}
-                style={styles.closeButton}
-              >
-                <Ionicons name="close" size={24} color={theme.colors.text} />
-              </TouchableOpacity>
-            </View>
-
-            {selectedAnnouncement && (
-              <ScrollView style={styles.detailContent}>
-                <ThemedText type="title" style={styles.detailTitle}>
-                  {selectedAnnouncement.title}
-                </ThemedText>
-
-                <ThemedText type="default" style={styles.detailContentText}>
-                  {selectedAnnouncement.content}
-                </ThemedText>
-
-                <View style={styles.detailItem}>
-                  <Ionicons
-                    name="person-outline"
-                    size={20}
-                    color={theme.colors.primary}
-                  />
-                  <ThemedText type="default" style={styles.detailText}>
-                    {selectedAnnouncement.author}
-                  </ThemedText>
-                </View>
-
-                <View style={styles.detailItem}>
-                  <Ionicons
-                    name="calendar-outline"
-                    size={20}
-                    color={theme.colors.primary}
-                  />
-                  <ThemedText type="default" style={styles.detailText}>
-                    {selectedAnnouncement.date}
-                  </ThemedText>
-                </View>
-
-                {selectedAnnouncement.priority === "high" && (
-                  <View style={styles.detailItem}>
                     <Ionicons
-                      name="warning-outline"
-                      size={20}
-                      color="#FF3B30"
+                      name={getPriorityIcon(priority)}
+                      size={16}
+                      color={getPriorityColor(priority)}
                     />
                     <ThemedText
-                      type="default"
-                      style={[styles.detailText, { color: "#FF3B30" }]}
+                      style={[
+                        styles.priorityOptionText,
+                        { color: getPriorityColor(priority) },
+                      ]}
                     >
-                      {t("announcements.high")}
+                      {priority === "high"
+                        ? t("announcements.highPriority")
+                        : t("announcements.normalPriority")}
                     </ThemedText>
-                  </View>
-                )}
-              </ScrollView>
-            )}
-          </View>
-        </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={[
+                styles.submitButton,
+                { backgroundColor: theme.colors.primary },
+              ]}
+              onPress={createAnnouncementHandler}
+            >
+              <ThemedText style={styles.submitButtonText}>
+                {t("announcements.publish")}
+              </ThemedText>
+            </TouchableOpacity>
+          </ScrollView>
+        </ThemedView>
       </Modal>
     </ThemedView>
   );
 }
 
-// Your styles remain exactly the same - no changes needed!
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: { paddingHorizontal: 20, paddingBottom: 10 },
-  headerRow: {
+  container: {
+    flex: 1,
+  },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    opacity: 0.7,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  errorText: {
+    fontSize: 16,
+    textAlign: "center",
+    marginBottom: 24,
+    opacity: 0.7,
+  },
+  retryButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  retryButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 16,
+  },
+  header: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-start",
   },
-  title: { fontSize: 28, fontWeight: "800", marginBottom: 4 },
-  subtitle: { fontSize: 16, fontWeight: "500" },
+  headerRTL: {
+    flexDirection: "row-reverse",
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: "800",
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 16,
+    opacity: 0.7,
+  },
   createButton: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 8,
     paddingHorizontal: 16,
-    borderRadius: 8,
+    paddingVertical: 10,
+    borderRadius: 12,
     gap: 6,
   },
   createButtonText: {
     color: "#fff",
     fontWeight: "600",
-    fontSize: 16,
+    fontSize: 14,
   },
-  listContent: { paddingHorizontal: 20, paddingVertical: 10 },
+  listContent: {
+    paddingHorizontal: 20,
+  },
   card: {
     padding: 20,
     borderRadius: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 8,
-    elevation: 3,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
   cardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 8,
+    marginBottom: 12,
+  },
+  cardHeaderRTL: {
+    flexDirection: "row-reverse",
+  },
+  priorityBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    gap: 6,
+  },
+  priorityBadgeRTL: {
+    flexDirection: "row-reverse",
+  },
+  priorityText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  deleteBtn: {
+    padding: 4,
   },
   announcementTitle: {
     fontSize: 18,
     fontWeight: "700",
-    flex: 1,
-    marginRight: 12,
+    marginBottom: 8,
+    lineHeight: 24,
   },
-  announcementContent: { fontSize: 14, marginBottom: 12, lineHeight: 20 },
-  detailsContainer: { marginBottom: 12 },
-  detailRow: { flexDirection: "row", alignItems: "center", marginBottom: 6 },
-  announcementDetails: { fontSize: 14, marginLeft: 8 },
-  deleteBtn: { padding: 4 },
+  announcementContent: {
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 16,
+  },
+  cardFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  cardFooterRTL: {
+    flexDirection: "row-reverse",
+  },
+  dateContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  dateContainerRTL: {
+    flexDirection: "row-reverse",
+  },
+  dateText: {
+    fontSize: 13,
+    opacity: 0.7,
+  },
+  readMoreBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  readMoreText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
   emptyState: {
-    flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    paddingVertical: 60,
     paddingHorizontal: 40,
   },
-  emptyTitle: { fontSize: 20, fontWeight: "700", marginTop: 16 },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    marginTop: 16,
+    marginBottom: 8,
+  },
   emptyText: {
     fontSize: 16,
     textAlign: "center",
-    marginTop: 8,
-    lineHeight: 24,
+    opacity: 0.7,
+    lineHeight: 22,
   },
-  createFirstAnnouncementBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    marginTop: 20,
-    gap: 8,
-  },
-  createFirstAnnouncementText: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: 16,
-  },
-  modalContainer: { flex: 1 },
-  modalOverlay: {
+  modalContainer: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  modalBox: {
-    width: "100%",
-    maxHeight: "80%",
-    borderRadius: 20,
-    overflow: "hidden",
-  },
-  detailModalBox: {
-    width: "90%",
-    maxHeight: "80%",
-    borderRadius: 20,
-    overflow: "hidden",
+    paddingTop: 60,
   },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(150,150,150,0.2)",
   },
-  modalTitle: { fontSize: 20, fontWeight: "700" },
-  detailModalTitle: { fontSize: 18, fontWeight: "700" },
-  closeButton: { padding: 4 },
-  modalScroll: { maxHeight: 400, paddingHorizontal: 20 },
-  inputLabel: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 8,
-    marginTop: 16,
+  modalHeaderRTL: {
+    flexDirection: "row-reverse",
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: "700",
+  },
+  closeButton: {
+    padding: 4,
+  },
+  modalContent: {
+    flex: 1,
+    padding: 20,
   },
   input: {
+    borderWidth: 1,
     borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    padding: 16,
     fontSize: 16,
-    fontWeight: "500",
+    marginBottom: 16,
   },
   textArea: {
     height: 120,
     textAlignVertical: "top",
   },
-  priorityContainer: {
+  prioritySection: {
+    marginBottom: 24,
+  },
+  prioritySectionRTL: {
+    alignItems: "flex-end",
+  },
+  priorityLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 12,
+  },
+  priorityOptions: {
     flexDirection: "row",
     gap: 12,
-    marginBottom: 16,
   },
-  priorityButton: {
+  priorityOptionsRTL: {
+    flexDirection: "row-reverse",
+  },
+  priorityOption: {
     flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
     paddingVertical: 12,
     borderRadius: 12,
-    alignItems: "center",
+    borderWidth: 2,
   },
-  priorityButtonSelected: {
-    backgroundColor: "#007AFF",
-  },
-  priorityButtonText: {
+  priorityOptionText: {
     fontSize: 14,
     fontWeight: "600",
   },
-  priorityButtonTextSelected: {
-    color: "#fff",
-  },
-  modalActions: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    padding: 20,
-    gap: 12,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(150,150,150,0.2)",
-  },
-  modalBtn: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+  submitButton: {
+    paddingVertical: 16,
     borderRadius: 12,
-    minWidth: 100,
     alignItems: "center",
   },
-  cancelBtn: { backgroundColor: "#f2f2f7" },
-  saveBtn: { backgroundColor: "#007AFF" },
-  modalBtnText: { fontSize: 16, fontWeight: "600" },
-  detailContent: { padding: 20 },
-  detailTitle: { fontSize: 22, fontWeight: "700", marginBottom: 12 },
-  detailContentText: { fontSize: 16, lineHeight: 24, marginBottom: 20 },
-  detailItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 16,
-    gap: 12,
+  submitButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
   },
-  detailText: { fontSize: 16, fontWeight: "500" },
+  textRTL: {
+    textAlign: "right",
+  },
 });

@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTranslation } from "react-i18next";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Appearance,
   ScrollView,
@@ -70,10 +70,10 @@ const themeOptions: {
 ];
 
 export default function AppearanceScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const systemColorScheme = useColorScheme();
   const [themeMode, setThemeMode] = useState<"light" | "dark" | "system">(
-    "system",
+    "system"
   );
   const [fontSize, setFontSize] = useState<
     "small" | "medium" | "large" | "xlarge"
@@ -124,7 +124,7 @@ export default function AppearanceScreen() {
             reduceMotion,
             boldText,
             highContrast,
-          }),
+          })
         );
       } catch (error) {
         console.error("Failed to save appearance settings:", error);
@@ -440,7 +440,7 @@ export default function AppearanceScreen() {
                 {
                   color: currentTheme.text,
                   fontSize: fontSizeOptions.find(
-                    (opt) => opt.value === fontSize,
+                    (opt) => opt.value === fontSize
                   )?.size,
                   fontWeight: boldText ? "bold" : "normal",
                 },

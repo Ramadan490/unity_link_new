@@ -1,65 +1,45 @@
 // features/requests/services/requestService.ts
-import { Request } from "@/types/request"; // ✅ fixed path
-import { apiFetch } from "@/utils/api"; // ✅ fixed path
+import { apiFetch } from "@/shared/utils/api";
+import { Request } from "@/types/request";
 
-let mockRequests: Request[] = [
-  {
-    id: "1",
-    title: "Fix street light",
-    description: "Light out near park",
-    status: "open",
-    createdBy: "Community Member 👥",
-    createdAt: "2025-09-11",
-    replies: [],
-  },
-  {
-    id: "2",
-    title: "Noise complaint",
-    description: "Late night music",
-    status: "in_progress",
-    createdBy: "Board Member 📝",
-    createdAt: "2025-09-10",
-    replies: [],
-  },
-];
+// ✅ REMOVED: const API_URL = "/api";
 
-// ✅ GET requests
 export async function getRequests(): Promise<Request[]> {
-  try {
-    return await apiFetch<Request[]>("/requests");
-  } catch {
-    return new Promise((resolve) =>
-      setTimeout(() => resolve(mockRequests), 500),
-    );
-  }
+  // ✅ FIXED: Remove /api prefix
+  return apiFetch(`/requests`);
 }
 
-// ✅ ADD request
-export async function addRequest(
-  request: Omit<Request, "id" | "createdAt">,
-): Promise<Request> {
-  try {
-    return await apiFetch<Request>("/requests", {
-      method: "POST",
-      body: JSON.stringify(request),
-    });
-  } catch {
-    const newRequest: Request = {
-      ...request,
-      id: String(mockRequests.length + 1),
-      createdAt: new Date().toISOString().split("T")[0],
-      replies: [],
-    };
-    mockRequests.push(newRequest);
-    return new Promise((resolve) => setTimeout(() => resolve(newRequest), 300));
-  }
+export async function createRequest(data: {
+  title: string;
+  description: string;
+  status: string;
+  communityId: string;
+  createdById: string;
+}): Promise<Request> {
+  // ✅ FIXED: Remove /api prefix
+  return apiFetch(`/requests`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
 }
 
-// ✅ DELETE request
 export async function deleteRequest(id: string): Promise<void> {
-  try {
-    await apiFetch<void>(`/requests/${id}`, { method: "DELETE" });
-  } catch {
-    mockRequests = mockRequests.filter((r) => r.id !== id);
+  // ✅ FIXED: Remove /api prefix
+  return apiFetch(`/requests/${id}`, {
+    method: "DELETE",
+  });
+}
+
+export async function addReply(
+  requestId: string,
+  data: {
+    content: string;
+    createdById: string;
   }
+): Promise<any> {
+  // ✅ FIXED: Remove /api prefix
+  return apiFetch(`/requests/${requestId}/replies`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
 }

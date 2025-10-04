@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Alert,
   Animated,
@@ -23,65 +24,61 @@ type FAQ = {
   category: string;
 };
 
-// Categories for better organization
-const FAQ_CATEGORIES = ["General", "Account", "Features", "Troubleshooting"];
-
-const faqs: FAQ[] = [
+// FAQ data with translation keys
+const faqs = [
   {
     id: "1",
-    question: "How do I update my profile?",
-    answer:
-      "Go to the Profile tab and tap on 'Edit Profile' to update your personal information, profile picture, and other details. Changes are saved automatically.",
-    category: "Account",
+    question: "help.faqs.howUpdateProfile",
+    answer: "help.faqs.howUpdateProfileAnswer",
+    category: "help.categories.account",
   },
   {
     id: "2",
-    question: "Who can post announcements?",
-    answer:
-      "Board members and Super Admins can create and post announcements. Regular community members can view announcements but cannot create them.",
-    category: "Features",
+    question: "help.faqs.whoPostAnnouncements",
+    answer: "help.faqs.whoPostAnnouncementsAnswer",
+    category: "help.categories.features",
   },
   {
     id: "3",
-    question: "How do I contact support?",
-    answer:
-      "You can contact our support team by using the 'Contact Support' button below to send us an email. We typically respond within 24 hours.",
-    category: "General",
+    question: "help.faqs.howContactSupport",
+    answer: "help.faqs.howContactSupportAnswer",
+    category: "help.categories.general",
   },
   {
     id: "4",
-    question: "How do I reset my password?",
-    answer:
-      "If you've forgotten your password, go to the login screen and tap 'Forgot Password'. You'll receive an email with instructions to reset your password.",
-    category: "Account",
+    question: "help.faqs.howResetPassword",
+    answer: "help.faqs.howResetPasswordAnswer",
+    category: "help.categories.account",
   },
   {
     id: "5",
-    question: "What should I do if the app crashes?",
-    answer:
-      "Try restarting the app first. If the issue persists, make sure you have the latest version installed. You can also contact support with details about when the crash occurs.",
-    category: "Troubleshooting",
+    question: "help.faqs.whatDoIfAppCrashes",
+    answer: "help.faqs.whatDoIfAppCrashesAnswer",
+    category: "help.categories.troubleshooting",
   },
   {
     id: "6",
-    question: "How do I report inappropriate content?",
-    answer:
-      "Use the report feature available on posts and comments, or contact support directly with details about the content you wish to report.",
-    category: "Features",
+    question: "help.faqs.howReportInappropriate",
+    answer: "help.faqs.howReportInappropriateAnswer",
+    category: "help.categories.features",
   },
 ];
 
 const SUPPORT_EMAIL = "support@communityapp.com";
-const SUPPORT_SUBJECT = "App Support Request";
 const COMMUNITY_GUIDELINES_URL = "https://communityapp.com/guidelines";
 const PRIVACY_POLICY_URL = "https://communityapp.com/privacy";
 
 export default function HelpScreen() {
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
-  const [activeCategory, setActiveCategory] = useState<string>("All");
+  const [activeCategory, setActiveCategory] = useState<string>(
+    "help.categories.all"
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const scheme = useColorScheme();
   const isDark = scheme === "dark";
+  const { t, i18n } = useTranslation();
+
+  const isRTL = i18n.language === "ar";
 
   // Animation values
   const animatedValues = React.useRef(new Map()).current;
@@ -123,34 +120,40 @@ export default function HelpScreen() {
     }
   };
 
+  // Get categories for filter
+  const categories = [
+    "help.categories.all",
+    "help.categories.general",
+    "help.categories.account",
+    "help.categories.features",
+    "help.categories.troubleshooting",
+  ];
+
   // Filter FAQs based on category and search
   const filteredFAQs = faqs.filter((faq) => {
     const matchesCategory =
-      activeCategory === "All" || faq.category === activeCategory;
+      activeCategory === "help.categories.all" ||
+      faq.category === activeCategory;
     const matchesSearch =
       searchQuery === "" ||
-      faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      faq.answer.toLowerCase().includes(searchQuery.toLowerCase());
+      t(faq.question).toLowerCase().includes(searchQuery.toLowerCase()) ||
+      t(faq.answer).toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
   const handleContactSupport = async () => {
-    const url = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
-      SUPPORT_SUBJECT,
-    )}`;
+    const subject = encodeURIComponent(t("help.supportRequest"));
+    const url = `mailto:${SUPPORT_EMAIL}?subject=${subject}`;
 
     try {
       const canOpen = await Linking.canOpenURL(url);
       if (canOpen) {
         await Linking.openURL(url);
       } else {
-        Alert.alert(
-          "Error",
-          "Cannot open email client. Please set up an email account on your device.",
-        );
+        Alert.alert(t("common.error"), t("help.emailClientError"));
       }
     } catch (error) {
-      Alert.alert("Error", "Error opening email client. Please try again.");
+      Alert.alert(t("common.error"), t("help.emailOpenError"));
       console.error("Error opening email client:", error);
     }
   };
@@ -161,20 +164,20 @@ export default function HelpScreen() {
       if (canOpen) {
         await Linking.openURL(url);
       } else {
-        Alert.alert("Error", "Cannot open this link. Please try again later.");
+        Alert.alert(t("common.error"), t("help.linkOpenError"));
       }
     } catch (error) {
-      Alert.alert("Error", "Error opening link. Please try again.");
+      Alert.alert(t("common.error"), t("help.linkOpenError"));
       console.error("Error opening link:", error);
     }
   };
 
-  const renderFAQItem = (faq: FAQ) => {
+  const renderFAQItem = (faq: any) => {
     const isExpanded = expandedItems.has(faq.id);
     const animatedValue = getAnimatedValue(faq.id);
     const height = animatedValue.interpolate({
       inputRange: [0, 1],
-      outputRange: [0, 100], // Approximate height for answer
+      outputRange: [0, 100],
     });
 
     return (
@@ -187,17 +190,28 @@ export default function HelpScreen() {
       >
         <TouchableOpacity
           onPress={() => toggleExpand(faq.id)}
-          style={styles.faqHeader}
+          style={[
+            styles.faqHeader,
+            { flexDirection: isRTL ? "row-reverse" : "row" },
+          ]}
           activeOpacity={0.7}
-          accessibilityLabel={faq.question}
-          accessibilityRole="button"
-          accessibilityState={{ expanded: isExpanded }}
         >
-          <View style={styles.faqQuestionContainer}>
+          <View
+            style={[
+              styles.faqQuestionContainer,
+              { alignItems: isRTL ? "flex-end" : "flex-start" },
+            ]}
+          >
             <Text
-              style={[styles.faqQuestion, { color: isDark ? "#fff" : "#333" }]}
+              style={[
+                styles.faqQuestion,
+                {
+                  color: isDark ? "#fff" : "#333",
+                  textAlign: isRTL ? "right" : "left",
+                },
+              ]}
             >
-              {faq.question}
+              {t(faq.question)}
             </Text>
             <View
               style={[
@@ -211,7 +225,7 @@ export default function HelpScreen() {
                   { color: isDark ? "#ccc" : "#666" },
                 ]}
               >
-                {faq.category}
+                {t(faq.category)}
               </Text>
             </View>
           </View>
@@ -219,13 +233,20 @@ export default function HelpScreen() {
             name={isExpanded ? "chevron-up" : "chevron-down"}
             size={20}
             color={isDark ? "#ccc" : "#666"}
-            accessibilityLabel={isExpanded ? "Collapse" : "Expand"}
           />
         </TouchableOpacity>
 
         <Animated.View style={[styles.answerContainer, { height }]}>
-          <Text style={[styles.faqAnswer, { color: isDark ? "#ccc" : "#555" }]}>
-            {faq.answer}
+          <Text
+            style={[
+              styles.faqAnswer,
+              {
+                color: isDark ? "#ccc" : "#555",
+                textAlign: isRTL ? "right" : "left",
+              },
+            ]}
+          >
+            {t(faq.answer)}
           </Text>
         </Animated.View>
       </View>
@@ -239,6 +260,10 @@ export default function HelpScreen() {
     secondaryText: isDark ? "#ccc" : "#666",
     primary: isDark ? "#0A84FF" : "#007AFF",
     border: isDark ? "#333" : "#e0e0e0",
+  };
+
+  const getChevronIcon = () => {
+    return isRTL ? "chevron-back" : "chevron-forward";
   };
 
   return (
@@ -259,12 +284,12 @@ export default function HelpScreen() {
             color={themeColors.primary}
           />
           <Text style={[styles.header, { color: themeColors.text }]}>
-            Help & Support
+            {t("help.title")}
           </Text>
           <Text
             style={[styles.subheader, { color: themeColors.secondaryText }]}
           >
-            Find answers to common questions or contact support for assistance
+            {t("help.subtitle")}
           </Text>
         </View>
 
@@ -272,7 +297,10 @@ export default function HelpScreen() {
         <View
           style={[
             styles.searchContainer,
-            { backgroundColor: isDark ? "#2a2a2a" : "#f0f0f0" },
+            {
+              backgroundColor: isDark ? "#2a2a2a" : "#f0f0f0",
+              flexDirection: isRTL ? "row-reverse" : "row",
+            },
           ]}
         >
           <Ionicons
@@ -281,8 +309,14 @@ export default function HelpScreen() {
             color={themeColors.secondaryText}
           />
           <TextInput
-            style={[styles.searchInput, { color: themeColors.text }]}
-            placeholder="Search help articles..."
+            style={[
+              styles.searchInput,
+              {
+                color: themeColors.text,
+                textAlign: isRTL ? "right" : "left",
+              },
+            ]}
+            placeholder={t("help.searchPlaceholder")}
             placeholderTextColor={themeColors.secondaryText}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -305,7 +339,7 @@ export default function HelpScreen() {
           style={styles.categoryScroll}
           contentContainerStyle={styles.categoryContent}
         >
-          {["All", ...FAQ_CATEGORIES].map((category) => (
+          {categories.map((category) => (
             <TouchableOpacity
               key={category}
               style={[
@@ -329,7 +363,7 @@ export default function HelpScreen() {
                   },
                 ]}
               >
-                {category}
+                {t(category)}
               </Text>
             </TouchableOpacity>
           ))}
@@ -347,7 +381,7 @@ export default function HelpScreen() {
               <Text
                 style={[styles.emptyText, { color: themeColors.secondaryText }]}
               >
-                {searchQuery ? "No results found" : "No FAQs available"}
+                {searchQuery ? t("help.noResults") : t("help.noFAQs")}
               </Text>
               {searchQuery && (
                 <Text
@@ -356,7 +390,7 @@ export default function HelpScreen() {
                     { color: themeColors.secondaryText },
                   ]}
                 >
-                  Try a different search term or category
+                  {t("help.tryDifferentSearch")}
                 </Text>
               )}
             </View>
@@ -367,8 +401,16 @@ export default function HelpScreen() {
 
         {/* Quick Actions */}
         <View style={styles.quickActions}>
-          <Text style={[styles.sectionTitle, { color: themeColors.text }]}>
-            Quick Actions
+          <Text
+            style={[
+              styles.sectionTitle,
+              {
+                color: themeColors.text,
+                textAlign: isRTL ? "right" : "left",
+              },
+            ]}
+          >
+            {t("help.quickActions")}
           </Text>
 
           <TouchableOpacity
@@ -377,18 +419,24 @@ export default function HelpScreen() {
               {
                 backgroundColor: themeColors.card,
                 borderColor: themeColors.border,
+                flexDirection: isRTL ? "row-reverse" : "row",
               },
             ]}
             onPress={handleContactSupport}
           >
             <Ionicons
-              name="mail-outline"
-              size={22}
-              color={themeColors.primary}
+              name={getChevronIcon()}
+              size={18}
+              color={themeColors.secondaryText}
             />
-            <View style={styles.actionTextContainer}>
+            <View
+              style={[
+                styles.actionTextContainer,
+                { alignItems: isRTL ? "flex-end" : "flex-start" },
+              ]}
+            >
               <Text style={[styles.actionTitle, { color: themeColors.text }]}>
-                Contact Support
+                {t("help.contactSupport")}
               </Text>
               <Text
                 style={[
@@ -396,13 +444,13 @@ export default function HelpScreen() {
                   { color: themeColors.secondaryText },
                 ]}
               >
-                Get help from our support team
+                {t("help.contactSupportDesc")}
               </Text>
             </View>
             <Ionicons
-              name="chevron-forward"
-              size={18}
-              color={themeColors.secondaryText}
+              name="mail-outline"
+              size={22}
+              color={themeColors.primary}
             />
           </TouchableOpacity>
 
@@ -412,18 +460,24 @@ export default function HelpScreen() {
               {
                 backgroundColor: themeColors.card,
                 borderColor: themeColors.border,
+                flexDirection: isRTL ? "row-reverse" : "row",
               },
             ]}
             onPress={() => openExternalLink(COMMUNITY_GUIDELINES_URL)}
           >
             <Ionicons
-              name="document-text-outline"
-              size={22}
-              color={themeColors.primary}
+              name={getChevronIcon()}
+              size={18}
+              color={themeColors.secondaryText}
             />
-            <View style={styles.actionTextContainer}>
+            <View
+              style={[
+                styles.actionTextContainer,
+                { alignItems: isRTL ? "flex-end" : "flex-start" },
+              ]}
+            >
               <Text style={[styles.actionTitle, { color: themeColors.text }]}>
-                Community Guidelines
+                {t("help.communityGuidelines")}
               </Text>
               <Text
                 style={[
@@ -431,13 +485,13 @@ export default function HelpScreen() {
                   { color: themeColors.secondaryText },
                 ]}
               >
-                Read our community rules and guidelines
+                {t("help.communityGuidelinesDesc")}
               </Text>
             </View>
             <Ionicons
-              name="chevron-forward"
-              size={18}
-              color={themeColors.secondaryText}
+              name="document-text-outline"
+              size={22}
+              color={themeColors.primary}
             />
           </TouchableOpacity>
 
@@ -447,18 +501,24 @@ export default function HelpScreen() {
               {
                 backgroundColor: themeColors.card,
                 borderColor: themeColors.border,
+                flexDirection: isRTL ? "row-reverse" : "row",
               },
             ]}
             onPress={() => openExternalLink(PRIVACY_POLICY_URL)}
           >
             <Ionicons
-              name="shield-checkmark-outline"
-              size={22}
-              color={themeColors.primary}
+              name={getChevronIcon()}
+              size={18}
+              color={themeColors.secondaryText}
             />
-            <View style={styles.actionTextContainer}>
+            <View
+              style={[
+                styles.actionTextContainer,
+                { alignItems: isRTL ? "flex-end" : "flex-start" },
+              ]}
+            >
               <Text style={[styles.actionTitle, { color: themeColors.text }]}>
-                Privacy Policy
+                {t("help.privacyPolicy")}
               </Text>
               <Text
                 style={[
@@ -466,13 +526,13 @@ export default function HelpScreen() {
                   { color: themeColors.secondaryText },
                 ]}
               >
-                Learn how we protect your data
+                {t("help.privacyPolicyDesc")}
               </Text>
             </View>
             <Ionicons
-              name="chevron-forward"
-              size={18}
-              color={themeColors.secondaryText}
+              name="shield-checkmark-outline"
+              size={22}
+              color={themeColors.primary}
             />
           </TouchableOpacity>
         </View>
@@ -482,7 +542,7 @@ export default function HelpScreen() {
           <Text
             style={[styles.footerText, { color: themeColors.secondaryText }]}
           >
-            App Version 1.0.0
+            {t("help.appVersion", { version: "1.0.0" })}
           </Text>
         </View>
       </ScrollView>
@@ -518,7 +578,6 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   searchContainer: {
-    flexDirection: "row",
     alignItems: "center",
     padding: 12,
     borderRadius: 12,
@@ -566,14 +625,13 @@ const styles = StyleSheet.create({
     }),
   },
   faqHeader: {
-    flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
     padding: 16,
   },
   faqQuestionContainer: {
     flex: 1,
-    marginRight: 12,
+    marginHorizontal: 12,
   },
   faqQuestion: {
     fontSize: 16,
@@ -622,7 +680,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   actionButton: {
-    flexDirection: "row",
     alignItems: "center",
     padding: 16,
     borderRadius: 12,

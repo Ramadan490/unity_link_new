@@ -1,13 +1,17 @@
-// shared/types/events.ts
+// shared/types/event.ts
+
 export type Event = {
   id: string;
   title: string;
-  description: string;
+  description?: string;
   date: string; // ISO date string
-  location: string;
-  createdBy: string;
+  location?: string;
+  createdById: string; // match backend Prisma field
   status: "upcoming" | "past" | "cancelled";
   donations: number;
   goal: number;
-  attending: string[]; // 👈 store user IDs of attendees
+  attending: string[]; // user IDs of attendees
+  communityId: string;
+  createdAt: string;
+  updatedAt: string;
 };

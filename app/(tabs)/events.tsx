@@ -1,833 +1,773 @@
 // app/(tabs)/events.tsx
+import {
+  createEvent,
+  deleteEvent as deleteEventAPI,
+  getEvents,
+} from "@/features/events/services/eventService";
+import { ThemedText, ThemedView } from "@/shared/components/ui";
 import { useTheme } from "@/shared/context/ThemeContext";
 import { useRole } from "@/shared/hooks/useRole";
+import { Event } from "@/shared/types/events";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import { useRouter } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  ActivityIndicator,
   Alert,
-  FlatList,
+  Animated,
+  Dimensions,
   Modal,
+  Platform,
+  RefreshControl,
   ScrollView,
   StyleSheet,
-  Text,
   TextInput,
   TouchableOpacity,
   View,
-  useColorScheme
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-type Event = {
-  id: string;
-  title: string;
-  date: string;
-  location: string;
-  description?: string;
-  attending?: boolean;
-  attendeesCount?: number;
-};
-
-const initialEvents: Event[] = [
-  {
-    id: "1",
-    title: "Community BBQ",
-    date: "Sept 20, 2025",
-    location: "Central Park",
-    description: "Join us for our annual community BBQ with food, games, and fun activities for all ages!",
-    attending: true,
-    attendeesCount: 12,
-  },
-  {
-    id: "2",
-    title: "Board Meeting",
-    date: "Sept 25, 2025",
-    location: "Clubhouse",
-    description: "Monthly board meeting to discuss community matters and upcoming initiatives.",
-    attending: false,
-    attendeesCount: 5,
-  },
-  {
-    id: "3",
-    title: "Memorial Service",
-    date: "Oct 2, 2025",
-    location: "Main Hall",
-    description: "A special service to honor and remember our beloved community members.",
-    attending: false,
-    attendeesCount: 20,
-  },
-];
+const { width } = Dimensions.get("window");
 
 export default function EventsScreen() {
-  const { t } = useTranslation();
-  const { isRTL } = useTheme();
-  const [events, setEvents] = useState<Event[]>(initialEvents);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [newEvent, setNewEvent] = useState({
-    title: "",
-    date: "",
-    location: "",
-    description: "",
-  });
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  const [detailModalVisible, setDetailModalVisible] = useState(false);
-
-  const scheme = useColorScheme() || "light";
-  const isDark = scheme === "dark";
+  const { theme, isDark } = useTheme();
+  const { t, i18n } = useTranslation();
   const insets = useSafeAreaInsets();
-
-  const { isSuperAdmin, isBoardMember } = useRole();
+  const router = useRouter();
+  const { isSuperAdmin, isBoardMember, user } = useRole();
   const canManageEvents = isSuperAdmin || isBoardMember;
 
-  const addEvent = () => {
-    if (!newEvent.title || !newEvent.date || !newEvent.location) {
-      Alert.alert(
-        t("events.errors.missingInfo"),
-        t("events.errors.fillFields")
-      );
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [createModalVisible, setCreateModalVisible] = useState(false);
+  const [newEvent, setNewEvent] = useState({
+    title: "",
+    description: "",
+    date: "",
+    location: "",
+    status: "upcoming" as Event["status"],
+  });
+
+  // Animations
+  const fadeAnim = useState(new Animated.Value(0))[0];
+  const slideAnim = useState(new Animated.Value(50))[0];
+
+  // ✅ Replace this with context/profile later
+  const communityId = "ec6dea87-7303-45a6-9cbc-ecb87bdd3b89";
+  const isRTL = i18n.language === "ar";
+
+  // ✅ Safe user ID fallback
+  const currentUserId = user?.id || "default-user-id-temp";
+
+  // ✅ Fetch events from backend
+  const fetchEvents = useCallback(async () => {
+    try {
+      setError(null);
+      const data = await getEvents(communityId);
+      setEvents(data);
+
+      // Animate in content
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } catch (err) {
+      console.error("Failed to load events:", err);
+      setError(t("events.errors.loadFailed"));
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [communityId, t, fadeAnim, slideAnim]);
+
+  useEffect(() => {
+    fetchEvents();
+  }, [fetchEvents]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchEvents();
+  }, [fetchEvents]);
+
+  // ✅ Status functions with type safety - USING LOWERCASE TO MATCH YOUR TYPES
+  const getStatusColor = (status: Event["status"] | undefined): string => {
+    const colors: Record<Event["status"], string> = {
+      upcoming: "#007AFF",
+      past: "#8E8E93",
+      cancelled: "#FF3B30",
+    };
+    return colors[status || "upcoming"];
+  };
+
+  const getStatusIcon = (
+    status: Event["status"] | undefined
+  ): keyof typeof Ionicons.glyphMap => {
+    const icons: Record<Event["status"], keyof typeof Ionicons.glyphMap> = {
+      upcoming: "calendar",
+      past: "checkmark-circle",
+      cancelled: "close-circle",
+    };
+    return icons[status || "upcoming"];
+  };
+
+  const createEventHandler = async () => {
+    if (
+      !newEvent.title.trim() ||
+      !newEvent.date.trim() ||
+      !newEvent.location.trim()
+    ) {
+      Alert.alert(t("error"), t("events.errors.fillAllFields"));
       return;
     }
 
-    const newItem: Event = {
-      id: Date.now().toString(),
-      ...newEvent,
-      attending: false,
-      attendeesCount: 0,
-    };
-    setEvents((prev) => [newItem, ...prev]);
-    setNewEvent({ title: "", date: "", location: "", description: "" });
-    setModalVisible(false);
+    try {
+      const created = await createEvent(communityId, {
+        ...newEvent,
+        createdById: currentUserId,
+      });
+      setEvents((prev) => [created, ...prev]);
+      setNewEvent({
+        title: "",
+        description: "",
+        date: "",
+        location: "",
+        status: "upcoming",
+      });
+      setCreateModalVisible(false);
+      Alert.alert(t("success"), t("events.createSuccess"));
+    } catch (err) {
+      console.error("Error creating event:", err);
+      Alert.alert(t("error"), t("events.errors.createFailed"));
+    }
   };
 
-  const deleteEvent = (id: string) => {
+  const deleteEventHandler = (id: string, title: string) => {
     Alert.alert(
       t("events.deleteConfirm"),
-      t("events.deleteConfirmMsg"),
+      t("events.deleteConfirmMsg", { title }),
       [
         { text: t("cancel"), style: "cancel" },
         {
           text: t("buttons.delete"),
           style: "destructive",
-          onPress: () => setEvents((prev) => prev.filter((e) => e.id !== id)),
+          onPress: async () => {
+            try {
+              await deleteEventAPI(id);
+              setEvents((prev) => prev.filter((e) => e.id !== id));
+            } catch (err) {
+              console.error("Failed to delete event:", err);
+              Alert.alert(t("error"), t("events.errors.deleteFailed"));
+            }
+          },
         },
       ]
     );
   };
 
-  const toggleAttendance = (id: string) => {
-    setEvents((prev) =>
-      prev.map((event) =>
-        event.id === id
-          ? {
-              ...event,
-              attending: !event.attending,
-              attendeesCount: event.attending
-                ? Math.max(0, (event.attendeesCount || 0) - 1)
-                : (event.attendeesCount || 0) + 1,
-            }
-          : event,
-      ),
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString(i18n.language, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const isEventPast = (dateString: string) => {
+    return new Date(dateString) < new Date();
+  };
+
+  const renderItem = ({ item, index }: { item: Event; index: number }) => {
+    const status =
+      item.status || (isEventPast(item.date) ? "past" : "upcoming");
+    const statusColor = getStatusColor(status);
+    const statusIcon = getStatusIcon(status);
+
+    return (
+      <Animated.View
+        style={{
+          opacity: fadeAnim,
+          transform: [{ translateY: slideAnim }],
+        }}
+      >
+        <TouchableOpacity
+          activeOpacity={0.7}
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.colors.card,
+              borderLeftWidth: 4,
+              borderLeftColor: statusColor,
+              marginTop: index === 0 ? 0 : 12,
+            },
+          ]}
+        >
+          <View style={[styles.cardHeader, isRTL && styles.cardHeaderRTL]}>
+            <View
+              style={[
+                styles.statusBadge,
+                { backgroundColor: statusColor + "20" },
+                isRTL && styles.statusBadgeRTL,
+              ]}
+            >
+              <Ionicons name={statusIcon} size={16} color={statusColor} />
+              <ThemedText
+                type="defaultSemiBold"
+                style={[styles.statusText, { color: statusColor }]}
+              >
+                {t(`events.status.${status}`)}
+              </ThemedText>
+            </View>
+
+            {canManageEvents && (
+              <TouchableOpacity
+                onPress={() => deleteEventHandler(item.id, item.title)}
+                style={styles.deleteBtn}
+              >
+                <Ionicons name="trash-outline" size={20} color="#ff3b30" />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          <ThemedText type="defaultSemiBold" style={styles.eventTitle}>
+            {item.title}
+          </ThemedText>
+
+          {item.description && (
+            <ThemedText
+              type="default"
+              style={styles.eventDescription}
+              numberOfLines={3}
+            >
+              {item.description}
+            </ThemedText>
+          )}
+
+          <View style={styles.eventDetails}>
+            <View style={[styles.detailRow, isRTL && styles.detailRowRTL]}>
+              <Ionicons
+                name="time-outline"
+                size={16}
+                color={theme.colors.textSecondary}
+              />
+              <ThemedText type="subtitle" style={styles.detailText}>
+                {formatDate(item.date)}
+              </ThemedText>
+            </View>
+
+            <View style={[styles.detailRow, isRTL && styles.detailRowRTL]}>
+              <Ionicons
+                name="location-outline"
+                size={16}
+                color={theme.colors.textSecondary}
+              />
+              <ThemedText type="subtitle" style={styles.detailText}>
+                {item.location}
+              </ThemedText>
+            </View>
+          </View>
+
+          <View style={[styles.cardFooter, isRTL && styles.cardFooterRTL]}>
+            <View
+              style={[
+                styles.attendanceContainer,
+                isRTL && styles.attendanceContainerRTL,
+              ]}
+            >
+              <Ionicons
+                name="people-outline"
+                size={14}
+                color={theme.colors.textSecondary}
+              />
+              <ThemedText type="subtitle" style={styles.attendanceText}>
+                {t("events.attendance", { count: item.donations || 0 })}
+              </ThemedText>
+            </View>
+
+            <TouchableOpacity style={styles.rsvpBtn}>
+              <ThemedText type="defaultSemiBold" style={styles.rsvpText}>
+                {t("events.rsvp")}
+              </ThemedText>
+              <Ionicons
+                name={isRTL ? "chevron-back" : "chevron-forward"}
+                size={16}
+                color={theme.colors.primary}
+              />
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Animated.View>
     );
   };
 
-  const confirmToggleAttendance = (event: Event) => {
-    if (event.attending) {
-      Alert.alert(
-        t("events.cancelAttendance"),
-        t("events.cancelAttendanceMsg"),
-        [
-          { text: t("buttons.no"), style: "cancel" },
-          {
-            text: t("buttons.yes"),
-            onPress: () => {
-              toggleAttendance(event.id);
-              if (detailModalVisible) {
-                setDetailModalVisible(false);
-              }
-            },
-          },
-        ]
-      );
-    } else {
-      Alert.alert(
-        t("events.confirmAttendance"),
-        t("events.confirmAttendanceMsg"),
-        [
-          { text: t("buttons.no"), style: "cancel" },
-          {
-            text: t("buttons.yes"),
-            onPress: () => {
-              toggleAttendance(event.id);
-              if (detailModalVisible) {
-                setDetailModalVisible(false);
-              }
-            },
-          },
-        ]
-      );
-    }
-  };
+  if (loading) {
+    return (
+      <ThemedView style={styles.centered}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <ThemedText style={styles.loadingText}>
+          {t("events.loading")}
+        </ThemedText>
+      </ThemedView>
+    );
+  }
 
-  const openEventDetails = (event: Event) => {
-    setSelectedEvent(event);
-    setDetailModalVisible(true);
-  };
-
-  const renderItem = ({ item }: { item: Event }) => (
-    <TouchableOpacity
-      onPress={() => openEventDetails(item)}
-      activeOpacity={0.7}
-    >
-      <View
-        style={[
-          styles.card,
-          {
-            backgroundColor: isDark ? "#1e1e1e" : "#fff",
-            borderLeftWidth: 4,
-            borderLeftColor: item.attending
-              ? "#34C759"
-              : isDark
-              ? "#333"
-              : "#eee",
-          },
-        ]}
-      >
-        {/* Header row */}
-        <View style={styles.cardHeader}>
-          <Text
-            style={[styles.eventTitle, { color: isDark ? "#fff" : "#333" }]}
-          >
-            {item.title}
-          </Text>
-
-          {canManageEvents && (
-            <TouchableOpacity
-              onPress={() => deleteEvent(item.id)}
-              accessibilityLabel={`Delete ${item.title}`}
-              style={styles.deleteBtn}
-            >
-              <Ionicons name="trash-outline" size={20} color="#ff3b30" />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Description preview */}
-        {item.description && (
-          <Text
-            style={[
-              styles.eventDescription,
-              { color: isDark ? "#bbb" : "#666" },
-            ]}
-            numberOfLines={2}
-          >
-            {item.description}
-          </Text>
-        )}
-
-        {/* Details */}
-        <View style={styles.detailsContainer}>
-          <View style={styles.detailRow}>
-            <Ionicons
-              name="calendar-outline"
-              size={16}
-              color={isDark ? "#0A84FF" : "#007AFF"}
-            />
-            <Text
-              style={[styles.eventDetails, { color: isDark ? "#bbb" : "#555" }]}
-            >
-              {item.date}
-            </Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Ionicons
-              name="location-outline"
-              size={16}
-              color={isDark ? "#0A84FF" : "#007AFF"}
-            />
-            <Text
-              style={[styles.eventDetails, { color: isDark ? "#bbb" : "#555" }]}
-            >
-              {item.location}
-            </Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Ionicons
-              name="people-outline"
-              size={16}
-              color={isDark ? "#0A84FF" : "#007AFF"}
-            />
-            <Text
-              style={[styles.eventDetails, { color: isDark ? "#bbb" : "#555" }]}
-            >
-              {item.attendeesCount || 0} {t("events.attending")}
-            </Text>
-          </View>
-        </View>
-
-        {/* RSVP Button */}
+  if (error) {
+    return (
+      <ThemedView style={styles.centered}>
+        <Ionicons name="alert-circle-outline" size={64} color="#ff3b30" />
+        <ThemedText style={styles.errorTitle}>
+          {t("events.errorTitle")}
+        </ThemedText>
+        <ThemedText style={styles.errorText}>{error}</ThemedText>
         <TouchableOpacity
           style={[
-            styles.rsvpButton,
-            {
-              backgroundColor: item.attending
-                ? isDark
-                  ? "#2C7A4A"
-                  : "#34C759"
-                : isDark
-                ? "#2C2C2E"
-                : "#F2F2F7",
-              borderColor: item.attending
-                ? "transparent"
-                : isDark
-                ? "#3A3A3C"
-                : "#E5E5EA",
-            },
+            styles.retryButton,
+            { backgroundColor: theme.colors.primary },
           ]}
-          onPress={() => confirmToggleAttendance(item)}
+          onPress={fetchEvents}
         >
-          <Ionicons
-            name={item.attending ? "checkmark-circle" : "add-circle-outline"}
-            size={16}
-            color={item.attending ? "#FFF" : isDark ? "#0A84FF" : "#007AFF"}
-          />
-          <Text
-            style={[
-              styles.rsvpButtonText,
-              {
-                color: item.attending ? "#FFF" : isDark ? "#0A84FF" : "#007AFF",
-              },
-            ]}
-          >
-            {item.attending ? t("events.attending") : t("events.rsvp")}
-          </Text>
+          <ThemedText style={styles.retryButtonText}>
+            {t("buttons.retry")}
+          </ThemedText>
         </TouchableOpacity>
-      </View>
-    </TouchableOpacity>
-  );
-
-  const eventCount = events.length;
-  const eventText = t("events.count", { count: eventCount });
+      </ThemedView>
+    );
+  }
 
   return (
-    <View
-      style={[
-        styles.container,
-        { backgroundColor: isDark ? "#121212" : "#fff" },
-      ]}
-    >
-      {/* Header with Create Button */}
-      <View style={[styles.header, { paddingTop: insets.top + 20 }]}>
-        <View style={styles.headerRow}>
-          <View>
-            <Text
-              style={[styles.title, { color: isDark ? "#fff" : "#2f4053" }]}
-            >
-              {t("events.title")}
-            </Text>
-            {events.length > 0 && (
-              <Text
-                style={[styles.subtitle, { color: isDark ? "#aaa" : "#666" }]}
-              >
-                {eventText}
-              </Text>
-            )}
-          </View>
-
-          {canManageEvents && events.length > 0 && (
-            <TouchableOpacity
-              style={[
-                styles.createButton,
-                { backgroundColor: isDark ? "#0A84FF" : "#007AFF" },
-              ]}
-              onPress={() => setModalVisible(true)}
-              accessibilityLabel={t("events.create")}
-            >
-              <Ionicons name="add" size={20} color="#fff" />
-              <Text style={styles.createButtonText}>{t("events.create")}</Text>
-            </TouchableOpacity>
-          )}
+    <ThemedView style={styles.container}>
+      {/* Header */}
+      <View
+        style={[
+          styles.header,
+          { paddingTop: insets.top + 20 },
+          isRTL && styles.headerRTL,
+        ]}
+      >
+        <View>
+          <ThemedText
+            type="title"
+            style={[styles.title, isRTL && styles.textRTL]}
+          >
+            {t("events.title")}
+          </ThemedText>
+          <ThemedText
+            type="subtitle"
+            style={[styles.subtitle, isRTL && styles.textRTL]}
+          >
+            {t("events.subtitle", { count: events.length })}
+          </ThemedText>
         </View>
+
+        {canManageEvents && (
+          <TouchableOpacity
+            style={[
+              styles.createButton,
+              { backgroundColor: theme.colors.primary },
+            ]}
+            onPress={() => setCreateModalVisible(true)}
+          >
+            <Ionicons name="add" size={20} color="#fff" />
+            <ThemedText style={styles.createButtonText}>
+              {t("events.create")}
+            </ThemedText>
+          </TouchableOpacity>
+        )}
       </View>
 
-      {events.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Ionicons
-            name="calendar-outline"
-            size={64}
-            color={isDark ? "#444" : "#ccc"}
+      {/* Events List */}
+      <Animated.FlatList
+        data={events}
+        keyExtractor={(item) => item.id}
+        renderItem={renderItem}
+        contentContainerStyle={[styles.listContent, { paddingBottom: 20 }]}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.colors.primary}
           />
-          <Text
-            style={[styles.emptyTitle, { color: isDark ? "#fff" : "#333" }]}
-          >
-            {t("events.noEvents")}
-          </Text>
-          <Text style={[styles.emptyText, { color: isDark ? "#aaa" : "#666" }]}>
-            {canManageEvents
-              ? t("events.emptyManage")
-              : t("events.emptyView")}
-          </Text>
-          {canManageEvents && (
-            <TouchableOpacity
-              style={[
-                styles.createFirstEventBtn,
-                { backgroundColor: isDark ? "#0A84FF" : "#007AFF" },
-              ]}
-              onPress={() => setModalVisible(true)}
-            >
-              <Ionicons name="add" size={20} color="#fff" />
-              <Text style={styles.createFirstEventText}>
-                {t("events.createFirst")}
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      ) : (
-        <FlatList
-          data={events}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          contentContainerStyle={[styles.listContent, { paddingBottom: 20 }]}
-          ItemSeparatorComponent={() => <View style={{ height: 16 }} />}
-          showsVerticalScrollIndicator={false}
-        />
-      )}
-
-      {/* Event Detail Modal */}
-      <Modal transparent visible={detailModalVisible} animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View
-            style={[
-              styles.detailModalBox,
-              { backgroundColor: isDark ? "#1e1e1e" : "#fff" },
-            ]}
-          >
-            <View style={styles.modalHeader}>
-              <Text
-                style={[
-                  styles.detailModalTitle,
-                  { color: isDark ? "#fff" : "#333" },
-                ]}
-              >
-                {t("events.details")}
-              </Text>
-              <TouchableOpacity
-                onPress={() => setDetailModalVisible(false)}
-                style={styles.closeButton}
-              >
-                <Ionicons
-                  name="close"
-                  size={24}
-                  color={isDark ? "#fff" : "#000"}
-                />
-              </TouchableOpacity>
-            </View>
-
-            {selectedEvent && (
-              <ScrollView style={styles.detailContent}>
-                <Text
-                  style={[
-                    styles.detailTitle,
-                    { color: isDark ? "#fff" : "#333" },
-                  ]}
-                >
-                  {selectedEvent.title}
-                </Text>
-
-                {selectedEvent.description && (
-                  <Text
-                    style={[
-                      styles.detailDescription,
-                      { color: isDark ? "#bbb" : "#666" },
-                    ]}
-                  >
-                    {selectedEvent.description}
-                  </Text>
-                )}
-
-                <View style={styles.detailItem}>
-                  <Ionicons
-                    name="calendar-outline"
-                    size={20}
-                    color={isDark ? "#0A84FF" : "#007AFF"}
-                  />
-                  <Text
-                    style={[
-                      styles.detailText,
-                      { color: isDark ? "#fff" : "#333" },
-                    ]}
-                  >
-                    {selectedEvent.date}
-                  </Text>
-                </View>
-
-                <View style={styles.detailItem}>
-                  <Ionicons
-                    name="location-outline"
-                    size={20}
-                    color={isDark ? "#0A84FF" : "#007AFF"}
-                  />
-                  <Text
-                    style={[
-                      styles.detailText,
-                      { color: isDark ? "#fff" : "#333" },
-                    ]}
-                  >
-                    {selectedEvent.location}
-                  </Text>
-                </View>
-
-                <View style={styles.detailItem}>
-                  <Ionicons
-                    name="people-outline"
-                    size={20}
-                    color={isDark ? "#0A84FF" : "#007AFF"}
-                  />
-                  <Text
-                    style={[
-                      styles.detailText,
-                      { color: isDark ? "#fff" : "#333" },
-                    ]}
-                  >
-                    {selectedEvent.attendeesCount || 0} {t("events.attending")}
-                  </Text>
-                </View>
-
-                <TouchableOpacity
-                  style={[
-                    styles.detailRsvpButton,
-                    {
-                      backgroundColor: selectedEvent.attending
-                        ? isDark
-                          ? "#2C7A4A"
-                          : "#34C759"
-                        : isDark
-                        ? "#0A84FF"
-                        : "#007AFF",
-                    },
-                  ]}
-                  onPress={() => confirmToggleAttendance(selectedEvent)}
-                >
-                  <Ionicons
-                    name={
-                      selectedEvent.attending
-                        ? "checkmark-circle"
-                        : "add-circle-outline"
-                    }
-                    size={20}
-                    color="#FFF"
-                  />
-                  <Text style={styles.detailRsvpButtonText}>
-                    {selectedEvent.attending
-                      ? t("events.attendingDetail")
-                      : t("events.rsvpDetail")}
-                  </Text>
-                </TouchableOpacity>
-              </ScrollView>
-            )}
+        }
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Ionicons
+              name="calendar-outline"
+              size={64}
+              color={theme.colors.textSecondary}
+            />
+            <ThemedText style={styles.emptyTitle}>
+              {t("events.emptyTitle")}
+            </ThemedText>
+            <ThemedText style={styles.emptyText}>
+              {t("events.emptyText")}
+            </ThemedText>
           </View>
-        </View>
-      </Modal>
+        }
+      />
 
       {/* Create Event Modal */}
-      <Modal transparent visible={modalVisible} animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View
-            style={[
-              styles.createModalBox,
-              { backgroundColor: isDark ? "#1e1e1e" : "#fff" },
-            ]}
-          >
-            <View style={styles.modalHeader}>
-              <Text
-                style={[
-                  styles.detailModalTitle,
-                  { color: isDark ? "#fff" : "#333" },
-                ]}
-              >
-                {t("events.createNew")}
-              </Text>
-              <TouchableOpacity
-                onPress={() => setModalVisible(false)}
-                style={styles.closeButton}
-              >
-                <Ionicons
-                  name="close"
-                  size={24}
-                  color={isDark ? "#fff" : "#000"}
-                />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.createContent}>
-              <Text style={[styles.inputLabel, { color: isDark ? "#fff" : "#333" }]}>
-                {t("events.form.title")}
-              </Text>
-              <View
-                style={[
-                  styles.inputContainer,
-                  { backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7" },
-                ]}
-              >
-                <TextInput
-                  style={[styles.input, { color: isDark ? "#fff" : "#000" }]}
-                  placeholder={t("events.form.titlePlaceholder")}
-                  placeholderTextColor={isDark ? "#888" : "#999"}
-                  value={newEvent.title}
-                  onChangeText={(text: string) =>
-                    setNewEvent({ ...newEvent, title: text })
-                  }
-                />
-              </View>
-
-              <Text style={[styles.inputLabel, { color: isDark ? "#fff" : "#333" }]}>
-                {t("events.form.date")}
-              </Text>
-              <View
-                style={[
-                  styles.inputContainer,
-                  { backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7" },
-                ]}
-              >
-                <TextInput
-                  style={[styles.input, { color: isDark ? "#fff" : "#000" }]}
-                  placeholder={t("events.form.datePlaceholder")}
-                  placeholderTextColor={isDark ? "#888" : "#999"}
-                  value={newEvent.date}
-                  onChangeText={(text: string) =>
-                    setNewEvent({ ...newEvent, date: text })
-                  }
-                />
-              </View>
-
-              <Text style={[styles.inputLabel, { color: isDark ? "#fff" : "#333" }]}>
-                {t("events.form.location")}
-              </Text>
-              <View
-                style={[
-                  styles.inputContainer,
-                  { backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7" },
-                ]}
-              >
-                <TextInput
-                  style={[styles.input, { color: isDark ? "#fff" : "#000" }]}
-                  placeholder={t("events.form.locationPlaceholder")}
-                  placeholderTextColor={isDark ? "#888" : "#999"}
-                  value={newEvent.location}
-                  onChangeText={(text: string) =>
-                    setNewEvent({ ...newEvent, location: text })
-                  }
-                />
-              </View>
-
-              <Text style={[styles.inputLabel, { color: isDark ? "#fff" : "#333" }]}>
-                {t("events.form.description")}
-              </Text>
-              <View
-                style={[
-                  styles.inputContainer,
-                  { 
-                    backgroundColor: isDark ? "#2c2c2e" : "#f2f2f7",
-                    minHeight: 100,
-                  },
-                ]}
-              >
-                <TextInput
-                  style={[
-                    styles.input, 
-                    { 
-                      color: isDark ? "#fff" : "#000",
-                      textAlignVertical: 'top',
-                      paddingTop: 12,
-                    }
-                  ]}
-                  placeholder={t("events.form.descriptionPlaceholder")}
-                  placeholderTextColor={isDark ? "#888" : "#999"}
-                  value={newEvent.description}
-                  onChangeText={(text: string) =>
-                    setNewEvent({ ...newEvent, description: text })
-                  }
-                  multiline
-                  numberOfLines={4}
-                />
-              </View>
-
-              <TouchableOpacity
-                style={[
-                  styles.createSubmitButton,
-                  { backgroundColor: isDark ? "#0A84FF" : "#007AFF" },
-                ]}
-                onPress={addEvent}
-              >
-                <Text style={styles.createSubmitButtonText}>
-                  {t("events.buttons.create")}
-                </Text>
-              </TouchableOpacity>
-            </ScrollView>
+      <Modal
+        visible={createModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <ThemedView style={styles.modalContainer}>
+          <View style={[styles.modalHeader, isRTL && styles.modalHeaderRTL]}>
+            <ThemedText type="title" style={styles.modalTitle}>
+              {t("events.createNew")}
+            </ThemedText>
+            <TouchableOpacity
+              onPress={() => setCreateModalVisible(false)}
+              style={styles.closeButton}
+            >
+              <Ionicons name="close" size={24} color={theme.colors.text} />
+            </TouchableOpacity>
           </View>
-        </View>
+
+          <ScrollView style={styles.modalContent}>
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  color: theme.colors.text,
+                  backgroundColor: theme.colors.background,
+                  borderColor: theme.colors.border,
+                  textAlign: isRTL ? "right" : "left",
+                },
+              ]}
+              placeholder={t("events.form.title")}
+              placeholderTextColor={theme.colors.textSecondary}
+              value={newEvent.title}
+              onChangeText={(text) =>
+                setNewEvent((prev) => ({ ...prev, title: text }))
+              }
+            />
+
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  color: theme.colors.text,
+                  backgroundColor: theme.colors.background,
+                  borderColor: theme.colors.border,
+                  textAlign: isRTL ? "right" : "left",
+                },
+              ]}
+              placeholder={t("events.form.location")}
+              placeholderTextColor={theme.colors.textSecondary}
+              value={newEvent.location}
+              onChangeText={(text) =>
+                setNewEvent((prev) => ({ ...prev, location: text }))
+              }
+            />
+
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  color: theme.colors.text,
+                  backgroundColor: theme.colors.background,
+                  borderColor: theme.colors.border,
+                  textAlign: isRTL ? "right" : "left",
+                },
+              ]}
+              placeholder={t("events.form.date")}
+              placeholderTextColor={theme.colors.textSecondary}
+              value={newEvent.date}
+              onChangeText={(text) =>
+                setNewEvent((prev) => ({ ...prev, date: text }))
+              }
+            />
+
+            <TextInput
+              style={[
+                styles.input,
+                styles.textArea,
+                {
+                  color: theme.colors.text,
+                  backgroundColor: theme.colors.background,
+                  borderColor: theme.colors.border,
+                  textAlign: isRTL ? "right" : "left",
+                },
+              ]}
+              placeholder={t("events.form.description")}
+              placeholderTextColor={theme.colors.textSecondary}
+              value={newEvent.description}
+              onChangeText={(text) =>
+                setNewEvent((prev) => ({ ...prev, description: text }))
+              }
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+            />
+
+            <TouchableOpacity
+              style={[
+                styles.submitButton,
+                { backgroundColor: theme.colors.primary },
+              ]}
+              onPress={createEventHandler}
+            >
+              <ThemedText style={styles.submitButtonText}>
+                {t("events.createEvent")}
+              </ThemedText>
+            </TouchableOpacity>
+          </ScrollView>
+        </ThemedView>
       </Modal>
-    </View>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: { paddingHorizontal: 20, paddingBottom: 10 },
-  headerRow: {
+  container: {
+    flex: 1,
+  },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    opacity: 0.7,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  errorText: {
+    fontSize: 16,
+    textAlign: "center",
+    marginBottom: 24,
+    opacity: 0.7,
+  },
+  retryButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  retryButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 16,
+  },
+  header: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-start",
   },
-  title: { fontSize: 28, fontWeight: "800", marginBottom: 4 },
-  subtitle: { fontSize: 16, fontWeight: "500" },
+  headerRTL: {
+    flexDirection: "row-reverse",
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: "800",
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 16,
+    opacity: 0.7,
+  },
   createButton: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 8,
     paddingHorizontal: 16,
-    borderRadius: 8,
+    paddingVertical: 10,
+    borderRadius: 12,
     gap: 6,
   },
   createButtonText: {
     color: "#fff",
     fontWeight: "600",
-    fontSize: 16,
+    fontSize: 14,
   },
-  listContent: { paddingHorizontal: 20, paddingVertical: 10 },
+  listContent: {
+    paddingHorizontal: 20,
+  },
   card: {
     padding: 20,
     borderRadius: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 8,
-    elevation: 3,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
   cardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 8,
+    marginBottom: 12,
   },
-  eventTitle: { fontSize: 18, fontWeight: "700", flex: 1, marginRight: 12 },
-  eventDescription: { fontSize: 14, marginBottom: 12, lineHeight: 20 },
-  detailsContainer: { marginBottom: 12 },
-  detailRow: { flexDirection: "row", alignItems: "center", marginBottom: 6 },
-  eventDetails: { fontSize: 14, marginLeft: 8 },
-  deleteBtn: { padding: 4 },
-  rsvpButton: {
+  cardHeaderRTL: {
+    flexDirection: "row-reverse",
+  },
+  statusBadge: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: 12,
-    borderWidth: 1,
-    marginTop: 8,
     gap: 6,
   },
-  rsvpButtonText: { fontSize: 15, fontWeight: "600" },
+  statusBadgeRTL: {
+    flexDirection: "row-reverse",
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  deleteBtn: {
+    padding: 4,
+  },
+  eventTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 8,
+    lineHeight: 24,
+  },
+  eventDescription: {
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 16,
+  },
+  eventDetails: {
+    marginBottom: 16,
+  },
+  detailRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 8,
+  },
+  detailRowRTL: {
+    flexDirection: "row-reverse",
+  },
+  detailText: {
+    fontSize: 14,
+    opacity: 0.8,
+  },
+  cardFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  cardFooterRTL: {
+    flexDirection: "row-reverse",
+  },
+  attendanceContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  attendanceContainerRTL: {
+    flexDirection: "row-reverse",
+  },
+  attendanceText: {
+    fontSize: 13,
+    opacity: 0.7,
+  },
+  rsvpBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  rsvpText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
   emptyState: {
-    flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    paddingVertical: 60,
     paddingHorizontal: 40,
   },
-  emptyTitle: { fontSize: 20, fontWeight: "700", marginTop: 16 },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    marginTop: 16,
+    marginBottom: 8,
+  },
   emptyText: {
     fontSize: 16,
     textAlign: "center",
-    marginTop: 8,
-    lineHeight: 24,
+    opacity: 0.7,
+    lineHeight: 22,
   },
-  createFirstEventBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    marginTop: 20,
-    gap: 8,
-  },
-  createFirstEventText: { color: "#fff", fontWeight: "600", fontSize: 16 },
-  modalOverlay: {
+  modalContainer: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  detailModalBox: {
-    width: "90%",
-    maxHeight: "80%",
-    borderRadius: 20,
-    overflow: "hidden",
-  },
-  createModalBox: {
-    width: "90%",
-    maxHeight: "80%",
-    borderRadius: 20,
-    overflow: "hidden",
+    paddingTop: 60,
   },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(150,150,150,0.2)",
   },
-  detailModalTitle: { fontSize: 18, fontWeight: "700" },
-  closeButton: { padding: 4 },
-  detailContent: { padding: 20 },
-  createContent: { padding: 20 },
-  detailTitle: { fontSize: 22, fontWeight: "700", marginBottom: 12 },
-  detailDescription: { fontSize: 16, lineHeight: 24, marginBottom: 20 },
-  detailItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 16,
-    gap: 12,
+  modalHeaderRTL: {
+    flexDirection: "row-reverse",
   },
-  detailText: { fontSize: 16, fontWeight: "500" },
-  detailRsvpButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 16,
-    borderRadius: 12,
-    marginTop: 20,
-    gap: 8,
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: "700",
   },
-  detailRsvpButtonText: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: 16,
+  closeButton: {
+    padding: 4,
   },
-  inputLabel: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 8,
-    marginTop: 16,
-  },
-  inputContainer: {
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    marginBottom: 8,
+  modalContent: {
+    flex: 1,
+    padding: 20,
   },
   input: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 16,
     fontSize: 16,
-    paddingVertical: 12,
+    marginBottom: 16,
   },
-  createSubmitButton: {
+  textArea: {
+    height: 100,
+    textAlignVertical: "top",
+  },
+  submitButton: {
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: "center",
-    marginTop: 24,
   },
-  createSubmitButtonText: {
+  submitButtonText: {
     color: "#fff",
-    fontWeight: "600",
     fontSize: 16,
+    fontWeight: "600",
+  },
+  textRTL: {
+    textAlign: "right",
   },
 });

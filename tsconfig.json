@@ -1,5 +1,4 @@
 {
-  "extends": "expo/tsconfig.base.json",
   "compilerOptions": {
     "jsx": "react-jsx",
     "esModuleInterop": true,
@@ -7,40 +6,24 @@
     "strict": true,
     "baseUrl": ".",
     "paths": {
-      "@/config/*": [
-        "shared/config/*"
-      ],
-      "@/services/*": [
-        "features/users/services/*"
-      ],
-      "@/utils/*": [
-        "shared/utils/*"
-      ],
-      "@/components/*": [
-        "shared/components/*"
-      ],
-      "@/context/*": [
-        "shared/context/*"
-      ],
-      "@/hooks/*": [
-        "shared/hooks/*"
-      ],
-      "@/types/*": [
-        "shared/types/*"
-      ],
-      "@/constants/*": [
-        "shared/constants/*"
-      ],
-      "@/*": [
-        "*"
-      ]
-    }
+      "@/*": ["*"],
+      "@/types/*": ["shared/types/*"],
+      "@/utils/*": ["utils/*"],
+      "@/features/*": ["features/*"],
+      "@/shared/*": ["shared/*"],
+      "@/config/*": ["shared/config/*"],
+      "@/context/*": ["shared/context/*"],
+      "@/hooks/*": ["shared/hooks/*"],
+      "@/constants/*": ["shared/constants/*"]
+    },
+    "typeRoots": ["./node_modules/@types", "./shared/types"]
   },
+  "extends": "expo/tsconfig.base",
   "include": [
     "**/*.ts",
     "**/*.tsx",
-    ".expo/types/**/*.d.ts",
+    ".expo/types/**/*.ts",
     "expo-env.d.ts",
-    ".expo/types/**/*.ts"
+    "shared/types/**/*.d.ts"
   ]
 }

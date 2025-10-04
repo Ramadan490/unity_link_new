@@ -1,0 +1,149 @@
+// prisma/schema.prisma
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  super_admin
+  board_member
+  community_member
+}
+
+model Profile {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  role      String   // global role (optional); local roles live in CommunityMember
+  password  String?
+  hashedPassword String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  communities   Community[] @relation("CommunitySuperAdmin")
+  memorials     Memorial[]
+  announcements Announcement[]
+  events        Event[]      @relation("EventCreatedBy")
+  requests      Request[]
+  replies       Reply[]
+  memberships   CommunityMember[]
+
+  Event Event[]
+}
+
+model Community {
+  id           String   @id @default(uuid())
+  name         String   @unique
+  description  String?
+  superAdminId String?
+  superAdmin   Profile? @relation("CommunitySuperAdmin", fields: [superAdminId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  memorials     Memorial[]
+  announcements Announcement[]
+  events        Event[]
+  requests      Request[]
+  members       CommunityMember[]
+}
+
+model CommunityMember {
+  id          String   @id @default(uuid())
+  communityId String
+  userId      String
+  role        String   @default("community_member") // scoped per community
+
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  user        Profile   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([communityId, userId])
+}
+
+model Memorial {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  communityId String
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  createdById String
+  createdBy   Profile   @relation(fields: [createdById], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Announcement {
+  id          String   @id @default(uuid())
+  title       String
+  content     String
+  communityId String
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  createdById String
+  createdBy   Profile   @relation(fields: [createdById], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  priority    String   @default("normal")
+}
+
+model Event {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  date        DateTime
+  location    String?
+  status      EventStatus @default(UPCOMING)
+  donations   Int      @default(0)
+  goal        Int      @default(0)
+
+  // relationships
+  communityId String
+  community   Community @relation(fields: [communityId], references: [id])
+
+  createdById String
+  createdBy   Profile   @relation(fields: [createdById], references: [id])
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  Profile Profile[] @relation("EventCreatedBy")
+
+}
+
+enum EventStatus {
+  UPCOMING
+  PAST
+  CANCELLED
+}
+
+
+model Request {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  status      String   @default("open")
+  communityId String
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  createdById String
+  createdBy   Profile   @relation(fields: [createdById], references: [id])
+  replies     Reply[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Reply {
+  id          String   @id @default(uuid())
+  content     String
+  requestId   String
+  request     Request   @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  createdById String
+  createdBy   Profile   @relation(fields: [createdById], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
